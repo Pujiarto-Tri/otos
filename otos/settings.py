@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-$l^vxclrjor4o-q#+0+w@okh8yg=vb0xbm-4al9(a9^-4-=8d0
 DEBUG = True
 
 ALLOWED_HOSTS = []
+AUTH_USER_MODEL = 'otosapp.User'
 
 
 # Application definition

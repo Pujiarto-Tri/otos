@@ -8,19 +8,27 @@
       {% if user.role.role_name == 'Student' %}
         <li>View and answer questions</li>
         <li>See your grades and assigned teachers</li>
+        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="hover:text-gray-300">Logout</button>
+        </form>
       {% elif user.role.role_name == 'Teacher' %}
         <li>Manage questions and answers</li>
         <li>View students and their grades</li>
         <li>Check test completion time for each student</li>
+        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="hover:text-gray-300">Logout</button>
+        </form>
       {% elif user.role.role_name == 'Admin' %}
         <li>Manage users, roles, questions, and categories</li>
+        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="hover:text-gray-300">Logout</button>
+        </form>
       {% endif %}
     </ul>
   {% else %}
     <h2>Please log in to access your dashboard.</h2>
-    <form action="{% url 'logout' %}" method="post" style="display: inline;">
-        {% csrf_token %}
-        <button type="submit" class="hover:text-gray-300">Logout</button>
-    </form>
   {% endif %}
 {% endblock %}
