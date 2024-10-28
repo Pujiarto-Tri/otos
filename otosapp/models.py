@@ -5,7 +5,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-    role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, default=1)
+    role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
 
     groups = models.ManyToManyField(
         Group,
