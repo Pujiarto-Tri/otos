@@ -19,3 +19,21 @@ class CustomUserCreationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+    
+class UserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['email', 'role']  # Include other fields you want admins to edit
+
+    # Optionally, add a role dropdown limited to available roles in Role model
+    role = forms.ModelChoiceField(
+        queryset=Role.objects.all(),
+        required=True,
+        label="User Role"
+    )
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+        return user

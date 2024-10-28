@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from otosapp.models import User
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, UserUpdateForm
 from .decorators import admin_required
 
 def register(request):
@@ -21,3 +21,37 @@ def register(request):
 def user_list(request):
     users = User.objects.all().order_by('-date_joined')
     return render(request, 'admin/user_list.html', {'users': users})
+
+@login_required
+@admin_required
+def user_create(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('user_list')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'admin/user_form.html', {'form': form, 'title': 'Add New User'})
+
+@login_required
+@admin_required
+def user_update(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        form = UserUpdateForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('user_list')
+    else:
+        form = UserUpdateForm(instance=user)
+    return render(request, 'admin/user_form.html', {'form': form, 'title': 'Edit User'})
+
+@login_required
+@admin_required
+def user_delete(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        user.delete()
+        return redirect('user_list')
+    return render(request, 'admin/user_confirm_delete.html', {'user': user})
