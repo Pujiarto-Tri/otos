@@ -1,11 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
+  darkMode: 'media',
   content: [
     './otosapp/templates/**/*.html',
     './static/**/*.js',
     './node_modules/flowbite/**/*.js',
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
