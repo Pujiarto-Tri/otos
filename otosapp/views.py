@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from otosapp.models import User
+from otosapp.models import User, Role
 from .forms import CustomUserCreationForm, UserUpdateForm
 from .decorators import admin_required
 
@@ -55,3 +55,9 @@ def user_delete(request, user_id):
         user.delete()
         return redirect('user_list')
     return render(request, 'admin/user_confirm_delete.html', {'user': user})
+
+@login_required
+@admin_required
+def your_view(request):
+    roles = Role.objects.all()  # Fetch all roles to populate the dropdown
+    return render(request, 'your_template.html', {'roles': roles})

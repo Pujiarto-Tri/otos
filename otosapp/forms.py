@@ -21,16 +21,36 @@ class CustomUserCreationForm(UserCreationForm):
         return user
     
 class UserUpdateForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ['email', 'role']  # Include other fields you want admins to edit
-
-    # Optionally, add a role dropdown limited to available roles in Role model
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+            'placeholder': 'Enter email address'
+        })
+    )
+    
     role = forms.ModelChoiceField(
         queryset=Role.objects.all(),
         required=True,
-        label="User Role"
+        label="User Role",
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+        })
     )
+
+    class Meta:
+        model = User
+        fields = ['email', 'role']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Add help text for fields
+        self.fields['email'].help_text = "The user's email address will be used for login and communications"
+        self.fields['role'].help_text = "Select the appropriate role for this user"
+
+        # Customize labels
+        self.fields['email'].label = "Email Address"
 
     def save(self, commit=True):
         user = super().save(commit=False)
