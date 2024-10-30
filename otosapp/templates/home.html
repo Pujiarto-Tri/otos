@@ -3,16 +3,16 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     {% if user.is_authenticated %}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome, {{ user.get_full_name|default:user.email }}!</h2>
-            <p class="text-gray-600 mb-4">Your role: <span class="font-medium text-indigo-600">{{ user.role.role_name }}</span></p>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Welcome, {{ user.get_full_name|default:user.email }}!</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">Your role: <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ user.role.role_name }}</span></p>
 
             {% if users %}
-                <div class="border-t border-gray-200 pt-4">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Registered Users:</h3>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Registered Users:</h3>
                     <ul class="space-y-3">
                         {% for registered_user in users %}
-                            <li class="flex items-center text-gray-700">
+                            <li class="flex items-center text-gray-700 dark:text-gray-300">
                                 {{ registered_user.get_full_name|default:registered_user.email }} - {{ registered_user.role.role_name }}
                             </li>
                         {% endfor %}
@@ -20,50 +20,50 @@
                 </div>
             {% endif %}
             
-            <div class="border-t border-gray-200 pt-4">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">Available Actions:</h3>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Available Actions:</h3>
                 <ul class="space-y-3">
                     {% if user.role.role_name == 'Student' %}
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             View and answer questions
                         </li>
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             See your grades and assigned teachers
                         </li>
                     {% elif user.role.role_name == 'Teacher' %}
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             Manage questions and answers
                         </li>
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             View students and their grades
                         </li>
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             Check test completion time for each student
                         </li>
                     {% elif user.role.role_name == 'Admin' %}
-                        <li class="flex items-center text-gray-700">
+                        <li class="flex items-center text-gray-700 dark:text-gray-300">
                             <svg class="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             Manage users, roles, questions, and categories
                         </li>
-                        <div class="border-t border-gray-200 pt-4">
-                          <h3 class="text-lg font-semibold text-gray-700 mb-3">Main Menu</h3>
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Main Menu</h3>
                           <ul class="space-y-3">
                             <a href="{% url 'user_list' %}" class="px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition">
                               List Users
@@ -75,9 +75,9 @@
             </div>
         </div>
     {% else %}
-        <div class="bg-white rounded-lg shadow-md p-6 text-center">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome to the Exam System</h2>
-            <p class="text-gray-600 mb-6">Please log in to access your dashboard.</p>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Welcome to the Exam System</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Please log in to access your dashboard.</p>
             <div class="space-x-4">
                 <a href="{% url 'login' %}" class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
                     Login

@@ -4,7 +4,7 @@ from .models import User, Role, Category, Question, Choice, Test, Answer
 
 class CustomUserAdmin(UserAdmin):
     model = User
-    list_display = ('email', 'username', 'is_staff', 'is_active', 'role')
+    list_display = ('email', 'username', 'is_staff', 'is_active', 'role', 'full_name')
     list_filter = ('is_staff', 'is_active', 'role')
     search_fields = ('email', 'username')
     ordering = ('email',)
