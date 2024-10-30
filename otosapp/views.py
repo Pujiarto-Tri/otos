@@ -63,7 +63,7 @@ def category_create(request):
     if request.method == 'POST':
         form = CategoryCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            form.save() 
             return redirect('category_list')
     else:
         form = CategoryCreationForm()
