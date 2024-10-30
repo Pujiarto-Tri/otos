@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from otosapp.models import User, Role
-from .forms import CustomUserCreationForm, UserUpdateForm
-from .decorators import admin_required
+from otosapp.models import User, Role, Category
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm
+from .decorators import admin_required, admin_or_teacher_required
 
 def register(request):
     if request.method == 'POST':
@@ -54,4 +54,25 @@ def user_delete(request, user_id):
     if request.method == 'POST':
         user.delete()
         return redirect('user_list')
-    return render(request, 'admin/manage/user/user_confirm_delete.html', {'user': user})
+    return render(request, 'admin/manage_user/user_confirm_delete.html', {'user': user})
+
+
+
+@login_required
+@admin_required
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'admin/manage_categories/category_list.html', {'categories': categories})
+
+@login_required
+@admin_required
+def category_update(request, category_id):
+    category = get_object_or_404(User, id=category_id)
+    if request.method == 'POST':
+        form = CategoryUpdateForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            return redirect('user_list')
+    else:
+        form = CategoryUpdateForm(instance=category)
+    return render(request, 'admin/manage_category/category_form.html', {'form': form, 'title': 'Edit Category'})

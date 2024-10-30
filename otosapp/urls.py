@@ -9,6 +9,12 @@ urlpatterns = [
     path('register/', register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    
+    path('admin/categories/', views.category_list, name='category_list'),
+    path('admin/categories/create/', views.category_list, name='category_create'),
+    path('admin/categories/<int:category_id>/edit/', views.category_list, name='category_update'),
+    path('admin/categories/<int:category_id>/delete/', views.category_list, name='category_delete'),
+
     path('admin/users/', views.user_list, name='user_list'),
     path('admin/users/create/', views.user_create, name='user_create'),
     path('admin/users/<int:user_id>/edit/', views.user_update, name='user_update'),

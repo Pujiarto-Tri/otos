@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Card Container -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">{{ title }}</h2>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Update Category information</p>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Form Fields -->
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}" 
+                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    {{ field.label }}
+                    {% if field.field.required %}
+                        <span class="text-red-500 dark:text-red-400">*</span>
+                    {% endif %}
+                </label>
+                <div class="mt-1">
+                    {{ field }}
+                </div>
+                {% if field.help_text %}
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <div class="mt-1">
+                    {% for error in field.errors %}
+                    <p class="text-red-500 dark:text-red-400 text-xs mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <!-- Button Group -->
+            <div class="flex items-center justify-end space-x-4 top-4 mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <a href="{% url 'category_list' %}" 
+                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 
+                          dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:border-gray-600
+                          rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 
+                          dark:focus:ring-gray-600 transition-colors duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 
+                               dark:bg-blue-600 dark:hover:bg-blue-700
+                               rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 
+                               focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors duration-200">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
