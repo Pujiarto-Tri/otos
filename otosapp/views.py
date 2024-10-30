@@ -57,6 +57,17 @@ def user_delete(request, user_id):
     return render(request, 'admin/manage_user/user_confirm_delete.html', {'user': user})
 
 
+@login_required
+@admin_required
+def category_create(request):
+    if request.method == 'POST':
+        form = CategoryCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('category_list')
+    else:
+        form = CategoryCreationForm()
+    return render(request, 'admin/manage_categories/category_form.html', {'form': form, 'title': 'Add New Category'})
 
 @login_required
 @admin_required
