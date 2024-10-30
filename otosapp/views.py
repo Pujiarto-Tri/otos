@@ -16,6 +16,8 @@ def register(request):
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
+##User View##
+
 @login_required
 @admin_required
 def user_list(request):
@@ -57,6 +59,8 @@ def user_delete(request, user_id):
     return render(request, 'admin/manage_user/user_confirm_delete.html', {'user': user})
 
 
+##Category View##
+
 @login_required
 @admin_required
 def category_create(request):
@@ -67,23 +71,33 @@ def category_create(request):
             return redirect('category_list')
     else:
         form = CategoryCreationForm()
-    return render(request, 'admin/manage_categories/category_form.html', {'form': form, 'title': 'Add New Category'})
+    return render(request, {'form': form, 'title': 'Add New Category'})
 
 @login_required
 @admin_required
 def category_list(request):
+    form = CategoryCreationForm()
     categories = Category.objects.all()
-    return render(request, 'admin/manage_categories/category_list.html', {'categories': categories})
+    return render(request, 'admin/manage_categories/category_list.html', {'categories': categories, 'form': form})
 
 @login_required
 @admin_required
 def category_update(request, category_id):
-    category = get_object_or_404(User, id=category_id)
+    category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
         form = CategoryUpdateForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
-            return redirect('user_list')
+            return redirect('category_list')
     else:
         form = CategoryUpdateForm(instance=category)
-    return render(request, 'admin/manage_category/category_form.html', {'form': form, 'title': 'Edit Category'})
+    return render(request, {'category': category, 'form': form, 'title': 'Edit Category'})
+
+@login_required
+@admin_required
+def category_delete(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == 'POST':
+        category.delete()
+        return redirect('category_list')
+    return render(request, {'category': category})
