@@ -29,11 +29,19 @@ class UserUpdateForm(forms.ModelForm):
         })
     )
 
-    full_name = forms.CharField(
+    first_name = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
-            'placeholder': 'Enter full name'
+            'placeholder': 'Enter first name'
+        })
+    )
+
+    last_name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+            'placeholder': 'Enter last name'
         })
     )
     
@@ -48,19 +56,21 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'role']
+        fields = ['email', 'first_name', 'last_name', 'role']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Add help text for fields
         self.fields['email'].help_text = "The user's email address will be used for login and communications"
-        self.fields['full_name'].help_text = "Enter the user's full name"
+        self.fields['first_name'].help_text = "Enter the user's first name"
+        self.fields['last_name'].help_text = "Enter the user's last name"
         self.fields['role'].help_text = "Select the appropriate role for this user"
 
         # Customize labels
         self.fields['email'].label = "Email Address"
-        self.fields['full_name'].label = "Full Name"
+        self.fields['first_name'].label = "First Name"
+        self.fields['last_name'].label = "Last Name"
 
     def save(self, commit=True):
         user = super().save(commit=False)

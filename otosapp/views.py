@@ -20,7 +20,7 @@ def register(request):
 @admin_required
 def user_list(request):
     users = User.objects.all().order_by('-date_joined')
-    return render(request, 'admin/user_list.html', {'users': users})
+    return render(request, 'admin/manage_user/user_list.html', {'users': users})
 
 @login_required
 @admin_required
@@ -32,7 +32,7 @@ def user_create(request):
             return redirect('user_list')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'admin/user_form.html', {'form': form, 'title': 'Add New User'})
+    return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Add New User'})
 
 @login_required
 @admin_required
@@ -45,7 +45,7 @@ def user_update(request, user_id):
             return redirect('user_list')
     else:
         form = UserUpdateForm(instance=user)
-    return render(request, 'admin/user_form.html', {'form': form, 'title': 'Edit User'})
+    return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Edit User'})
 
 @login_required
 @admin_required
@@ -54,10 +54,4 @@ def user_delete(request, user_id):
     if request.method == 'POST':
         user.delete()
         return redirect('user_list')
-    return render(request, 'admin/user_confirm_delete.html', {'user': user})
-
-@login_required
-@admin_required
-def your_view(request):
-    roles = Role.objects.all()  # Fetch all roles to populate the dropdown
-    return render(request, 'your_template.html', {'roles': roles})
+    return render(request, 'admin/manage/user/user_confirm_delete.html', {'user': user})
