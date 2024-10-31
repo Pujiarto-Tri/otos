@@ -124,3 +124,10 @@ class CategoryUpdateForm(forms.ModelForm):
         if commit:
             category.save()
         return category
+    
+    
+    # def clean_category_name(self):
+    #     name = self.cleaned_data['category_name']
+    #     if not name:
+    #         raise forms.ValidationError("Category name is required")
+    #     return name

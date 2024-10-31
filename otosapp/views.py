@@ -1,9 +1,11 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from otosapp.models import User, Role, Category
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm
 from .decorators import admin_required, admin_or_teacher_required
+from django.http import HttpResponse
 
 def register(request):
     if request.method == 'POST':
@@ -92,6 +94,33 @@ def category_update(request, category_id):
     else:
         form = CategoryUpdateForm(instance=category)
     return render(request, {'category': category, 'form': form, 'title': 'Edit Category'})
+
+# @login_required
+# @admin_required
+# def category_update(request, category_id):
+#     print("1. View called")  # Debug print
+#     print("2. Method:", request.method)  # Debug print
+#     print("3. Category ID:", category_id)  # Debug print
+    
+#     category = get_object_or_404(Category, id=category_id)
+#     print("4. Current category name:", category.category_name)  # Debug print
+    
+#     if request.method == 'POST':
+#         print("5. POST data:", request.POST)  # Debug print
+#         new_name = request.POST.get('category_name')
+#         print("6. New name:", new_name)  # Debug print
+        
+#         if new_name:
+#             category.category_name = new_name
+#             category.save()
+#             print("7. Category saved with new name:", category.category_name)  # Debug print
+#             return HttpResponse("Success")
+#         else:
+#             print("7. No new name provided")  # Debug print
+#             return HttpResponse("Error: No name provided", status=400)
+    
+#     print("5. Not a POST request")  # Debug print
+#     return HttpResponse("Error: Invalid request method", status=400)
 
 @login_required
 @admin_required
