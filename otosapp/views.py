@@ -2,8 +2,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from otosapp.models import User, Role, Category
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm
+from otosapp.models import User, Role, Category, Question
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm
 from .decorators import admin_required, admin_or_teacher_required
 from django.http import HttpResponse
 
@@ -93,34 +93,7 @@ def category_update(request, category_id):
             return redirect('category_list')
     else:
         form = CategoryUpdateForm(instance=category)
-    return render(request, {'category': category, 'form': form, 'title': 'Edit Category'})
-
-# @login_required
-# @admin_required
-# def category_update(request, category_id):
-#     print("1. View called")  # Debug print
-#     print("2. Method:", request.method)  # Debug print
-#     print("3. Category ID:", category_id)  # Debug print
-    
-#     category = get_object_or_404(Category, id=category_id)
-#     print("4. Current category name:", category.category_name)  # Debug print
-    
-#     if request.method == 'POST':
-#         print("5. POST data:", request.POST)  # Debug print
-#         new_name = request.POST.get('category_name')
-#         print("6. New name:", new_name)  # Debug print
-        
-#         if new_name:
-#             category.category_name = new_name
-#             category.save()
-#             print("7. Category saved with new name:", category.category_name)  # Debug print
-#             return HttpResponse("Success")
-#         else:
-#             print("7. No new name provided")  # Debug print
-#             return HttpResponse("Error: No name provided", status=400)
-    
-#     print("5. Not a POST request")  # Debug print
-#     return HttpResponse("Error: Invalid request method", status=400)
+    return render(request, None, {'form': form, 'category_id': category_id})
 
 @login_required
 @admin_required
@@ -130,3 +103,48 @@ def category_delete(request, category_id):
         category.delete()
         return redirect('category_list')
     return render(request, {'category': category})
+
+
+
+##Question View##
+
+@login_required
+@admin_or_teacher_required
+def question_create(request):
+    if request.method == 'POST':
+        form = QuestionCreationForm(request.POST)
+        if form.is_valid():
+            form.save() 
+            return redirect('question_list')
+    else:
+        form = QuestionCreationForm()
+    return render(request, {'form': form, 'title': 'Add New Question'})
+
+@login_required
+@admin_or_teacher_required
+def question_list(request):
+    form = QuestionCreationForm()
+    questions = Question.objects.all()
+    return render(request, 'admin/manage_questions/question_list.html', {'questions': questions, 'form': form})
+
+@login_required
+@admin_or_teacher_required
+def question_update(request, question_id):
+    question = get_object_or_404(Category, id=question_id)
+    if request.method == 'POST':
+        form = QuestionUpdateForm(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            return redirect('question_list')
+    else:
+        form = QuestionUpdateForm(instance=question)
+    return render(request, None, {'form': form, 'question_id': question_id})
+
+@login_required
+@admin_or_teacher_required
+def question_delete(request, question_id):
+    question = get_object_or_404(Category, id=question_id)
+    if request.method == 'POST':
+        question.delete()
+        return redirect('question_list')
+    return render(request, {'question': question})

@@ -13,7 +13,7 @@ def admin_required(function):
 def admin_or_teacher_required(function):
     @wraps(function)
     def wrap(request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.role.role_name == 'Admin' or request.user.role.role_name == 'Teacher' :
+        if request.user.is_authenticated and (request.user.role.role_name == 'Admin' or request.user.role.role_name == 'Teacher'):
             return function(request, *args, **kwargs)
         raise PermissionDenied
     return wrap

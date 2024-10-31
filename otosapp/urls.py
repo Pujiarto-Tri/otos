@@ -19,4 +19,9 @@ urlpatterns = [
     path('admin/users/create/', views.user_create, name='user_create'),
     path('admin/users/<int:user_id>/edit/', views.user_update, name='user_update'),
     path('admin/users/<int:user_id>/delete/', views.user_delete, name='user_delete'),
+
+    path('admin/question/', views.question_list, name='question_list'),
+    path('admin/question/create/', views.question_create, name='question_create'),
+    path('admin/question/<int:question_id>/edit/', views.question_update, name='question_update'),
+    path('admin/question/<int:question_id>/delete/', views.question_delete, name='question_delete'),
 ]
