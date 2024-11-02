@@ -1,9 +1,11 @@
+from django.contrib import messages
+from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from otosapp.models import User, Role, Category, Question
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet
 from .decorators import admin_required, admin_or_teacher_required
 from django.http import HttpResponse
 
@@ -108,17 +110,93 @@ def category_delete(request, category_id):
 
 ##Question View##
 
+# @login_required
+# @admin_or_teacher_required
+# def question_create(request):
+#     if request.method == 'POST':
+#         form = QuestionCreationForm(request.POST)
+#         if form.is_valid():
+#             form.save() 
+#             return redirect('question_list')
+#     else:
+#         form = QuestionCreationForm()
+#     return render(request, {'form': form, 'title': 'Add New Question'})
+
 @login_required
 @admin_or_teacher_required
 def question_create(request):
     if request.method == 'POST':
         form = QuestionCreationForm(request.POST)
-        if form.is_valid():
-            form.save() 
+        formset = ChoiceFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+            # Set the publication date before saving
+            question = form.save(commit=False)
+            question.pub_date = timezone.now()
+            question.save()
+            
+            # Save the formset
+            choices = formset.save(commit=False)
+            
+            # Ensure at least one choice is marked as correct
+            has_correct_answer = any(
+                form.cleaned_data.get('is_correct', False) 
+                for form in formset.forms 
+                if form.cleaned_data
+            )
+            
+            if not has_correct_answer:
+                messages.error(request, 'At least one choice must be marked as correct.')
+                return render(request, 'admin/manage_questions/question_list.html', {
+                    'form': form,
+                    'formset': formset,
+                    'title': 'Add New Question'
+                })
+            
+            # Save all choices
+            for choice in choices:
+                choice.question = question
+                choice.save()
+            
+            messages.success(request, 'Question created successfully!')
             return redirect('question_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+            print("Form errors:", form.errors)
+            print("Formset errors:", formset.errors)
     else:
         form = QuestionCreationForm()
-    return render(request, {'form': form, 'title': 'Add New Question'})
+        formset = ChoiceFormSet()
+
+    return render(request, 'admin/manage_questions/question_list.html', {
+        'form': form,
+        'formset': formset,
+        'title': 'Add New Question'
+    })
+
+def question_create(request):
+    if request.method == 'POST':
+        form = QuestionCreationForm(request.POST)
+        formset = ChoiceFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+            question = form.save()
+            choices = formset.save(commit=False)
+            for choice in choices:
+                choice.question = question
+                choice.save()
+            return redirect('question_list')
+    else:
+        print(form.errors)
+        print(formset.errors)
+        form = QuestionCreationForm()
+        formset = ChoiceFormSet()
+
+    return render(request, 'admin/manage_questions/question_list.html', {
+        'form': form,
+        'formset': formset,
+        'title': 'Add New Question'
+    })
 
 @login_required
 @admin_or_teacher_required

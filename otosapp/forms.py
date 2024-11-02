@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Role, Category, Question
+from django.forms import inlineformset_factory
+from .models import User, Role, Category, Question, Choice
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
@@ -126,6 +127,28 @@ class CategoryUpdateForm(forms.ModelForm):
     
     
 
+# class QuestionCreationForm(forms.ModelForm):
+#     class Meta:
+#         model = Question
+#         fields = ('question_text', 'category')
+#         widgets = {
+#             'question_text': forms.TextInput(attrs={
+#                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+#                 'placeholder': 'Enter category name'
+#             }),
+#         } 
+
+#     def save(self, commit=True):
+#         question = super().save(commit=False)
+            
+#         if commit:
+#             question.save()
+#         return question
+
+from django import forms
+from django.forms import inlineformset_factory
+from .models import Question, Choice
+
 class QuestionCreationForm(forms.ModelForm):
     class Meta:
         model = Question
@@ -133,16 +156,31 @@ class QuestionCreationForm(forms.ModelForm):
         widgets = {
             'question_text': forms.TextInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
-                'placeholder': 'Enter category name'
+                'placeholder': 'Enter question text'
             }),
-        } 
+            'category': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            })
+        }
 
-    def save(self, commit=True):
-        question = super().save(commit=False)
-            
-        if commit:
-            question.save()
-        return question
+ChoiceFormSet = inlineformset_factory(
+    Question,
+    Choice,
+    fields=('choice_text', 'is_correct'),
+    extra=1,
+    min_num=2,  # Minimum number of choices
+    validate_min=True,
+    can_delete=False,
+    widgets={
+        'choice_text': forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'placeholder': 'Enter choice text'
+        }),
+        'is_correct': forms.CheckboxInput(attrs={
+            'class': 'w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+        })
+    }
+)
 
 class QuestionUpdateForm(forms.ModelForm):
     category_name = forms.CharField(

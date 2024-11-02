@@ -24,7 +24,7 @@
                     </form>
                 </div>
                 <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                    <button type="button" id="createProductModalButton" data-modal-target="createProductModal" data-modal-toggle="createProductModal" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                <button type="button" id="createQuestionModalButton" data-modal-target="createQuestionModal" data-modal-toggle="createQuestionModal" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                         <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
                         </svg>
@@ -184,58 +184,80 @@
 </section>
 <!-- End block -->
 <!-- Create modal -->
-<div id="createProductModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900/50 dark:bg-gray-900/80">
+<div id="createQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900/50 dark:bg-gray-900/80">
     <div class="relative p-4 w-full max-w-2xl max-h-full">
-        <!-- Modal content -->
         <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-            <!-- Modal header -->
             <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                     Add Question
                 </h3>
-                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-target="createProductModal" data-modal-toggle="createProductModal">
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="createQuestionModal">
                     <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
                     </svg>
                     <span class="sr-only">Close modal</span>
                 </button>
             </div>
-
-            <!-- Modal body -->
             <div class="p-4 md:p-5">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="p-4 mb-4 text-sm {% if message.tags == 'error' %}text-red-800 bg-red-50{% else %}text-green-800 bg-green-50{% endif %} rounded-lg" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
                 <form method="POST" action="{% url 'question_create' %}" class="space-y-4">
                     {% csrf_token %}
-                    {% for field in form %}
-                    <div class="space-y-2">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-900 dark:text-white">
-                            {{ field.label }}
-                            {% if field.field.required %}
-                                <span class="text-red-500 dark:text-red-400">*</span>
-                            {% endif %}
-                        </label>
-                        <div class="mt-1">
-                            {{ field.as_widget|safe }}
-                        </div>
-                        {% if field.help_text %}
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
-                        {% endif %}
-                        {% if field.errors %}
-                        <div class="mt-1">
-                            {% for error in field.errors %}
-                            <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
                     
-                    <!-- Modal footer -->
+                    <!-- Question fields -->
+                    <div class="space-y-2">
+                        {{ form.non_field_errors }}
+                        {% for field in form %}
+                            <div>
+                                {{ field.label_tag }}
+                                {{ field }}
+                                {{ field.errors }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="hidden">
+                        {{ formset.management_form }}
+                        <input type="hidden" name="choices-TOTAL_FORMS" id="id_choices-TOTAL_FORMS" value="1">
+                        <input type="hidden" name="choices-INITIAL_FORMS" id="id_choices-INITIAL_FORMS" value="0">
+                        <input type="hidden" name="choices-MIN_NUM_FORMS" id="id_choices-MIN_NUM_FORMS" value="2">
+                        <input type="hidden" name="choices-MAX_NUM_FORMS" id="id_choices-MAX_NUM_FORMS" value="10">
+                    </div>
+                    <!-- Choices -->
+                    <div id="choicesContainer" class="space-y-4">
+                        {{ formset.management_form }}
+                        {% for form in formset %}
+                            <div class="choice-item space-y-2 p-4 border rounded-lg">
+                                {{ form.non_field_errors }}
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-900 dark:text-white">Choice Text</label>
+                                        {{ form.choice_text }}
+                                        {{ form.choice_text.errors }}
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="inline-flex items-center">
+                                            {{ form.is_correct }}
+                                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" id="addChoiceBtn" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Add Another Choice
+                    </button>
+
                     <div class="flex items-center mt-6">
                         <button type="submit" class="text-white inline-flex items-center bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                            <svg class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                            Add new Question
+                            Add Question
                         </button>
                     </div>
                 </form>
@@ -323,9 +345,10 @@
         const questionNameInput = form.querySelector('[name="question_text"]');
         
         // Set the form action URL dynamically
-        form.action = `/otosapp/admin/categories/${quesitonId}/edit/`;
+        form.action = `/otosapp/admin/question/${questionId}/edit/`;
 
-        quesitonNameInput.placeholder = questionName;
+        // Set placeholder and input value
+        questionNameInput.placeholder = questionName;
         questionNameInput.value = questionName;
 
         // Show modal
@@ -334,23 +357,137 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('createQuestionModal');
+        const addChoiceBtn = document.getElementById('addChoiceBtn');
+        const choicesContainer = document.getElementById('choicesContainer');
+        
+        // Get the management form inputs
+        const totalFormsInput = document.querySelector('#id_choices-TOTAL_FORMS');
+        const initialFormsInput = document.querySelector('#id_choices-INITIAL_FORMS');
+        const minFormsInput = document.querySelector('#id_choices-MIN_NUM_FORMS');
+        const maxFormsInput = document.querySelector('#id_choices-MAX_NUM_FORMS');
+        
+        // Initialize choiceIndex with current total forms
+        let choiceIndex = parseInt(totalFormsInput.value);
+    
+        // Add choice button functionality
+        addChoiceBtn.addEventListener('click', function() {
+            // Create new choice container
+            const newChoiceDiv = document.createElement('div');
+            newChoiceDiv.classList.add('choice-item', 'space-y-2', 'p-4', 'border', 'rounded-lg', 'mb-4');
+            
+            // Create the HTML for the new choice form
+            newChoiceDiv.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                        <label for="id_choices-${choiceIndex}-choice_text" 
+                               class="block text-sm font-medium text-gray-900 dark:text-white">
+                            Choice Text
+                        </label>
+                        <input type="text" 
+                               name="choices-${choiceIndex}-choice_text" 
+                               id="id_choices-${choiceIndex}-choice_text"
+                               maxlength="200" 
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                               required>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" 
+                                   name="choices-${choiceIndex}-is_correct"
+                                   id="id_choices-${choiceIndex}-is_correct"
+                                   class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Add hidden field for form-id -->
+                <input type="hidden" name="choices-${choiceIndex}-id" id="id_choices-${choiceIndex}-id">
+            `;
+            
+            // Add the new choice to the container
+            choicesContainer.appendChild(newChoiceDiv);
+            
+            // Increment the form count
+            choiceIndex++;
+            totalFormsInput.value = choiceIndex;
+        });
+    
+        // Form validation before submit
+        const form = modal.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            // Get all choice items
+            const choices = form.querySelectorAll('.choice-item');
+            
+            // Check if there are at least two choices
+            if (choices.length < 2) {
+                event.preventDefault();
+                alert('Please add at least two choices.');
+                return;
+            }
+            
+            // Check if at least one correct answer is selected
+            const hasCorrectAnswer = Array.from(choices).some(choice => 
+                choice.querySelector('input[type="checkbox"]').checked
+            );
+            
+            if (!hasCorrectAnswer) {
+                event.preventDefault();
+                alert('Please mark at least one choice as correct.');
+                return;
+            }
+    
+            // Validate that all choice texts are filled
+            const emptyChoices = Array.from(choices).some(choice => {
+                const textInput = choice.querySelector('input[type="text"]');
+                return !textInput.value.trim();
+            });
+    
+            if (emptyChoices) {
+                event.preventDefault();
+                alert('Please fill in all choice texts.');
+                return;
+            }
+        });
+    });
+
+    {% comment %} document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('updateQuestionModal');
         const closeButtons = modal.querySelectorAll('.close-modal');
-    
-        // Loop through and add event listener to each close button
+        const addChoiceBtn = document.getElementById('addChoiceBtn');
+        const choicesContainer = document.getElementById('choicesContainer');
+        
+        // Initialize choiceIndex with total form count dynamically from server
+        let choiceIndex = parseInt("{{ formset.total_form_count }}", 10);
+
+        // Close modal functionality
         closeButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const modalInstance = new Modal(modal);
                 modalInstance.hide();
             });
         });
-    
+
+        // Add choice button functionality
+        addChoiceBtn.addEventListener('click', function() {
+            const newChoice = document.createElement('div');
+            newChoice.classList.add('choice-item', 'space-y-2');
+            newChoice.innerHTML = `
+                <label for="id_choices-${choiceIndex}-choice_text" class="block text-sm font-medium text-gray-900 dark:text-white">Choice Text</label>
+                <input type="text" name="choices-${choiceIndex}-choice_text" maxlength="200" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                <label><input type="checkbox" name="choices-${choiceIndex}-is_correct"> Is Correct?</label>
+            `;
+            choicesContainer.appendChild(newChoice);
+            choiceIndex++;
+        });
+
+        // Handle update form submission
         const updateForm = document.getElementById('updateQuestionForm');
         updateForm.addEventListener('submit', function(event) {
             event.preventDefault();
-    
+
             const formData = new FormData(this);
-    
+
             fetch(this.action, {
                 method: 'POST',
                 body: formData,
@@ -371,8 +508,9 @@
                 alert('An error occurred while updating the question');
             });
         });
-    });
+    }); {% endcomment %}
 </script>
+
 
 
 {% endblock %}
