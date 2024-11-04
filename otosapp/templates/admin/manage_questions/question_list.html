@@ -252,7 +252,7 @@
                     </div>
 
                     <button type="button" id="addChoiceBtn" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
-                        Add Another Choice
+                        Add Choice
                     </button>
 
                     <div class="flex items-center mt-6">
@@ -265,6 +265,86 @@
         </div>
     </div>
 </div>
+
+
+<script>
+    function openUpdateModal(questionId, questionName) {
+        const modal = document.getElementById('updateQuestionModal');
+        const form = document.getElementById('updateQuestionForm');
+        const questionNameInput = form.querySelector('[name="question_text"]');
+        
+        // Set the form action URL dynamically
+        form.action = `/otosapp/admin/question/${questionId}/edit/`;
+
+        // Set placeholder and input value
+        questionNameInput.placeholder = questionName;
+        questionNameInput.value = questionName;
+
+        // Show modal
+        const modalInstance = new Modal(modal);
+        modalInstance.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addChoiceBtn = document.getElementById('addChoiceBtn');
+        const choicesContainer = document.getElementById('choicesContainer');
+        const totalFormsInput = document.querySelector('#id_choices-TOTAL_FORMS');
+        
+        // Initialize choice index based on the current total forms
+        let choiceIndex = parseInt(totalFormsInput.value);
+    
+        // Function to create a new choice field
+        function createChoiceField(index) {
+            return `
+                <div class="choice-item space-y-2 p-4 border rounded-lg mb-4">
+                    <label for="id_choices-${index}-choice_text" class="block text-sm font-medium text-gray-900 dark:text-white">Choice Text</label>
+                    <input type="text" 
+                           name="choices-${index}-choice_text" 
+                           id="id_choices-${index}-choice_text"
+                           maxlength="200" 
+                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                           required>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" 
+                               name="choices-${index}-is_correct"
+                               id="id_choices-${index}-is_correct"
+                               class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
+                    </label>
+                    <input type="hidden" name="choices-${index}-id" id="id_choices-${index}-id">
+                </div>
+            `;
+        }
+    
+        // Add a new choice field when "Add Choice" button is clicked
+        addChoiceBtn.addEventListener('click', function() {
+            choicesContainer.insertAdjacentHTML('beforeend', createChoiceField(choiceIndex));
+            choiceIndex++;
+            totalFormsInput.value = choiceIndex;  // Update the total form count
+        });
+    
+        // Validation for form submission
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const choiceItems = choicesContainer.querySelectorAll('.choice-item');
+            
+            // Ensure at least two choices are present
+            if (choiceItems.length < 2) {
+                alert('Please add at least two choices.');
+                event.preventDefault();
+                return;
+            }
+            
+            // Ensure at least one choice is marked as correct
+            const hasCorrectAnswer = Array.from(choiceItems).some(choice => 
+                choice.querySelector('input[type="checkbox"]').checked
+            );
+            if (!hasCorrectAnswer) {
+                alert('Please mark at least one choice as correct.');
+                event.preventDefault();
+            }
+        });
+    });
+</script>
 
 <!-- Update modal -->
 <!-- Add id to the modal for debugging -->
@@ -338,118 +418,7 @@
     });  
 </script>
 
-<script>
-    function openUpdateModal(questionId, questionName) {
-        const modal = document.getElementById('updateQuestionModal');
-        const form = document.getElementById('updateQuestionForm');
-        const questionNameInput = form.querySelector('[name="question_text"]');
-        
-        // Set the form action URL dynamically
-        form.action = `/otosapp/admin/question/${questionId}/edit/`;
 
-        // Set placeholder and input value
-        questionNameInput.placeholder = questionName;
-        questionNameInput.value = questionName;
-
-        // Show modal
-        const modalInstance = new Modal(modal);
-        modalInstance.show();
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const modal = document.getElementById('createQuestionModal');
-        const addChoiceBtn = document.getElementById('addChoiceBtn');
-        const choicesContainer = document.getElementById('choicesContainer');
-        
-        // Get the management form inputs
-        const totalFormsInput = document.querySelector('#id_choices-TOTAL_FORMS');
-        const initialFormsInput = document.querySelector('#id_choices-INITIAL_FORMS');
-        const minFormsInput = document.querySelector('#id_choices-MIN_NUM_FORMS');
-        const maxFormsInput = document.querySelector('#id_choices-MAX_NUM_FORMS');
-        
-        // Initialize choiceIndex with current total forms
-        let choiceIndex = parseInt(totalFormsInput.value);
-    
-        // Add choice button functionality
-        addChoiceBtn.addEventListener('click', function() {
-            // Create new choice container
-            const newChoiceDiv = document.createElement('div');
-            newChoiceDiv.classList.add('choice-item', 'space-y-2', 'p-4', 'border', 'rounded-lg', 'mb-4');
-            
-            // Create the HTML for the new choice form
-            newChoiceDiv.innerHTML = `
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1">
-                        <label for="id_choices-${choiceIndex}-choice_text" 
-                               class="block text-sm font-medium text-gray-900 dark:text-white">
-                            Choice Text
-                        </label>
-                        <input type="text" 
-                               name="choices-${choiceIndex}-choice_text" 
-                               id="id_choices-${choiceIndex}-choice_text"
-                               maxlength="200" 
-                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                               required>
-                    </div>
-                    <div class="flex items-center">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" 
-                                   name="choices-${choiceIndex}-is_correct"
-                                   id="id_choices-${choiceIndex}-is_correct"
-                                   class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                        </label>
-                    </div>
-                </div>
-                <!-- Add hidden field for form-id -->
-                <input type="hidden" name="choices-${choiceIndex}-id" id="id_choices-${choiceIndex}-id">
-            `;
-            
-            // Add the new choice to the container
-            choicesContainer.appendChild(newChoiceDiv);
-            
-            // Increment the form count
-            choiceIndex++;
-            totalFormsInput.value = choiceIndex;
-        });
-    
-        // Form validation before submit
-        const form = modal.querySelector('form');
-        form.addEventListener('submit', function(event) {
-            // Get all choice items
-            const choices = form.querySelectorAll('.choice-item');
-            
-            // Check if there are at least two choices
-            if (choices.length < 2) {
-                event.preventDefault();
-                alert('Please add at least two choices.');
-                return;
-            }
-            
-            // Check if at least one correct answer is selected
-            const hasCorrectAnswer = Array.from(choices).some(choice => 
-                choice.querySelector('input[type="checkbox"]').checked
-            );
-            
-            if (!hasCorrectAnswer) {
-                event.preventDefault();
-                alert('Please mark at least one choice as correct.');
-                return;
-            }
-    
-            // Validate that all choice texts are filled
-            const emptyChoices = Array.from(choices).some(choice => {
-                const textInput = choice.querySelector('input[type="text"]');
-                return !textInput.value.trim();
-            });
-    
-            if (emptyChoices) {
-                event.preventDefault();
-                alert('Please fill in all choice texts.');
-                return;
-            }
-        });
-    });
 
     {% comment %} document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('updateQuestionModal');
@@ -509,7 +478,7 @@
             });
         });
     }); {% endcomment %}
-</script>
+
 
 
 

@@ -174,29 +174,30 @@ def question_create(request):
         'title': 'Add New Question'
     })
 
-def question_create(request):
-    if request.method == 'POST':
-        form = QuestionCreationForm(request.POST)
-        formset = ChoiceFormSet(request.POST)
+# def question_create(request):
+#     if request.method == 'POST':
+#         form = QuestionCreationForm(request.POST)
+#         formset = ChoiceFormSet(request.POST)
         
-        if form.is_valid() and formset.is_valid():
-            question = form.save()
-            choices = formset.save(commit=False)
-            for choice in choices:
-                choice.question = question
-                choice.save()
-            return redirect('question_list')
-    else:
-        print(form.errors)
-        print(formset.errors)
-        form = QuestionCreationForm()
-        formset = ChoiceFormSet()
+#         if form.is_valid() and formset.is_valid():
+#             question = form.save()
+#             question.pub_date = timezone.now()
+#             choices = formset.save(commit=False)
+#             for choice in choices:
+#                 choice.question = question
+#                 choice.save()
+#             return redirect('question_list')
+#     else:
+#         print(form.errors)
+#         print(formset.errors)
+#         form = QuestionCreationForm()
+#         formset = ChoiceFormSet()
 
-    return render(request, 'admin/manage_questions/question_list.html', {
-        'form': form,
-        'formset': formset,
-        'title': 'Add New Question'
-    })
+#     return render(request, 'admin/manage_questions/question_list.html', {
+#         'form': form,
+#         'formset': formset,
+#         'title': 'Add New Question'
+#     })
 
 @login_required
 @admin_or_teacher_required

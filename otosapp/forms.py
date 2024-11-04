@@ -145,10 +145,6 @@ class CategoryUpdateForm(forms.ModelForm):
 #             question.save()
 #         return question
 
-from django import forms
-from django.forms import inlineformset_factory
-from .models import Question, Choice
-
 class QuestionCreationForm(forms.ModelForm):
     class Meta:
         model = Question

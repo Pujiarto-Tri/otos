@@ -42,7 +42,7 @@ module.exports = {
           'Roboto', 
           'Helvetica Neue', 
           'Arial', 
-          'Noto Sans', 
+          'Noto Sans',  
           'sans-serif', 
           'Apple Color Emoji', 
           'Segoe UI Emoji', 
