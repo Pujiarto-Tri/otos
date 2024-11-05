@@ -127,35 +127,17 @@ class CategoryUpdateForm(forms.ModelForm):
     
     
 
-# class QuestionCreationForm(forms.ModelForm):
-#     class Meta:
-#         model = Question
-#         fields = ('question_text', 'category')
-#         widgets = {
-#             'question_text': forms.TextInput(attrs={
-#                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
-#                 'placeholder': 'Enter category name'
-#             }),
-#         } 
-
-#     def save(self, commit=True):
-#         question = super().save(commit=False)
-            
-#         if commit:
-#             question.save()
-#         return question
-
 class QuestionCreationForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = ('question_text', 'category')
         widgets = {
             'question_text': forms.TextInput(attrs={
-                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5',
                 'placeholder': 'Enter question text'
             }),
             'category': forms.Select(attrs={
-                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5'
             })
         }
 
@@ -163,21 +145,21 @@ ChoiceFormSet = inlineformset_factory(
     Question,
     Choice,
     fields=('choice_text', 'is_correct'),
-    extra=1,
-    min_num=2,  # Minimum number of choices
+    extra=2,
+    min_num=2,
+    max_num=10,
     validate_min=True,
     can_delete=False,
     widgets={
         'choice_text': forms.TextInput(attrs={
-            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5',
             'placeholder': 'Enter choice text'
         }),
         'is_correct': forms.CheckboxInput(attrs={
-            'class': 'w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+            'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
         })
     }
 )
-
 class QuestionUpdateForm(forms.ModelForm):
     category_name = forms.CharField(
         required=True,
