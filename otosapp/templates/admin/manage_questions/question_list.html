@@ -81,8 +81,9 @@
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Question Text</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Category</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Date Created</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Total Question</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Choices</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Action</th>
                         </tr>
                     </thead>
@@ -92,8 +93,23 @@
 
                         <tr class="border-b dark:border-gray-700">
                             <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ question.question_text }}</th>
-                            <td class="px-4 py-3">-</td>
-                            <td class="px-4 py-3">-</td>
+                            <td class="px-4 py-3">{{ question.category }}</td>
+                            <td class="px-4 py-3">{{ question.pub_date|date:"Y-m-d H:i" }}</td>
+                            <td class="px-4 py-3">
+
+                                <ul>
+                                    {% for choice in question.choices.all %}
+                                        <li class="py-1">
+                                            {% if choice.is_correct %}
+                                                <strong class="text-green-600">{{ choice.choice_text }} ✔</strong>
+                                            {% else %}
+                                                {{ choice.choice_text }}
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+
+                            </td>
                             <td class="px-4 py-3 flex items-center">
                                 <div class="flex items-center space-x-4">
 
@@ -186,7 +202,7 @@
 <!-- Create modal -->
 <!-- Modal Template -->
 <div id="createQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
+    <div class="relative p-4 w-full max-w-4xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
             <!-- Modal header -->
             <div class="flex items-center justify-between p-4 md:p-5 border-b dark:border-gray-600">
@@ -406,10 +422,11 @@
     
         // Remove choice handler
         function handleRemoveChoice(event) {
-            if (event.target.classList.contains('remove-choice')) {
+            const button = event.target.closest('.remove-choice');
+            if (button) {
                 const choices = choicesContainer.querySelectorAll('.choice-item');
                 if (choices.length > MIN_CHOICES) {
-                    event.target.closest('.choice-item').remove();
+                    button.closest('.choice-item').remove();
                     updateFormIndices();
                 }
             }
@@ -474,32 +491,64 @@
         </div>
 
         <!-- Modal Form -->
+        <!-- Modal Form -->
+        <!-- Question Update Modal Form -->
         <form id="updateQuestionForm" method="post" class="p-4 space-y-4">
             {% csrf_token %}
-            {% for field in form %}
+            <!-- Question Text Field -->
             <div class="space-y-2">
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-900 dark:text-white">
-                    {{ field.label }}
-                    {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
-                </label>
-                <div>{{ field }}</div>
-                {% if field.help_text %}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                {{ form.question_text.label_tag }}
+                {{ form.question_text }}
+                {% if form.question_text.help_text %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ form.question_text.help_text }}</p>
                 {% endif %}
-                {% if field.errors %}
-                    <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                {% if form.question_text.errors %}
+                    <div class="text-sm text-red-600 dark:text-red-400">{{ form.question_text.errors }}</div>
                 {% endif %}
             </div>
-            {% endfor %}
-            
+
+            <!-- Choices Formset -->
+            <div class="space-y-4">
+                <h4 class="font-semibold text-gray-900 dark:text-white">Choices</h4>
+                {% for choice_form in formset %}
+                    <div class="space-y-2">
+                        {{ choice_form.choice_text.label_tag }}
+                        {{ choice_form.choice_text }}
+                        {{ choice_form.is_correct.label_tag }}
+                        {{ choice_form.is_correct }}
+                    </div>
+                {% endfor %}
+            </div>
+
             <!-- Modal Footer -->
             <div class="flex justify-end gap-4 pt-4">
                 <button type="submit" class="bg-blue-700 text-white px-5 py-2.5 rounded-lg hover:bg-blue-800">Update</button>
                 <button type="button" class="close-modal text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Cancel</button>
             </div>
         </form>
+
     </div>
 </div>
+
+<script>
+    function openUpdateModal(questionId, questionText) {
+        // Set question text in the modal (e.g., in the input field)
+        document.querySelector('#updateQuestionForm input[name="question_text"]').value = questionText;
+    
+        // Load the question’s choices into the modal (adjust this to fit the structure of your formset)
+        // For example, if you have the choices as a formset in the template, ensure it loads correctly.
+        
+        // Open the modal
+        document.getElementById('updateQuestionModal').classList.remove('hidden');
+    }
+    
+    // Close modal functionality
+    document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', function () {
+            document.getElementById('updateQuestionModal').classList.add('hidden');
+        });
+    });
+</script>
 
 <div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
     <div class="relative p-4 w-full max-w-md max-h-full">

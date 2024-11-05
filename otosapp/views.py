@@ -1,10 +1,11 @@
 from django.contrib import messages
+from django.forms import inlineformset_factory
 from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from otosapp.models import User, Role, Category, Question
+from otosapp.models import Choice, User, Role, Category, Question
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet
 from .decorators import admin_required, admin_or_teacher_required
 from django.http import HttpResponse
@@ -110,18 +111,6 @@ def category_delete(request, category_id):
 
 ##Question View##
 
-# @login_required
-# @admin_or_teacher_required
-# def question_create(request):
-#     if request.method == 'POST':
-#         form = QuestionCreationForm(request.POST)
-#         if form.is_valid():
-#             form.save() 
-#             return redirect('question_list')
-#     else:
-#         form = QuestionCreationForm()
-#     return render(request, {'form': form, 'title': 'Add New Question'})
-
 @login_required
 @admin_or_teacher_required
 def question_create(request):
@@ -152,83 +141,6 @@ def question_create(request):
         'title': 'Add New Question'
     })
 
-# @login_required
-# @admin_or_teacher_required
-# def question_create(request):
-#     if request.method == 'POST':
-#         form = QuestionCreationForm(request.POST)
-#         formset = ChoiceFormSet(request.POST)
-        
-#         if form.is_valid() and formset.is_valid():
-#             # Set the publication date before saving
-#             question = form.save(commit=False)
-#             question.pub_date = timezone.now()
-#             question.save()
-            
-#             # Save the formset
-#             choices = formset.save(commit=False)
-            
-#             # Ensure at least one choice is marked as correct
-#             has_correct_answer = any(
-#                 form.cleaned_data.get('is_correct', False) 
-#                 for form in formset.forms 
-#                 if form.cleaned_data
-#             )
-            
-#             if not has_correct_answer:
-#                 messages.error(request, 'At least one choice must be marked as correct.')
-#                 return render(request, 'admin/manage_questions/question_list.html', {
-#                     'form': form,
-#                     'formset': formset,
-#                     'title': 'Add New Question'
-#                 })
-            
-#             # Save all choices
-#             for choice in choices:
-#                 choice.question = question
-#                 choice.save()
-            
-#             messages.success(request, 'Question created successfully!')
-#             return redirect('question_list')
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#             print("Form errors:", form.errors)
-#             print("Formset errors:", formset.errors)
-#     else:
-#         form = QuestionCreationForm()
-#         formset = ChoiceFormSet()
-
-#     return render(request, 'admin/manage_questions/question_list.html', {
-#         'form': form,
-#         'formset': formset,
-#         'title': 'Add New Question'
-#     })
-
-# def question_create(request):
-#     if request.method == 'POST':
-#         form = QuestionCreationForm(request.POST)
-#         formset = ChoiceFormSet(request.POST)
-        
-#         if form.is_valid() and formset.is_valid():
-#             question = form.save()
-#             question.pub_date = timezone.now()
-#             choices = formset.save(commit=False)
-#             for choice in choices:
-#                 choice.question = question
-#                 choice.save()
-#             return redirect('question_list')
-#     else:
-#         print(form.errors)
-#         print(formset.errors)
-#         form = QuestionCreationForm()
-#         formset = ChoiceFormSet()
-
-#     return render(request, 'admin/manage_questions/question_list.html', {
-#         'form': form,
-#         'formset': formset,
-#         'title': 'Add New Question'
-#     })
-
 @login_required
 @admin_or_teacher_required
 def question_list(request):
@@ -236,23 +148,50 @@ def question_list(request):
     questions = Question.objects.all()
     return render(request, 'admin/manage_questions/question_list.html', {'questions': questions, 'form': form})
 
+# @login_required
+# @admin_or_teacher_required
+# def question_update(request, question_id):
+#     question = get_object_or_404(Category, id=question_id)
+#     if request.method == 'POST':
+#         form = QuestionUpdateForm(request.POST, instance=question)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('question_list')
+#     else:
+#         form = QuestionUpdateForm(instance=question)
+#     return render(request, None, {'form': form, 'question_id': question_id})
+
 @login_required
 @admin_or_teacher_required
 def question_update(request, question_id):
-    question = get_object_or_404(Category, id=question_id)
+    question = get_object_or_404(Question, id=question_id)  # Correct model
+
     if request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
-        if form.is_valid():
+        formset = ChoiceFormSet(request.POST, instance=Question())
+
+        if form.is_valid() and formset.is_valid():
             form.save()
+            formset.save()
+            messages.success(request, 'Question updated successfully!')
             return redirect('question_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
-        form = QuestionUpdateForm(instance=question)
-    return render(request, None, {'form': form, 'question_id': question_id})
+        form = QuestionUpdateForm()
+        formset = ChoiceFormSet(instance=Question())
+
+    return render(request, {
+        'form': form,
+        'formset': formset,
+        'question_id': question_id,
+        'title': 'Edit Question'
+    })
 
 @login_required
 @admin_or_teacher_required
 def question_delete(request, question_id):
-    question = get_object_or_404(Category, id=question_id)
+    question = get_object_or_404(Question, id=question_id)
     if request.method == 'POST':
         question.delete()
         return redirect('question_list')
