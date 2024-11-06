@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.utils import timezone
@@ -8,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from otosapp.models import Choice, User, Role, Category, Question
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet
 from .decorators import admin_required, admin_or_teacher_required
-from django.http import HttpResponse
+
 
 def register(request):
     if request.method == 'POST':
@@ -164,28 +165,48 @@ def question_list(request):
 @login_required
 @admin_or_teacher_required
 def question_update(request, question_id):
-    question = get_object_or_404(Question, id=question_id)  # Correct model
+    question = get_object_or_404(Question, id=question_id)
+
+    if request.method == 'GET':  # Respond with JSON for modal
+        choices_data = [{'id': choice.id, 'choice_text': choice.choice_text, 'is_correct': choice.is_correct} for choice in question.choices.all()]
+        data = {
+            'question': {
+                'question_text': question.question_text,
+                'category': question.category.id if question.category else None
+            },
+            'choices': choices_data
+        }
+        return JsonResponse(data)
 
     if request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
-        formset = ChoiceFormSet(request.POST, instance=Question())
+        formset = ChoiceFormSet(request.POST, instance=question)
 
         if form.is_valid() and formset.is_valid():
             form.save()
             formset.save()
             messages.success(request, 'Question updated successfully!')
             return redirect('question_list')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = QuestionUpdateForm()
-        formset = ChoiceFormSet(instance=Question())
+    elif request.method == 'GET':
+        # Return JSON response with question and choices data
+        question_data = {
+            "question": {
+                "question_text": question.question_text,
+            },
+            "choices": [
+                {"id": choice.id, "choice_text": choice.choice_text, "is_correct": choice.is_correct}
+                for choice in question.choices.all()
+            ]
+        }
+        return JsonResponse(question_data)
 
-    return render(request, {
+    # For POST and any other methods, return the full HTML template
+    form = QuestionUpdateForm(instance=question)
+    formset = ChoiceFormSet(instance=question)
+    return render(request, 'admin/manage_questions/question_list.html', {
         'form': form,
         'formset': formset,
         'question_id': question_id,
-        'title': 'Edit Question'
     })
 
 @login_required

@@ -163,26 +163,27 @@ ChoiceFormSet = inlineformset_factory(
 )
 
 class QuestionUpdateForm(forms.ModelForm):
-    question_text = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
-            'placeholder': 'Enter Category Name'
-        })
-    )
-
     class Meta:
         model = Question
-        fields = ['question_text',]
+        fields = ['question_text', 'category']
+        widgets = {
+            'question_text': forms.Textarea(attrs={
+                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-1.5',
+                'placeholder': 'Enter question text',
+                'rows': 4  # This will make it 4 rows tall
+            }),
+            'category': forms.Select(attrs={
+                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5'
+            })
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['question_text'].label = "Question"
+        self.fields['question_text'].help_text = "Enter the question text here"
 
-        # Add help text for fields
-        self.fields['question_text'].help_text = "Question will be used for Making Question"
-
-        # Customize labels
-        self.fields['question_text'].label = "Category"
+        self.fields['category'].label = "Category"
+        self.fields['category'].help_text = "Select the category"
 
     def save(self, commit=True):
         question = super().save(commit=False)

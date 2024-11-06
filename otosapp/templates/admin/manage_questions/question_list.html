@@ -480,42 +480,43 @@
 <!-- Add id to the modal for debugging -->
 <div id="updateQuestionModal" tabindex="-1" aria-hidden="true" class="hidden fixed top-0 right-0 left-0 z-50 w-full h-full flex justify-center items-center bg-gray-900/50 dark:bg-gray-900/80">
     <div class="relative w-full max-w-2xl max-h-full bg-white rounded-lg shadow dark:bg-gray-800">
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Update Question</h3>
-            <button type="button" class="close-modal text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
-                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1l6 6m0 0l6 6M7 7l6-6M7 7L1 13"/>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Modal Form -->
-        <!-- Modal Form -->
-        <!-- Question Update Modal Form -->
         <form id="updateQuestionForm" method="post" class="p-4 space-y-4">
             {% csrf_token %}
-            <!-- Question Text Field -->
+            {{ formset.management_form }}
+
+            <!-- Question Field -->
             <div class="space-y-2">
-                {{ form.question_text.label_tag }}
-                {{ form.question_text }}
-                {% if form.question_text.help_text %}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ form.question_text.help_text }}</p>
-                {% endif %}
-                {% if form.question_text.errors %}
-                    <div class="text-sm text-red-600 dark:text-red-400">{{ form.question_text.errors }}</div>
-                {% endif %}
+                <label for="question_text" class="text-gray-700 dark:text-white">Question</label>
+                <textarea id="question_text" name="question_text" rows="4" 
+                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" 
+                    placeholder="Enter question text"></textarea>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Enter the question text here</p>
             </div>
 
-            <!-- Choices Formset -->
+            <!-- Category Field -->
+            <div class="space-y-2">
+                <label for="category" class="text-gray-700 dark:text-white">Category</label>
+                <select id="category" name="category" 
+                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    {% for category in form.category.field.queryset %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Choices -->
             <div class="space-y-4">
                 <h4 class="font-semibold text-gray-900 dark:text-white">Choices</h4>
                 {% for choice_form in formset %}
-                    <div class="space-y-2">
-                        {{ choice_form.choice_text.label_tag }}
-                        {{ choice_form.choice_text }}
-                        {{ choice_form.is_correct.label_tag }}
-                        {{ choice_form.is_correct }}
+                    <div class="space-y-2 choice-form">
+                        {% for hidden_field in choice_form.hidden_fields %}
+                            {{ hidden_field }}
+                        {% endfor %}
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">{{ choice_form.choice_text }}</div>
+                            <div class="flex items-center gap-2">{{ choice_form.is_correct }} <label>Correct</label></div>
+                            {% if choice_form.can_delete %} {{ choice_form.DELETE }} <label>Delete</label>{% endif %}
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -526,26 +527,103 @@
                 <button type="button" class="close-modal text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Cancel</button>
             </div>
         </form>
-
     </div>
 </div>
 
 <script>
-    function openUpdateModal(questionId, questionText) {
-        // Set question text in the modal (e.g., in the input field)
-        document.querySelector('#updateQuestionForm input[name="question_text"]').value = questionText;
-    
-        // Load the question’s choices into the modal (adjust this to fit the structure of your formset)
-        // For example, if you have the choices as a formset in the template, ensure it loads correctly.
-        
-        // Open the modal
-        document.getElementById('updateQuestionModal').classList.remove('hidden');
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
     
+    function openUpdateModal(questionId, questionText) {
+        const modal = document.getElementById('updateQuestionModal');
+        const form = document.getElementById('updateQuestionForm');
+        
+        // Update the form action URL
+        form.action = `/otosapp/admin/question/${questionId}/edit/`;
+        
+        // Show the modal
+        modal.classList.remove('hidden');
+        
+        // Fetch the question data
+        fetch(`/otosapp/admin/question/${questionId}/edit/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Set question text field with the existing question text
+                const questionTextField = form.querySelector('input[name="question_text"]');
+                if (questionTextField) {
+                    questionTextField.value = escapeHtml(data.question.question_text);  // Set value with existing text
+                }
+
+                const categorySelectField = form.querySelector('select[name="category"]');
+                if (categorySelectField) {
+                    categorySelectField.value = data.question.category;
+                }
+                
+                // Update the formset management form for choices
+                const totalForms = form.querySelector('#id_choice_set-TOTAL_FORMS');
+                const initialForms = form.querySelector('#id_choice_set-INITIAL_FORMS');
+                if (totalForms && initialForms) {
+                    totalForms.value = data.choices.length;
+                    initialForms.value = data.choices.length;
+                }
+                
+                // Clear existing choice forms
+                const choicesContainer = form.querySelector('.space-y-4');
+                while (choicesContainer.firstChild) {
+                    choicesContainer.removeChild(choicesContainer.firstChild);
+                }
+                
+                // Add choice forms
+                data.choices.forEach((choice, index) => {
+                    const choiceForm = document.createElement('div');
+                    choiceForm.className = 'space-y-2 choice-form';
+                    choiceForm.innerHTML = `
+                        <input type="hidden" name="choice_set-${index}-id" value="${choice.id}">
+                        <input type="hidden" name="choice_set-${index}-question" value="${questionId}">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <input type="text" 
+                                    name="choice_set-${index}-choice_text" 
+                                    value="${escapeHtml(choice.choice_text)}"
+                                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" 
+                                    name="choice_set-${index}-is_correct" 
+                                    ${choice.is_correct ? 'checked' : ''}
+                                    class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
+                                <label>Correct</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" 
+                                    name="choice_set-${index}-DELETE"
+                                    class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                                <label>Delete</label>
+                            </div>
+                        </div>
+                    `;
+                    choicesContainer.appendChild(choiceForm);
+                });
+            })
+            .catch(error => console.error('Error loading question data:', error));
+    }
     // Close modal functionality
-    document.querySelectorAll('.close-modal').forEach(button => {
-        button.addEventListener('click', function () {
-            document.getElementById('updateQuestionModal').classList.add('hidden');
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('updateQuestionModal').classList.add('hidden');
+            });
         });
     });
 </script>
