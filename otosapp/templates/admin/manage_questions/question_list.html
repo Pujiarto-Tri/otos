@@ -118,7 +118,7 @@
                                         type="button" 
                                         data-modal-target="updateQuestionModal"
                                         data-modal-toggle="updateQuestionModal"
-                                        onclick="openUpdateModal('{{ question.id }}', '{{ question.question_text }}')" 
+                                        onclick="openUpdateModal('{{ question.id }}')" 
                                         class="flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 -ml-0.5" viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
@@ -200,7 +200,7 @@
 </section>
 <!-- End block -->
 <!-- Create modal -->
-<!-- Modal Template -->
+<!-- Create Modal Template -->
 <div id="createQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
     <div class="relative p-4 w-full max-w-4xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
@@ -335,7 +335,7 @@
     </div>
 </div>
 
-<!-- Modal JavaScript -->
+<!-- Create Modal JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // DOM Elements
@@ -477,7 +477,6 @@
 </script>
 
 <!-- Update modal -->
-<!-- Add id to the modal for debugging -->
 <div id="updateQuestionModal" tabindex="-1" aria-hidden="true" class="hidden fixed top-0 right-0 left-0 z-50 w-full h-full flex justify-center items-center bg-gray-900/50 dark:bg-gray-900/80">
     <div class="relative w-full max-w-2xl max-h-full bg-white rounded-lg shadow dark:bg-gray-800">
         <form id="updateQuestionForm" method="post" class="p-4 space-y-4">
@@ -529,7 +528,7 @@
         </form>
     </div>
 </div>
-
+<!-- Update modal JavaScript -->
 <script>
     function escapeHtml(unsafe) {
         return unsafe
@@ -540,7 +539,7 @@
             .replace(/'/g, "&#039;");
     }
     
-    function openUpdateModal(questionId, questionText) {
+    function openUpdateModal(questionId) {
         const modal = document.getElementById('updateQuestionModal');
         const form = document.getElementById('updateQuestionForm');
         
@@ -560,11 +559,12 @@
             })
             .then(data => {
                 // Set question text field with the existing question text
-                const questionTextField = form.querySelector('input[name="question_text"]');
+                const questionTextField = form.querySelector('textarea[name="question_text"]');
                 if (questionTextField) {
-                    questionTextField.value = escapeHtml(data.question.question_text);  // Set value with existing text
+                    questionTextField.value = escapeHtml(data.question.question_text);
                 }
-
+    
+                // Set category
                 const categorySelectField = form.querySelector('select[name="category"]');
                 if (categorySelectField) {
                     categorySelectField.value = data.question.category;
@@ -580,9 +580,11 @@
                 
                 // Clear existing choice forms
                 const choicesContainer = form.querySelector('.space-y-4');
-                while (choicesContainer.firstChild) {
-                    choicesContainer.removeChild(choicesContainer.firstChild);
-                }
+                const choicesTitle = document.createElement('h4');
+                choicesTitle.className = 'font-semibold text-gray-900 dark:text-white';
+                choicesTitle.textContent = 'Choices';
+                choicesContainer.innerHTML = '';
+                choicesContainer.appendChild(choicesTitle);
                 
                 // Add choice forms
                 data.choices.forEach((choice, index) => {
@@ -618,6 +620,7 @@
             })
             .catch(error => console.error('Error loading question data:', error));
     }
+    
     // Close modal functionality
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.close-modal').forEach(button => {
@@ -627,7 +630,7 @@
         });
     });
 </script>
-
+<!-- Delete modal -->
 <div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
     <div class="relative p-4 w-full max-w-md max-h-full">
         <div class="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
@@ -641,7 +644,7 @@
     </div>
 </div>
 
-
+<!-- Delete modal JavaScript -->
 <script>
     document.querySelectorAll('[data-modal-target="deleteModal"]').forEach(button => {
         button.addEventListener('click', function() {

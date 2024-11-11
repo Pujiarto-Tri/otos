@@ -167,18 +167,25 @@ def question_list(request):
 def question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
 
-    if request.method == 'GET':  # Respond with JSON for modal
-        choices_data = [{'id': choice.id, 'choice_text': choice.choice_text, 'is_correct': choice.is_correct} for choice in question.choices.all()]
-        data = {
-            'question': {
-                'question_text': question.question_text,
-                'category': question.category.id if question.category else None
+    if request.method == 'GET':
+        # Return JSON response with question and choices data
+        question_data = {
+            "question": {
+                "question_text": question.question_text,
+                "category": question.category.id if question.category else None
             },
-            'choices': choices_data
+            "choices": [
+                {
+                    "id": choice.id,
+                    "choice_text": choice.choice_text,
+                    "is_correct": choice.is_correct
+                }
+                for choice in question.choices.all()
+            ]
         }
-        return JsonResponse(data)
+        return JsonResponse(question_data)
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
         formset = ChoiceFormSet(request.POST, instance=question)
 
@@ -187,27 +194,15 @@ def question_update(request, question_id):
             formset.save()
             messages.success(request, 'Question updated successfully!')
             return redirect('question_list')
-    elif request.method == 'GET':
-        # Return JSON response with question and choices data
-        question_data = {
-            "question": {
-                "question_text": question.question_text,
-            },
-            "choices": [
-                {"id": choice.id, "choice_text": choice.choice_text, "is_correct": choice.is_correct}
-                for choice in question.choices.all()
-            ]
-        }
-        return JsonResponse(question_data)
+        else:
+            messages.error(request, 'There was an error updating the question.')
+            return JsonResponse({
+                'status': 'error',
+                'form_errors': form.errors,
+                'formset_errors': formset.errors
+            }, status=400)
 
-    # For POST and any other methods, return the full HTML template
-    form = QuestionUpdateForm(instance=question)
-    formset = ChoiceFormSet(instance=question)
-    return render(request, 'admin/manage_questions/question_list.html', {
-        'form': form,
-        'formset': formset,
-        'question_id': question_id,
-    })
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 @login_required
 @admin_or_teacher_required
