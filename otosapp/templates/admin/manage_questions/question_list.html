@@ -477,57 +477,86 @@
 </script>
 
 <!-- Update modal -->
-<div id="updateQuestionModal" tabindex="-1" aria-hidden="true" class="hidden fixed top-0 right-0 left-0 z-50 w-full h-full flex justify-center items-center bg-gray-900/50 dark:bg-gray-900/80">
-    <div class="relative w-full max-w-2xl max-h-full bg-white rounded-lg shadow dark:bg-gray-800">
-        <form id="updateQuestionForm" method="post" class="p-4 space-y-4">
-            {% csrf_token %}
-            {{ formset.management_form }}
-
-            <!-- Question Field -->
-            <div class="space-y-2">
-                <label for="question_text" class="text-gray-700 dark:text-white">Question</label>
-                <textarea id="question_text" name="question_text" rows="4" 
-                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" 
-                    placeholder="Enter question text"></textarea>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Enter the question text here</p>
+<div id="updateQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-4xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
+            <!-- Modal header -->
+            <div class="flex items-center justify-between p-4 md:p-5 border-b dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    Edit Question
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="updateQuestionModal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
             </div>
 
-            <!-- Category Field -->
-            <div class="space-y-2">
-                <label for="category" class="text-gray-700 dark:text-white">Category</label>
-                <select id="category" name="category" 
-                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                    {% for category in form.category.field.queryset %}
-                        <option value="{{ category.id }}">{{ category.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5 space-y-4">
+                <form id="updateQuestionForm" method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Add Formset Management Form -->
+                    <div class="hidden">
+                        <input type="hidden" name="choice_set-TOTAL_FORMS" id="id_choice_set-TOTAL_FORMS" value="0">
+                        <input type="hidden" name="choice_set-INITIAL_FORMS" id="id_choice_set-INITIAL_FORMS" value="0">
+                        <input type="hidden" name="choice_set-MIN_NUM_FORMS" value="2">
+                        <input type="hidden" name="choice_set-MAX_NUM_FORMS" value="10">
+                    </div>
 
-            <!-- Choices -->
-            <div class="space-y-4">
-                <h4 class="font-semibold text-gray-900 dark:text-white">Choices</h4>
-                {% for choice_form in formset %}
-                    <div class="space-y-2 choice-form">
-                        {% for hidden_field in choice_form.hidden_fields %}
-                            {{ hidden_field }}
-                        {% endfor %}
-                        <div class="flex items-center gap-4">
-                            <div class="flex-1">{{ choice_form.choice_text }}</div>
-                            <div class="flex items-center gap-2">{{ choice_form.is_correct }} <label>Correct</label></div>
-                            {% if choice_form.can_delete %} {{ choice_form.DELETE }} <label>Delete</label>{% endif %}
+                    <!-- Question fields -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="update_question_text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Question Text</label>
+                            <textarea id="update_question_text" name="question_text" rows="4" 
+                                class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
+                                placeholder="Enter question text"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="update_category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
+                            <select id="update_category" name="category" 
+                                class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                                {% for category in form.category.field.queryset %}
+                                    <option value="{{ category.id }}" class="dark:bg-gray-700 dark:text-white">{{ category.category_name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
 
-            <!-- Modal Footer -->
-            <div class="flex justify-end gap-4 pt-4">
-                <button type="submit" class="bg-blue-700 text-white px-5 py-2.5 rounded-lg hover:bg-blue-800">Update</button>
-                <button type="button" class="close-modal text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Cancel</button>
+                    <!-- Choices Container -->
+                    <div class="space-y-4">
+                        <h4 class="font-semibold text-gray-900 dark:text-white">Choices</h4>
+                        <div id="editChoicesContainer" class="space-y-2">
+                            <!-- Choices will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <button type="button" id="addEditChoiceBtn" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                            <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
+                            </svg>
+                            Add Choice
+                        </button>
+
+                        <div class="flex items-center pt-4 border-t dark:border-gray-600">
+                            <button type="submit" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                                Update Question
+                            </button>
+                            <button type="button" data-modal-hide="updateQuestionModal" class="ms-3 text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </div>
+
 <!-- Update modal JavaScript -->
 <script>
     function escapeHtml(unsafe) {
@@ -551,84 +580,178 @@
         
         // Fetch the question data
         fetch(`/otosapp/admin/question/${questionId}/edit/`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                // Set question text field with the existing question text
-                const questionTextField = form.querySelector('textarea[name="question_text"]');
+                console.log('Received data:', data);
+                
+                // Set question text and category fields
+                const questionTextField = document.getElementById('update_question_text');
+                const categorySelectField = document.getElementById('update_category');
+                
                 if (questionTextField) {
-                    questionTextField.value = escapeHtml(data.question.question_text);
+                    questionTextField.value = data.question.question_text || '';
                 }
-    
-                // Set category
-                const categorySelectField = form.querySelector('select[name="category"]');
-                if (categorySelectField) {
+                if (categorySelectField && data.question.category) {
                     categorySelectField.value = data.question.category;
                 }
                 
-                // Update the formset management form for choices
-                const totalForms = form.querySelector('#id_choice_set-TOTAL_FORMS');
-                const initialForms = form.querySelector('#id_choice_set-INITIAL_FORMS');
-                if (totalForms && initialForms) {
-                    totalForms.value = data.choices.length;
-                    initialForms.value = data.choices.length;
-                }
+                // Update formset management form
+                const totalFormsInput = document.getElementById('id_choice_set-TOTAL_FORMS');
+                const initialFormsInput = document.getElementById('id_choice_set-INITIAL_FORMS');
+                const choicesCount = data.choices.length;
                 
-                // Clear existing choice forms
-                const choicesContainer = form.querySelector('.space-y-4');
-                const choicesTitle = document.createElement('h4');
-                choicesTitle.className = 'font-semibold text-gray-900 dark:text-white';
-                choicesTitle.textContent = 'Choices';
+                if (totalFormsInput) totalFormsInput.value = choicesCount;
+                if (initialFormsInput) initialFormsInput.value = choicesCount;
+                
+                // Clear and update choices
+                const choicesContainer = document.getElementById('editChoicesContainer');
                 choicesContainer.innerHTML = '';
-                choicesContainer.appendChild(choicesTitle);
                 
                 // Add choice forms
                 data.choices.forEach((choice, index) => {
                     const choiceForm = document.createElement('div');
-                    choiceForm.className = 'space-y-2 choice-form';
+                    choiceForm.className = 'flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg';
                     choiceForm.innerHTML = `
                         <input type="hidden" name="choice_set-${index}-id" value="${choice.id}">
                         <input type="hidden" name="choice_set-${index}-question" value="${questionId}">
-                        <div class="flex items-center gap-4">
-                            <div class="flex-1">
-                                <input type="text" 
-                                    name="choice_set-${index}-choice_text" 
-                                    value="${escapeHtml(choice.choice_text)}"
-                                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" 
-                                    name="choice_set-${index}-is_correct" 
-                                    ${choice.is_correct ? 'checked' : ''}
-                                    class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
-                                <label>Correct</label>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" 
-                                    name="choice_set-${index}-DELETE"
-                                    class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
-                                <label>Delete</label>
-                            </div>
+                        <div class="flex-1">
+                            <input type="text" 
+                                name="choice_set-${index}-choice_text" 
+                                value="${escapeHtml(choice.choice_text)}"
+                                class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2"
+                                required>
                         </div>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" 
+                                name="choice_set-${index}-is_correct"
+                                ${choice.is_correct ? 'checked' : ''}
+                                class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
+                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct</span>
+                        </label>
+                        <button type="button" onclick="removeChoice(this, ${index})" class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm p-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewbox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
                     `;
                     choicesContainer.appendChild(choiceForm);
                 });
             })
-            .catch(error => console.error('Error loading question data:', error));
+            .catch(error => {
+                console.error('Error loading question data:', error);
+                modal.classList.add('hidden');
+            });
     }
     
     // Close modal functionality
     document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('updateQuestionModal');
+        
+        function closeModal() {
+            // Hide the modal
+            modal.classList.add('hidden');
+            
+            // Remove the grey overlay
+            document.body.classList.remove('overflow-hidden');
+            
+            // Remove any backdrop that might have been added
+            const backdrops = document.querySelectorAll('[modal-backdrop]');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Reset form if needed
+            const form = document.getElementById('updateQuestionForm');
+            if (form) form.reset();
+            
+            // Ensure body is scrollable and interactive
+            document.body.style.overflow = '';
+            document.body.style.pointerEvents = '';
+        }
+        
+        // Close on button click
         document.querySelectorAll('.close-modal').forEach(button => {
-            button.addEventListener('click', function() {
-                document.getElementById('updateQuestionModal').classList.add('hidden');
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeModal();
             });
         });
+        
+        // Close on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Close on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // Prevent clicks inside the modal from closing it
+        modal.querySelector('.relative').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
     });
+
+    // Add function to handle removing choices
+    function removeChoice(button, index) {
+        const choicesContainer = document.getElementById('editChoicesContainer');
+        const totalFormsInput = document.getElementById('id_choice_set-TOTAL_FORMS');
+        
+        // Remove the choice div
+        button.closest('div').remove();
+        
+        // Update total forms count
+        const currentTotal = parseInt(totalFormsInput.value);
+        totalFormsInput.value = currentTotal - 1;
+        
+        // Reindex remaining choices
+        const remainingChoices = choicesContainer.querySelectorAll('div');
+        remainingChoices.forEach((choice, newIndex) => {
+            choice.querySelectorAll('[name*="choice_set-"]').forEach(input => {
+                input.name = input.name.replace(/choice_set-\d+/, `choice_set-${newIndex}`);
+            });
+        });
+    }
+
+    // Add function to handle adding new choices
+    function addNewChoice() {
+        const choicesContainer = document.getElementById('editChoicesContainer');
+        const totalFormsInput = document.getElementById('id_choice_set-TOTAL_FORMS');
+        const currentIndex = parseInt(totalFormsInput.value);
+        
+        const choiceForm = document.createElement('div');
+        choiceForm.className = 'flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg';
+        choiceForm.innerHTML = `
+            <input type="hidden" name="choice_set-${currentIndex}-id" value="">
+            <input type="hidden" name="choice_set-${currentIndex}-question" value="">
+            <div class="flex-1">
+                <input type="text" 
+                    name="choice_set-${currentIndex}-choice_text" 
+                    class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2"
+                    required>
+            </div>
+            <label class="inline-flex items-center">
+                <input type="checkbox" 
+                    name="choice_set-${currentIndex}-is_correct"
+                    class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
+                <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct</span>
+            </label>
+            <button type="button" onclick="removeChoice(this, ${currentIndex})" class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm p-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewbox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        `;
+        
+        choicesContainer.appendChild(choiceForm);
+        totalFormsInput.value = currentIndex + 1;
+    }
+
+    // Add event listener for the add choice button
+    document.getElementById('addEditChoiceBtn').addEventListener('click', addNewChoice);
 </script>
 <!-- Delete modal -->
 <div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">

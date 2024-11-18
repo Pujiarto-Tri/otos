@@ -171,8 +171,9 @@ def question_update(request, question_id):
         # Return JSON response with question and choices data
         question_data = {
             "question": {
+                "id": question.id,
                 "question_text": question.question_text,
-                "category": question.category.id if question.category else None
+                "category": question.category.id if question.category else None,
             },
             "choices": [
                 {
@@ -188,14 +189,12 @@ def question_update(request, question_id):
     elif request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
         formset = ChoiceFormSet(request.POST, instance=question)
-
+        
         if form.is_valid() and formset.is_valid():
             form.save()
             formset.save()
-            messages.success(request, 'Question updated successfully!')
-            return redirect('question_list')
+            return JsonResponse({'status': 'success'})
         else:
-            messages.error(request, 'There was an error updating the question.')
             return JsonResponse({
                 'status': 'error',
                 'form_errors': form.errors,
