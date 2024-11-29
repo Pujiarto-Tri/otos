@@ -115,6 +115,12 @@ def category_delete(request, category_id):
 
 @login_required
 @admin_or_teacher_required
+def question_list(request):
+    questions = Question.objects.all()
+    return render(request, 'admin/manage_questions/question_list.html', {'questions': questions})
+
+@login_required
+@admin_or_teacher_required
 def question_create(request):
     if request.method == 'POST':
         form = QuestionCreationForm(request.POST)
@@ -125,7 +131,6 @@ def question_create(request):
             question.pub_date = timezone.now()
             question.save()
             
-            # Save the formset with the question instance
             formset.instance = question
             formset.save()
             
@@ -137,90 +142,49 @@ def question_create(request):
         form = QuestionCreationForm()
         formset = ChoiceFormSet(instance=Question())
 
-    return render(request, 'admin/manage_questions/question_list.html', {
+    return render(request, 'admin/manage_questions/question_create.html', {
         'form': form,
-        'formset': formset,
-        'title': 'Add New Question'
+        'formset': formset
     })
-
-@login_required
-@admin_or_teacher_required
-def question_list(request):
-    form = QuestionCreationForm()
-    questions = Question.objects.all()
-    return render(request, 'admin/manage_questions/question_list.html', {'questions': questions, 'form': form})
 
 @login_required
 @admin_or_teacher_required
 def question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
-
-    if request.method == 'GET':
-        # For GET requests, return the question and choices data
-        choices = []
-        for choice in question.choices.all():
-            choices.append({
-                'id': choice.id,
-                'choice_text': choice.choice_text,
-                'is_correct': choice.is_correct,
-                'question': choice.question_id
-            })
-        
-        data = {
-            'question': {
-                'id': question.id,
-                'question_text': question.question_text,
-                'category': question.category.id
-            },
-            'choices': choices
-        }
-        return JsonResponse(data)
-
-    elif request.method == 'POST':
+    
+    if request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
         ChoiceFormSet = inlineformset_factory(
-            Question, 
-            Choice,
+            Question, Choice,
             fields=('choice_text', 'is_correct'),
-            extra=0,
-            can_delete=True,
-            min_num=2,
-            validate_min=True
+            extra=0, can_delete=True,
+            min_num=2, validate_min=True
         )
         formset = ChoiceFormSet(request.POST, instance=question, prefix='choice_set')
         
-        # Print debug information
-        print("Form data:", request.POST)
-        print("Form valid:", form.is_valid())
-        print("Formset valid:", formset.is_valid())
-        if not formset.is_valid():
-            print("Formset errors:", formset.errors)
-            print("Formset non form errors:", formset.non_form_errors())
-        
         if form.is_valid() and formset.is_valid():
-            try:
-                with transaction.atomic():
-                    question = form.save()
-                    formset.save()
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Question updated successfully'
-                })
-            except Exception as e:
-                print("Error saving form:", str(e))
-                return JsonResponse({
-                    'status': 'error',
-                    'message': str(e)
-                }, status=500)
+            with transaction.atomic():
+                question = form.save()
+                formset.save()
+                messages.success(request, 'Question updated successfully!')
+                return redirect('question_list')
         else:
-            return JsonResponse({
-                'status': 'error',
-                'form_errors': form.errors,
-                'formset_errors': formset.errors if not formset.is_valid() else [],
-                'non_form_errors': formset.non_form_errors() if not formset.is_valid() else []
-            }, status=400)
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = QuestionUpdateForm(instance=question)
+        ChoiceFormSet = inlineformset_factory(
+            Question, Choice,
+            fields=('choice_text', 'is_correct'),
+            extra=0, can_delete=True,
+            min_num=2, validate_min=True
+        )
+        formset = ChoiceFormSet(instance=question, prefix='choice_set')
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+    return render(request, 'admin/manage_questions/question_update.html', {
+        'form': form,
+        'formset': formset,
+        'question': question
+    })
 
 @login_required
 @admin_or_teacher_required
