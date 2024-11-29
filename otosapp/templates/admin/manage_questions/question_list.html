@@ -1,9 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Question{% endblock %}
+{% block title %}Questions{% endblock %}
 
 {% block content %}
-
 <!-- Start block -->
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
@@ -24,862 +23,115 @@
                     </form>
                 </div>
                 <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                <button type="button" id="createQuestionModalButton" data-modal-target="createQuestionModal" data-modal-toggle="createQuestionModal" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                    <a href="{% url 'question_create' %}" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                         <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
                         </svg>
                         Add Question
-                    </button>
-                    <div class="flex items-center space-x-3 w-full md:w-auto">
-                        <button id="actionsDropdownButton" data-dropdown-toggle="actionsDropdown" class="w-full md:w-auto flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" type="button">
-                            <svg class="-ml-1 mr-1.5 w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                            </svg>
-                            Actions
-                        </button>
-                        <div id="actionsDropdown" class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
-                            <ul class="py-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="actionsDropdownButton">
-                                <li>
-                                    <a href="#" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Mass Edit</a>
-                                </li>
-                            </ul>
-                            <div class="py-1">
-                                <a href="#" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Delete all</a>
-                            </div>
-                        </div>
-                        <button id="filterDropdownButton" data-dropdown-toggle="filterDropdown" class="w-full md:w-auto flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" type="button">
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="h-4 w-4 mr-2 text-gray-400" viewbox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
-                            </svg>
-                            Filter
-                            <svg class="-mr-1 ml-1.5 w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                            </svg>
-                        </button>
-                        <div id="filterDropdown" class="z-10 hidden w-56 p-3 bg-white rounded-lg shadow dark:bg-gray-700">
-                            <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">Role</h6>
-                            <ul class="space-y-2 text-sm" aria-labelledby="filterDropdownButton">
-                                <li class="flex items-center">
-                                    <input id="apple" type="checkbox" value="" class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                    <label for="apple" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Admin (56)</label>
-                                </li>
-                                <li class="flex items-center">
-                                    <input id="apple" type="checkbox" value="" class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                    <label for="apple" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Teacher (56)</label>
-                                </li>
-                                <li class="flex items-center">
-                                    <input id="apple" type="checkbox" value="" class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                    <label for="apple" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Student (56)</label>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                    </a>
                 </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Question Text</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Category</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Date Created</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Choices</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Action</th>
+                            <th scope="col" class="px-6 py-3">Question Text</th>
+                            <th scope="col" class="px-6 py-3">Category</th>
+                            <th scope="col" class="px-6 py-3">Date Created</th>
+                            <th scope="col" class="px-6 py-3">Choices</th>
+                            <th scope="col" class="px-6 py-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-
                         {% for question in questions %}
-
                         <tr class="border-b dark:border-gray-700">
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ question.question_text }}</th>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                {{ question.question_text }}
+                            </th>
                             <td class="px-4 py-3">{{ question.category }}</td>
                             <td class="px-4 py-3">{{ question.pub_date|date:"Y-m-d H:i" }}</td>
                             <td class="px-4 py-3">
-
                                 <ul>
                                     {% for choice in question.choices.all %}
-                                        <li class="py-1">
-                                            {% if choice.is_correct %}
-                                                <strong class="text-green-600">{{ choice.choice_text }} ✔</strong>
-                                            {% else %}
-                                                {{ choice.choice_text }}
-                                            {% endif %}
-                                        </li>
+                                    <li class="py-1">
+                                        {{ choice.choice_text }}
+                                        {% if choice.is_correct %}
+                                        <span class="text-green-600 dark:text-green-400">(✓)</span>
+                                        {% endif %}
+                                    </li>
                                     {% endfor %}
                                 </ul>
-
                             </td>
-                            <td class="px-4 py-3 flex items-center">
-                                <div class="flex items-center space-x-4">
-
-                                    
-                                    <button 
-                                        type="button" 
-                                        data-modal-target="updateQuestionModal"
-                                        data-modal-toggle="updateQuestionModal"
-                                        onclick="openUpdateModal('{{ question.id }}')" 
-                                        class="flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 -ml-0.5" viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                            <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                                        </svg>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'question_update' question.id %}" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-3 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                                         Edit
-                                    </button>
-                                    
-
-                                    <button 
-                                        type="button" 
-                                        data-modal-target="deleteModal" 
-                                        data-modal-toggle="deleteModal" 
-                                        data-question-id="{{ question.id }}" 
-                                        data-question-text="{{ question.question_text }}" 
-                                        class="flex items-center text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 -ml-0.5" viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                        </svg>
+                                    </a>
+                                    <button type="button" 
+                                            onclick="confirmDelete({{ question.id }})" 
+                                            class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
                                         Delete
                                     </button>
                                 </div>
-
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                No Question found.
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4" aria-label="Table navigation">
-                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-                    Showing
-                    <span class="font-semibold text-gray-900 dark:text-white">1-10</span>
-                    of
-                    <span class="font-semibold text-gray-900 dark:text-white">1000</span>
-                </span>
-                <ul class="inline-flex items-stretch -space-x-px">
-                    <li>
-                        <a href="#" class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="sr-only">Previous</span>
-                            <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">1</a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">2</a>
-                    </li>
-                    <li>
-                        <a href="#" aria-current="page" class="flex items-center justify-center text-sm z-10 py-2 px-3 leading-tight text-primary-600 bg-primary-50 border border-primary-300 hover:bg-primary-100 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">3</a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">...</a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">100</a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="sr-only">Next</span>
-                            <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
         </div>
     </div>
 </section>
-<!-- End block -->
-<!-- Create modal -->
-<!-- Create Modal Template -->
-<div id="createQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-4xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
-            <!-- Modal header -->
-            <div class="flex items-center justify-between p-4 md:p-5 border-b dark:border-gray-600">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Add Question
-                </h3>
-                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="createQuestionModal">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                    </svg>
-                    <span class="sr-only">Close modal</span>
-                </button>
-            </div>
-            <!-- Modal body -->
-            <div class="p-4 md:p-5 space-y-4">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="p-4 mb-4 text-sm rounded-lg {% if message.tags == 'error' %}text-red-800 bg-red-100 dark:bg-red-900 dark:text-red-200{% else %}text-green-800 bg-green-100 dark:bg-green-900 dark:text-green-200{% endif %}" role="alert">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <form id="questionForm" method="POST" action="{% url 'question_create' %}" class="space-y-6">
-                    {% csrf_token %}
-                    
-                    <!-- Question fields -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="{{ form.question_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Question Text</label>
-                            {{ form.question_text }}
-                            {% if form.question_text.errors %}
-                                <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ form.question_text.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                        
-                        <div>
-                            <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
-                            {{ form.category }}
-                            {% if form.category.errors %}
-                                <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ form.category.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
 
-                    <!-- Formset Management Form -->
-                    <div class="hidden">
-                        {{ formset.management_form }}
-                        <input type="hidden" name="choices-TOTAL_FORMS" id="id_choices-TOTAL_FORMS" value="2">
-                        <input type="hidden" name="choices-INITIAL_FORMS" id="id_choices-INITIAL_FORMS" value="0">
-                        <input type="hidden" name="choices-MIN_NUM_FORMS" id="id_choices-MIN_NUM_FORMS" value="2">
-                        <input type="hidden" name="choices-MAX_NUM_FORMS" id="id_choices-MAX_NUM_FORMS" value="10">
-                    </div>
-                    
-                    <!-- Choices Container -->
-                    <div id="choicesContainer" class="space-y-4">
-                        <!-- Template for new choice -->
-                        <template id="choiceTemplate">
-                            <div class="choice-item space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-1">
-                                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Choice Text</label>
-                                        <input type="text" 
-                                               name="choices-__prefix__-choice_text" 
-                                               maxlength="200" 
-                                               class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
-                                               required>
-                                    </div>
-                                    <div class="flex items-center pt-6">
-                                        <label class="inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" 
-                                                   name="choices-__prefix__-is_correct"
-                                                   class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
-                                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <button type="button" class="remove-choice flex items-center text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 -ml-0.5" viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    Delete Choice
-                                </button>
-                            </div>
-                        </template>
-
-                        <!-- Initial choices -->
-                        {% for form in formset %}
-                            <div class="choice-item space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                                {{ form.id }}
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-1">
-                                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Choice Text</label>
-                                        {{ form.choice_text }}
-                                        {% if form.choice_text.errors %}
-                                            <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ form.choice_text.errors.0 }}</p>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex items-center pt-6">
-                                        <label class="inline-flex items-center cursor-pointer">
-                                            {{ form.is_correct }}
-                                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="flex flex-col gap-4">
-                        <button type="button" id="addChoiceBtn" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                            <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-                            </svg>
-                            Add Choice
-                        </button>
-
-                        <div class="flex items-center pt-4 border-t dark:border-gray-600">
-                            <button type="submit" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                                <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                    <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-                                </svg>
-                                Add Question
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Create Modal JavaScript -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // DOM Elements
-        const modal = document.getElementById('createQuestionModal');
-        const addChoiceBtn = document.getElementById('addChoiceBtn');
-        const choicesContainer = document.getElementById('choicesContainer');
-        const choiceTemplate = document.getElementById('choiceTemplate');
-        const form = document.getElementById('questionForm');
-        const totalFormsInput = document.querySelector('#id_choices-TOTAL_FORMS');
-        const initialFormsInput = document.querySelector('#id_choices-INITIAL_FORMS');
-    
-        // Constants
-        const MIN_CHOICES = 2;
-        const MAX_CHOICES = 10;
-    
-        // Initialize modal using Flowbite
-        const modalInstance = new Modal(modal, {
-            placement: 'center',
-            backdrop: 'dynamic',
-            onHide: () => {
-                form.reset();
-                resetChoices();
-            }
-        });
-    
-        // Initialize form counts
-        function initializeFormCounts() {
-            if (totalFormsInput && !totalFormsInput.value) {
-                totalFormsInput.value = MIN_CHOICES.toString();
-            }
-            if (initialFormsInput && !initialFormsInput.value) {
-                initialFormsInput.value = '0';
-            }
-        }
-    
-        // Update form indices for all choices
-        function updateFormIndices() {
-            const choices = choicesContainer.querySelectorAll('.choice-item');
-            choices.forEach((choice, index) => {
-                choice.querySelectorAll('[name*="choices-"]').forEach(input => {
-                    input.name = input.name.replace(/choices-\d+/, `choices-${index}`);
-                    input.id = input.id.replace(/choices-\d+/, `choices-${index}`);
-                });
-            });
-            totalFormsInput.value = choices.length.toString();
-            updateAddButtonState();
-        }
-    
-        // Reset choices to initial state
-        function resetChoices() {
-            const choices = choicesContainer.querySelectorAll('.choice-item');
-            choices.forEach((choice, index) => {
-                if (index >= MIN_CHOICES) {
-                    choice.remove();
-                }
-            });
-            totalFormsInput.value = MIN_CHOICES.toString();
-            updateAddButtonState();
-        }
-    
-        // Update add button state
-        function updateAddButtonState() {
-            const currentCount = choicesContainer.querySelectorAll('.choice-item').length;
-            addChoiceBtn.disabled = currentCount >= MAX_CHOICES;
-        }
-    
-        // Add new choice
-        function addChoice() {
-            const currentCount = choicesContainer.querySelectorAll('.choice-item').length;
-            
-            if (currentCount < MAX_CHOICES) {
-                const newChoice = choiceTemplate.content.cloneNode(true);
-                
-                // Update indices in the new choice
-                newChoice.querySelectorAll('[name*="__prefix__"]').forEach(input => {
-                    input.name = input.name.replace('__prefix__', currentCount);
-                    input.id = input.id.replace('__prefix__', currentCount);
-                });
-                
-                choicesContainer.appendChild(newChoice);
-                updateFormIndices();
-            }
-        }
-    
-        // Remove choice handler
-        function handleRemoveChoice(event) {
-            const button = event.target.closest('.remove-choice');
-            if (button) {
-                const choices = choicesContainer.querySelectorAll('.choice-item');
-                if (choices.length > MIN_CHOICES) {
-                    button.closest('.choice-item').remove();
-                    updateFormIndices();
-                }
-            }
-        }
-    
-        // Validate form
-        function validateForm(event) {
-            const choices = choicesContainer.querySelectorAll('.choice-item');
-            let hasCorrectAnswer = false;
-            let hasEmptyChoice = false;
-    
-            choices.forEach(choice => {
-                const choiceText = choice.querySelector('[name*="choice_text"]').value;
-                const isCorrect = choice.querySelector('[name*="is_correct"]').checked;
-                
-                if (isCorrect) hasCorrectAnswer = true;
-                if (!choiceText.trim()) hasEmptyChoice = true;
-            });
-    
-            if (!hasCorrectAnswer) {
-                event.preventDefault();
-                alert('Please mark at least one choice as correct.');
-                return;
-            }
-    
-            if (hasEmptyChoice) {
-                event.preventDefault();
-                alert('Please fill in all choice texts.');
-                return;
-            }
-    
-            if (choices.length < MIN_CHOICES) {
-                event.preventDefault();
-                alert('Please add at least two choices.');
-                return;
-            }
-        }
-    
-        // Initialize
-        initializeFormCounts();
-        updateAddButtonState();
-    
-        // Event Listeners
-        addChoiceBtn.addEventListener('click', addChoice);
-        choicesContainer.addEventListener('click', handleRemoveChoice);
-        form.addEventListener('submit', validateForm);
-    });
-</script>
-
-<!-- Update modal -->
-<div id="updateQuestionModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-4xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
-            <!-- Modal header -->
-            <div class="flex items-center justify-between p-4 md:p-5 border-b dark:border-gray-600">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Edit Question
-                </h3>
-                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="updateQuestionModal">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                    </svg>
-                    <span class="sr-only">Close modal</span>
-                </button>
-            </div>
-
-            <!-- Modal body -->
-            <div class="p-4 md:p-5 space-y-4">
-                <form id="updateQuestionForm" method="POST" class="space-y-6">
-                    {% csrf_token %}
-                    
-                    <!-- Add Formset Management Form -->
-                    <div class="hidden">
-                        <input type="hidden" name="choice_set-TOTAL_FORMS" id="id_choice_set-TOTAL_FORMS" value="0">
-                        <input type="hidden" name="choice_set-INITIAL_FORMS" id="id_choice_set-INITIAL_FORMS" value="0">
-                        <input type="hidden" name="choice_set-MIN_NUM_FORMS" id="id_choice_set-MIN_NUM_FORMS" value="2">
-                        <input type="hidden" name="choice_set-MAX_NUM_FORMS" id="id_choice_set-MAX_NUM_FORMS" value="10">
-                    </div>
-
-                    <!-- Question fields -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="update_question_text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Question Text</label>
-                            <textarea id="update_question_text" name="question_text" rows="4" 
-                                class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
-                                placeholder="Enter question text"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label for="update_category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
-                            <select id="update_category" name="category" 
-                                class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                                {% for category in form.category.field.queryset %}
-                                    <option value="{{ category.id }}" class="dark:bg-gray-700 dark:text-white">{{ category.category_name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Choices Container -->
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-gray-900 dark:text-white">Choices</h4>
-                        <div id="editChoicesContainer" class="space-y-2">
-                            <!-- Choices will be dynamically added here -->
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-4">
-                        <button type="button" id="addEditChoiceBtn" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                            <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-                            </svg>
-                            Add Choice
-                        </button>
-
-                        <div class="flex items-center pt-4 border-t dark:border-gray-600">
-                            <button type="submit" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                                Update Question
-                            </button>
-                            <button type="button" data-modal-hide="updateQuestionModal" class="ms-3 text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update modal JavaScript -->
-<script>
-    function escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-    
-    function openUpdateModal(questionId) {
-        const modal = document.getElementById('updateQuestionModal');
-        const form = document.getElementById('updateQuestionForm');
-        const choicesContainer = document.getElementById('editChoicesContainer');
-        
-        // Clear existing choices
-        choicesContainer.innerHTML = '';
-        
-        // Update the form action URL
-        form.action = `/otosapp/admin/question/${questionId}/edit/`;
-        
-        // Show the modal
-        modal.classList.remove('hidden');
-        
-        // Fetch the question data
-        fetch(`/otosapp/admin/question/${questionId}/edit/`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Received data:', data);
-                
-                // Set question text and category
-                document.getElementById('update_question_text').value = data.question.question_text;
-                document.getElementById('update_category').value = data.question.category;
-                
-                // Update formset management form
-                document.getElementById('id_choice_set-TOTAL_FORMS').value = data.choices.length;
-                document.getElementById('id_choice_set-INITIAL_FORMS').value = data.choices.length;
-                
-                // Add choices
-                data.choices.forEach((choice, index) => {
-                    const choiceHtml = `
-                        <div class="choice-item space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <input type="hidden" name="choice_set-${index}-id" value="${choice.id}">
-                            <input type="hidden" name="choice_set-${index}-question" value="${choice.question}">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1">
-                                    <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Choice Text</label>
-                                    <input type="text" 
-                                           name="choice_set-${index}-choice_text" ø
-                                           value="${choice.choice_text}"
-                                           class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
-                                           required>
-                                </div>
-                                <div class="flex items-center pt-6">
-                                    <label class="inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" 
-                                               name="choice_set-${index}-is_correct"
-                                               ${choice.is_correct ? 'checked' : ''}
-                                               class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
-                                        <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <button type="button" onclick="removeEditChoice(this)" class="mt-2 text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" viewbox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                                Delete Choice
-                            </button>
-                        </div>
-                    `;
-                    choicesContainer.insertAdjacentHTML('beforeend', choiceHtml);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading question data:', error);
-                alert('Error loading question data. Please try again.');
-            });
-    }
-
-    // Function to remove a choice in edit mode
-    function removeEditChoice(button) {
-        const choicesContainer = document.getElementById('editChoicesContainer');
-        const totalFormsInput = document.getElementById('id_choice_set-TOTAL_FORMS');
-        const choiceItem = button.closest('.choice-item');
-        
-        // Count visible choices (not marked for deletion)
-        const visibleChoices = Array.from(choicesContainer.querySelectorAll('.choice-item'))
-            .filter(item => !item.classList.contains('hidden'));
-        
-        // Check if we have more than minimum required choices
-        if (visibleChoices.length <= 2) {
-            alert('You must have at least 2 choices.');
-            return;
-        }
-
-        // Get the choice ID if it exists
-        const idInput = choiceItem.querySelector('[name$="-id"]');
-        const choiceId = idInput ? idInput.value : null;
-
-        if (choiceId) {
-            // For existing choices, hide and mark for deletion
-            choiceItem.classList.add('hidden');
-            const deleteInput = document.createElement('input');
-            deleteInput.type = 'hidden';
-            deleteInput.name = `choice_set-${getChoiceIndex(choiceItem)}-DELETE`;
-            deleteInput.value = 'on';
-            choiceItem.appendChild(deleteInput);
-        } else {
-            // For new choices, just remove from DOM
-            choiceItem.remove();
-            totalFormsInput.value = parseInt(totalFormsInput.value) - 1;
-        }
-    }
-
-    // Helper function to get choice index
-    function getChoiceIndex(choiceItem) {
-        const inputs = choiceItem.querySelectorAll('[name^="choice_set-"]');
-        for (const input of inputs) {
-            const match = input.name.match(/choice_set-(\d+)-/);
-            if (match) {
-                return match[1];
-            }
-        }
-        return null;
-    }
-
-    // Add choice button event listener
-    document.getElementById('addEditChoiceBtn').addEventListener('click', function() {
-        const choicesContainer = document.getElementById('editChoicesContainer');
-        const totalFormsInput = document.getElementById('id_choice_set-TOTAL_FORMS');
-        const newIndex = parseInt(totalFormsInput.value);
-        const questionId = document.getElementById('updateQuestionForm')
-            .action.split('/').filter(segment => !isNaN(segment))[0];
-
-        const newChoiceHtml = `
-            <div class="choice-item space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <input type="hidden" name="choice_set-${newIndex}-id" value="">
-                <input type="hidden" name="choice_set-${newIndex}-question" value="${questionId}">
-                <div class="flex items-center gap-4">
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">Choice Text</label>
-                        <input type="text" 
-                               name="choice_set-${newIndex}-choice_text" 
-                               class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
-                               required>
-                    </div>
-                    <div class="flex items-center pt-6">
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" 
-                                   name="choice_set-${newIndex}-is_correct"
-                                   class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
-                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                        </label>
-                    </div>
-                </div>
-                <button type="button" onclick="removeEditChoice(this)" class="mt-2 text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" viewbox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                    Delete Choice
-                </button>
-            </div>
-        `;
-        
-        choicesContainer.insertAdjacentHTML('beforeend', newChoiceHtml);
-        totalFormsInput.value = parseInt(totalFormsInput.value) + 1;
-    });
-
-    // Update form before submission
-    function updateFormBeforeSubmit(form) {
-        const visibleChoices = Array.from(form.querySelectorAll('.choice-item'))
-            .filter(item => !item.classList.contains('hidden'));
-        
-        // Reindex visible choices
-        visibleChoices.forEach((choice, index) => {
-            choice.querySelectorAll('[name^="choice_set-"]').forEach(input => {
-                const oldName = input.name;
-                const newName = oldName.replace(/choice_set-\d+/, `choice_set-${index}`);
-                input.name = newName;
-            });
-        });
-    }
-</script>
-
-<!-- Delete modal -->
+<!-- Delete Confirmation Modal -->
 <div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
     <div class="relative p-4 w-full max-w-md max-h-full">
-        <div class="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-            <p id="modalQuestionInfo" class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this Question?</p>
-            <form id="deleteForm" method="post">
-                {% csrf_token %}
-                <button data-modal-toggle="deleteModal" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">No, cancel</button>
-                <button type="submit" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">Yes, I'm sure</button>
-            </form>
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="deleteModal">
+                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                </svg>
+                <span class="sr-only">Close modal</span>
+            </button>
+            <div class="p-4 md:p-5 text-center">
+                <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this question?</h3>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center me-2">
+                        Yes, I'm sure
+                    </button>
+                    <button data-modal-hide="deleteModal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                        No, cancel
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Delete modal JavaScript -->
 <script>
-    document.querySelectorAll('[data-modal-target="deleteModal"]').forEach(button => {
-        button.addEventListener('click', function() {
-            const questionId = this.getAttribute('data-question-id');
-            const questionText = this.getAttribute('data-question-text');
-
-            // Update modal user info
-            document.getElementById('modalQuestionInfo').textContent = `Are you sure you want to delete ${questionText}?`;
-
-            // Update form action URL dynamically
-            const deleteForm = document.getElementById('deleteForm');
-            deleteForm.action = `{% url 'question_delete' 0 %}`.replace('0', questionId);
-        });
-    });  
-</script>
-
-<!-- Add this HTML for the notification at the top of your content block, after the section opening -->
-<div id="notification" class="fixed top-4 right-4 z-50 hidden">
-    <div class="flex items-center p-4 text-sm rounded-lg max-w-xs" role="alert">
-        <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg me-3">
-            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-            </svg>
-        </div>
-        <span id="notificationMessage" class="font-medium"></span>
-    </div>
-</div>
-
-<!-- Update the JavaScript for form submission -->
-<script>
-    // Function to show notification
-    function showNotification(message, type = 'success') {
-        const notification = document.getElementById('notification');
-        const notificationMessage = document.getElementById('notificationMessage');
-        const notificationDiv = notification.querySelector('div');
+    function confirmDelete(questionId) {
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteForm = document.getElementById('deleteForm');
         
-        // Set message
-        notificationMessage.textContent = message;
+        // Update form action
+        deleteForm.action = `/otosapp/admin/question/${questionId}/delete/`;
         
-        // Set styles based on type
-        if (type === 'success') {
-            notificationDiv.classList.add('text-green-800', 'bg-green-50');
-            notification.querySelector('svg').classList.add('text-green-600');
-        } else {
-            notificationDiv.classList.add('text-red-800', 'bg-red-50');
-            notification.querySelector('svg').classList.add('text-red-600');
-        }
-        
-        // Show notification
-        notification.classList.remove('hidden');
-        
-        // Hide after 3 seconds
-        setTimeout(() => {
-            notification.classList.add('hidden');
-            // Clean up classes
-            notificationDiv.classList.remove('text-green-800', 'bg-green-50', 'text-red-800', 'bg-red-50');
-            notification.querySelector('svg').classList.remove('text-green-600', 'text-red-600');
-        }, 3000);
+        // Show modal
+        deleteModal.classList.remove('hidden');
+        deleteModal.classList.add('flex');
     }
 
-    // Update the form submission handler
-    document.getElementById('updateQuestionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Update form indices before submission
-        updateFormBeforeSubmit(this);
-        
-        // Validate form
-        const visibleChoices = Array.from(this.querySelectorAll('.choice-item'))
-            .filter(item => !item.classList.contains('hidden'));
-        const correctAnswers = this.querySelectorAll('[name^="choice_set-"][name$="-is_correct"]:checked');
-        
-        if (visibleChoices.length < 2) {
-            showNotification('You must have at least 2 choices.', 'error');
-            return;
-        }
-        
-        if (correctAnswers.length === 0) {
-            showNotification('You must select at least one correct answer.', 'error');
-            return;
-        }
-        
-        const formData = new FormData(this);
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showNotification('Question updated successfully!');
-                window.location.reload();
-            } else {
-                let errorMessage = 'Failed to update question. ';
-                if (data.form_errors) {
-                    errorMessage += Object.entries(data.form_errors)
-                        .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
-                        .join('; ');
-                }
-                if (data.formset_errors) {
-                    errorMessage += ' Choice errors: ' + JSON.stringify(data.formset_errors);
-                }
-                showNotification(errorMessage, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('An error occurred while updating the question.', 'error');
+    // Close modal when clicking outside
+    document.querySelectorAll('[data-modal-hide="deleteModal"]').forEach(button => {
+        button.addEventListener('click', () => {
+            const deleteModal = document.getElementById('deleteModal');
+            deleteModal.classList.add('hidden');
+            deleteModal.classList.remove('flex');
         });
     });
 </script>
-
-
 {% endblock %}
