@@ -49,13 +49,13 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
-                    <button type="button" id="addEditChoiceBtn" 
+                    {% comment %} <button type="button" id="addEditChoiceBtn" 
                             class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                         <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path>
                         </svg>
                         Add Choice
-                    </button>
+                    </button> {% endcomment %}
                 </div>
 
                 {{ formset.management_form }}
@@ -65,22 +65,35 @@
                         <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
                             {{ choice_form.id }}
                             <div class="flex items-center gap-4">
+                                {{ choice_form.DELETE.as_hidden }}
                                 <div class="flex-1">
-                                    {{ choice_form.choice_text }}
+                                    <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                                        Choice Text
+                                    </label>
+                                    <input type="text" 
+                                           name="{{ choice_form.choice_text.html_name }}"
+                                           id="{{ choice_form.choice_text.id_for_label }}"
+                                           value="{{ choice_form.choice_text.value|default:'' }}"
+                                           class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
+                                           required>
                                 </div>
                                 <div class="flex items-center whitespace-nowrap">
                                     <label class="inline-flex items-center">
-                                        {{ choice_form.is_correct }}
+                                        <input type="checkbox" 
+                                               name="{{ choice_form.is_correct.html_name }}"
+                                               id="{{ choice_form.is_correct.id_for_label }}"
+                                               {% if choice_form.is_correct.value %}checked{% endif %}
+                                               class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
                                         <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
                                     </label>
                                 </div>
-                                <button type="button" 
+                                {% comment %} <button type="button" 
                                         onclick="removeEditChoice(this)" 
                                         class="delete-choice-btn p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded-lg focus:ring-2 focus:ring-red-300 dark:text-red-500 dark:hover:text-white dark:border-red-500 dark:hover:bg-red-600 transition-colors duration-200">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                                     </svg>
-                                </button>
+                                </button> {% endcomment %}
                             </div>
                         </div>
                     {% endfor %}
@@ -147,7 +160,7 @@
 
     function removeEditChoice(button) {
         const container = document.getElementById('editChoicesContainer');
-        const choiceItems = container.querySelectorAll('.choice-item');
+        const choiceItems = container.querySelectorAll('.choice-item:not([style*="display: none"])');
         
         if (choiceItems.length <= 2) {
             alert('You must have at least 2 choices.');
@@ -155,16 +168,26 @@
         }
         
         const choiceItem = button.closest('.choice-item');
-        choiceItem.remove();
+        const deleteInput = choiceItem.querySelector('input[name$="-DELETE"]');
+        if (deleteInput) {
+            deleteInput.value = 'on';
+            choiceItem.style.display = 'none';
+        } else {
+            choiceItem.remove();
+        }
         
         const totalForms = document.getElementById('id_choice_set-TOTAL_FORMS');
-        totalForms.value = parseInt(totalForms.value) - 1;
+        if (!deleteInput) {
+            totalForms.value = parseInt(totalForms.value) - 1;
+        }
         
-        const remainingChoices = container.querySelectorAll('.choice-item');
-        remainingChoices.forEach((item, index) => {
+        const remainingVisibleChoices = container.querySelectorAll('.choice-item:not([style*="display: none"])');
+        remainingVisibleChoices.forEach((item, index) => {
             item.querySelectorAll('input').forEach(input => {
-                input.name = input.name.replace(/choice_set-\d+/, `choice_set-${index}`);
-                input.id = input.id.replace(/choice_set-\d+/, `choice_set-${index}`);
+                if (!input.name.endsWith('-DELETE')) {
+                    input.name = input.name.replace(/choice_set-\d+/, `choice_set-${index}`);
+                    input.id = input.id.replace(/choice_set-\d+/, `choice_set-${index}`);
+                }
             });
         });
     }
