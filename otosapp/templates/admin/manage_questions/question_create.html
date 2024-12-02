@@ -4,14 +4,14 @@
 
 {% block content %}
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 min-h-screen">
-    <div class="mx-auto max-w-4xl px-4 lg:px-12">
+    <div class="mx-auto max-w-5xl px-4 lg:px-12">
         <!-- Breadcrumb -->
-        <nav class="flex mb-5" aria-label="Breadcrumb">
+        {% comment %} <nav class="flex mb-5" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-3">
                 <li><a href="{% url 'question_list' %}" class="text-gray-700 dark:text-gray-300 hover:text-primary-600">Questions</a></li>
                 <li class="text-gray-500 dark:text-gray-400">/ Create New Question</li>
             </ol>
-        </nav>
+        </nav> {% endcomment %}
 
         <!-- Main Content -->
         <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden p-4">
@@ -20,8 +20,9 @@
             <form method="POST" class="space-y-6">
                 {% csrf_token %}
                 
-                <!-- Question Fields -->
-                <div class="space-y-4">
+                <!-- Question Text Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Question Details</h3>
                     <div>
                         <label for="{{ form.question_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                             Question Text
@@ -31,10 +32,14 @@
                             <p class="text-red-500 text-sm mt-1">{{ form.question_text.errors.0 }}</p>
                         {% endif %}
                     </div>
+                </div>
 
+                <!-- Category Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category</h3>
                     <div>
                         <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Category
+                            Select Category
                         </label>
                         {{ form.category }}
                         {% if form.category.errors %}
@@ -43,46 +48,67 @@
                     </div>
                 </div>
 
-                <!-- Choices -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Choices</h3>
+                <!-- Choices Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
+                        <button type="button" id="addChoiceBtn" 
+                                class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                            <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            Add Choice
+                        </button>
+                    </div>
+
                     {{ formset.management_form }}
+                    <div class="hidden">
+                        <input type="hidden" name="choice_set-TOTAL_FORMS" id="id_choice_set-TOTAL_FORMS" value="2">
+                        <input type="hidden" name="choice_set-INITIAL_FORMS" id="id_choice_set-INITIAL_FORMS" value="0">
+                        <input type="hidden" name="choice_set-MIN_NUM_FORMS" id="id_choice_set-MIN_NUM_FORMS" value="2">
+                        <input type="hidden" name="choice_set-MAX_NUM_FORMS" id="id_choice_set-MAX_NUM_FORMS" value="10">
+                    </div>
                     
                     <div id="choicesContainer" class="space-y-4">
                         {% for choice_form in formset %}
-                            <div class="choice-item space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
                                 {{ choice_form.id }}
                                 <div class="flex items-center gap-4">
                                     <div class="flex-1">
-                                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1.5">
+                                        {% comment %} <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                                             Choice Text
-                                        </label>
+                                        </label> {% endcomment %}
                                         {{ choice_form.choice_text }}
                                     </div>
-                                    <div class="flex items-center pt-6">
+                                    <div class="flex items-center whitespace-nowrap">
                                         <label class="inline-flex items-center">
                                             {{ choice_form.is_correct }}
                                             <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
                                         </label>
                                     </div>
+                                    <button type="button" 
+                                            onclick="removeChoice(this)" 
+                                            class="delete-choice-btn p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded-lg focus:ring-2 focus:ring-red-300 dark:text-red-500 dark:hover:text-white dark:border-red-500 dark:hover:bg-red-600 transition-colors duration-200">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
-
-                    <button type="button" id="addChoiceBtn" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                        Add Choice
-                    </button>
                 </div>
 
                 <!-- Form Actions -->
-                <div class="flex items-center space-x-4 mt-6">
-                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                        Create Question
-                    </button>
-                    <a href="{% url 'question_list' %}" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'question_list' %}" 
+                       class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
                         Cancel
                     </a>
+                    <button type="submit" 
+                            class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                        Create Question
+                    </button>
                 </div>
             </form>
         </div>
@@ -90,24 +116,88 @@
 </section>
 
 <script>
-    // Add choice functionality
-    document.getElementById('addChoiceBtn').addEventListener('click', function() {
-        const container = document.getElementById('choicesContainer');
-        const totalForms = document.getElementById('id_form-TOTAL_FORMS');
-        const newIndex = parseInt(totalForms.value);
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded');
         
-        // Clone the first choice form
-        const template = container.querySelector('.choice-item').cloneNode(true);
+        const addChoiceBtn = document.getElementById('addChoiceBtn');
+        const choicesContainer = document.getElementById('choicesContainer');
         
-        // Update form indices
-        template.querySelectorAll('input').forEach(input => {
-            input.name = input.name.replace('-0-', `-${newIndex}-`);
-            input.id = input.id.replace('-0-', `-${newIndex}-`);
-            input.value = '';
+        addChoiceBtn.addEventListener('click', function() {
+            console.log('Add Choice button clicked');
+            
+            // Get the current number of choices
+            const totalForms = document.getElementById('id_choice_set-TOTAL_FORMS');
+            const currentTotal = parseInt(totalForms.value);
+            console.log('Current total:', currentTotal);
+            
+            // Create new choice element
+            const newChoice = document.createElement('div');
+            newChoice.className = 'choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2';
+            
+            newChoice.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="flex-1">
+                        {% comment %} <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            Choice Text
+                        </label> {% endcomment %}
+                        <input type="text" name="choice_set-${currentTotal}-choice_text" 
+                               id="id_choice_set-${currentTotal}-choice_text"
+                               class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
+                               required>
+                    </div>
+                    <div class="flex items-center whitespace-nowrap">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="choice_set-${currentTotal}-is_correct" 
+                                   id="id_choice_set-${currentTotal}-is_correct"
+                                   class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
+                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
+                        </label>
+                    </div>
+                    <button type="button" 
+                            onclick="removeChoice(this)" 
+                            class="delete-choice-btn p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded-lg focus:ring-2 focus:ring-red-300 dark:text-red-500 dark:hover:text-white dark:border-red-500 dark:hover:bg-red-600 transition-colors duration-200">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            // Add the new choice to the container
+            choicesContainer.appendChild(newChoice);
+            console.log('New choice added');
+            
+            // Update the total forms count
+            totalForms.value = currentTotal + 1;
+            console.log('Updated total forms:', totalForms.value);
         });
-        
-        container.appendChild(template);
-        totalForms.value = newIndex + 1;
     });
+
+    // Keep the removeChoice function outside DOMContentLoaded since it's called from onclick
+    function removeChoice(button) {
+        const container = document.getElementById('choicesContainer');
+        const choiceItems = container.querySelectorAll('.choice-item');
+        
+        if (choiceItems.length <= 2) {
+            alert('You must have at least 2 choices.');
+            return;
+        }
+        
+        const choiceItem = button.closest('.choice-item');
+        choiceItem.remove();
+        
+        // Update total forms count
+        const totalForms = document.getElementById('id_choice_set-TOTAL_FORMS');
+        totalForms.value = parseInt(totalForms.value) - 1;
+        
+        // Reindex remaining forms
+        const remainingChoices = container.querySelectorAll('.choice-item');
+        remainingChoices.forEach((item, index) => {
+            item.querySelectorAll('input').forEach(input => {
+                input.name = input.name.replace(/choice_set-\d+/, `choice_set-${index}`);
+                input.id = input.id.replace(/choice_set-\d+/, `choice_set-${index}`);
+            });
+        });
+    }
 </script>
 {% endblock %} 

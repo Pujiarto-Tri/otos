@@ -124,8 +124,6 @@ class CategoryUpdateForm(forms.ModelForm):
         if commit:
             category.save()
         return category
-    
-    
 
 class QuestionCreationForm(forms.ModelForm):
     class Meta:
