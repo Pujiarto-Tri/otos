@@ -24,4 +24,6 @@ urlpatterns = [
     path('admin/question/create/', views.question_create, name='question_create'),
     path('admin/question/<int:question_id>/edit/', views.question_update, name='question_update'),
     path('admin/question/<int:question_id>/delete/', views.question_delete, name='question_delete'),
+
+    path('students/tryouts/', views.tryout_list, name='tryout_list'),
 ]

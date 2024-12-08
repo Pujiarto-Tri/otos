@@ -8,7 +8,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from otosapp.models import Choice, User, Role, Category, Question
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet
-from .decorators import admin_required, admin_or_teacher_required
+from .decorators import admin_required, admin_or_teacher_required, students_required
 from django.db import transaction
 
 
@@ -194,3 +194,13 @@ def question_delete(request, question_id):
         question.delete()
         return redirect('question_list')
     return render(request, {'question': question})
+
+
+
+##STUDENTS##
+
+@login_required
+@students_required
+def tryout_list(request):
+    tryout_list = Category.objects.all() 
+    return render(request, 'students/tryouts/tryout_list.html', {'tryout': tryout_list})
