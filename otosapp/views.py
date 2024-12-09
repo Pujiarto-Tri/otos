@@ -6,8 +6,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from otosapp.models import Choice, User, Role, Category, Question
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet, AnswerForm
 from .decorators import admin_required, admin_or_teacher_required, students_required
 from django.db import transaction
 
@@ -204,3 +204,55 @@ def question_delete(request, question_id):
 def tryout_list(request):
     tryout_list = Category.objects.all() 
     return render(request, 'students/tryouts/tryout_list.html', {'tryout': tryout_list})
+
+@login_required
+@students_required
+def take_test(request, category_id, question):
+    category = get_object_or_404(Category, id=category_id)
+    questions = Question.objects.filter(category=category)
+
+    # Get the current question index from the request
+    current_question_index = question
+
+    # Initialize a set to track answered questions
+    answered_questions = set(request.session.get('answered_questions', []))
+
+    if request.method == 'POST':
+        # Process the answer for the current question
+        choice_id = request.POST.get('answer')
+        if choice_id:
+            test = Test.objects.create(student=request.user)
+            question_instance = get_object_or_404(Question, id=questions[current_question_index].id)
+            choice = get_object_or_404(Choice, id=choice_id)
+            Answer.objects.create(test=test, question=question_instance, selected_choice=choice)
+
+            # Mark the question as answered
+            answered_questions.add(question_instance.id)
+            request.session['answered_questions'] = list(answered_questions)
+
+            # Redirect to the next question
+            next_question_index = current_question_index + 1
+            if next_question_index < len(questions):
+                return redirect('take_test', category_id=category_id, question=next_question_index)
+            else:
+                # Redirect to results or completion page
+                return redirect('test_results', test_id=test.id)
+
+    # Get the current question
+    current_question = questions[current_question_index] if questions else None
+
+    return render(request, 'students/tests/take_test.html', {
+        'category': category,
+        'question': current_question,
+        'current_question_index': current_question_index,
+        'questions': questions,
+        'answered_questions': answered_questions,
+    })
+
+@login_required
+@students_required
+def test_results(request, test_id):
+    test = get_object_or_404(Test, id=test_id)
+    return render(request, 'students/tests/test_results.html', {'test': test})
+
+

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Results{% endblock %}
+
+{% block content %}
+<div class="max-w-screen-xl mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-4">Test Results</h2>
+    <p>Your score: {{ test.score }}%</p>
+    <p>Date Taken: {{ test.date_taken }}</p>
+</div>
+{% endblock %}

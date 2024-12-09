@@ -188,3 +188,17 @@ class QuestionUpdateForm(forms.ModelForm):
         if commit:
             question.save()
         return question
+
+class AnswerForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        questions = kwargs.pop('questions', None)
+        super().__init__(*args, **kwargs)
+
+        if questions:
+            for question in questions:
+                # Create a choice field for each question
+                self.fields[f'question_{question.id}'] = forms.ChoiceField(
+                    choices=[(choice.id, choice.choice_text) for choice in question.choices.all()],
+                    widget=forms.RadioSelect,
+                    label=question.question_text
+                )

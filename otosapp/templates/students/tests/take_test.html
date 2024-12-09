@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Take Test - {{ category.category_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-screen-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md dark:bg-gray-800">
+    <h2 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Question {{ current_question_index|add:1 }} of {{ questions|length }}</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="p-4 border border-gray-300 rounded-lg dark:border-gray-600">
+            <p class="font-semibold text-lg text-gray-800 dark:text-white">{{ question.question_text }}</p>
+            <div class="mt-2">
+                {% for choice in question.choices.all %}
+                <div class="flex items-center mb-2">
+                    <input type="radio" id="choice_{{ choice.id }}" name="answer" value="{{ choice.id }}" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" required>
+                    <label for="choice_{{ choice.id }}" class="ml-2 text-gray-700 dark:text-gray-300">{{ choice.choice_text }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="mt-6">
+            <button type="submit" class="inline-block px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                Next Question
+            </button>
+        </div>
+    </form>
+
+    <div class="mt-6">
+        <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-white">Jump to Question:</h3>
+        <div class="grid grid-cols-4 gap-4">
+            {% for q in questions %}
+            <a href="{% url 'take_test' category.id forloop.counter0 %}" class="flex items-center justify-center w-10 h-10 text-white 
+                {% if q.id in answered_questions %} bg-green-600 {% else %} bg-indigo-600 {% endif %} 
+                rounded-full hover:bg-indigo-700 transition">
+                {{ forloop.counter }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

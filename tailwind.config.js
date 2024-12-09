@@ -21,7 +21,9 @@ module.exports = {
     'leading-6',
     'h-9',
     'leading-9',
-    'shadow-lg'
+    'shadow-lg',
+    'bg-green-600',  // Add this line
+    'bg-indigo-600',
   ],
 
   darkMode: 'class',

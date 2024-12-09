@@ -5,10 +5,9 @@
 {% block content %}
 <div class="max-w-screen-xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for tryout_list in tryout %}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4 pl-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4">
         <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ tryout_list.category_name }}</h3>
-        {% comment %} <p class="text-gray-600 dark:text-gray-300 mb-4">Description or details about {{ category.category_name }} can go here.</p> {% endcomment %}
-        <a href="#" class="w-full inline-block px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+        <a href="{% url 'take_test' tryout_list.id 0 %}" class="w-full inline-block px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
             Start Test
         </a>
     </div>
