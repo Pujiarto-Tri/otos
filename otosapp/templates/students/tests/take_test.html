@@ -31,7 +31,7 @@
         <div class="grid grid-cols-4 gap-4">
             {% for q in questions %}
             <a href="{% url 'take_test' category.id forloop.counter0 %}" class="flex items-center justify-center w-10 h-10 text-white 
-                {% if q.id in answered_questions %} bg-green-600 {% else %} bg-indigo-600 {% endif %} 
+                {% if q.id in answered_questions %} bg-blue {% else %} bg-indigo-600 {% endif %} 
                 rounded-full hover:bg-indigo-700 transition">
                 {{ forloop.counter }}
             </a>
