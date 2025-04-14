@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
+from django_ckeditor_5.fields import CKEditor5Field
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -35,16 +36,16 @@ class Category(models.Model):
         return self.category_name
 
 class Question(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="questions")
-    question_text = models.CharField(max_length=200, verbose_name="Question Text")
-    pub_date = models.DateTimeField("Date Published")
+    question_text = CKEditor5Field('Text', config_name='extends')
+    pub_date = models.DateTimeField('date published')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.question_text
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="choices")
-    choice_text = models.CharField(max_length=200, verbose_name="Choice Text")
+    choice_text = CKEditor5Field('Text', config_name='extends')
     is_correct = models.BooleanField(default=False, help_text="Is this the correct answer?")
 
     def __str__(self):

@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
 from .models import User, Role, Category, Question, Choice
+from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
@@ -125,51 +126,40 @@ class CategoryUpdateForm(forms.ModelForm):
             category.save()
         return category
 
-class QuestionCreationForm(forms.ModelForm):
+class QuestionForm(forms.ModelForm):
+    question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    
     class Meta:
         model = Question
-        fields = ('question_text', 'category')
+        fields = ['question_text', 'category']
+
+class ChoiceForm(forms.ModelForm):
+    choice_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    
+    class Meta:
+        model = Choice
+        fields = ['choice_text', 'is_correct']
         widgets = {
-            'question_text': forms.Textarea(attrs={
-                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-1.5',
-                'placeholder': 'Enter question text',
-                'rows': 4  # This will make it 4 rows tall
-            }),
-            'category': forms.Select(attrs={
-                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5'
-            })
+            'is_correct': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'})
         }
 
-ChoiceFormSet = inlineformset_factory(
+ChoiceFormSet = forms.inlineformset_factory(
     Question,
     Choice,
-    fields=('choice_text', 'is_correct'),
+    form=ChoiceForm,
     extra=2,
     min_num=2,
     max_num=10,
-    validate_min=True,
-    can_delete=True,
-    widgets={
-        'choice_text': forms.TextInput(attrs={
-            'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5',
-            'placeholder': 'Enter choice text'
-        }),
-        'is_correct': forms.CheckboxInput(attrs={
-            'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
-        })
-    }
+    can_delete=True
 )
 
 class QuestionUpdateForm(forms.ModelForm):
+    question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    
     class Meta:
         model = Question
         fields = ['question_text', 'category']
         widgets = {
-            'question_text': forms.Textarea(attrs={
-                'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-1.5',
-                'placeholder': 'Enter question text',
-                'rows': 4  # This will make it 4 rows tall
-            }),
             'category': forms.Select(attrs={
                 'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5'
             })

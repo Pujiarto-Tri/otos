@@ -5,11 +5,12 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from otosapp.models import Choice, User, Role, Category, Question, Test, Answer
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionCreationForm, QuestionUpdateForm, ChoiceFormSet, AnswerForm
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet
 from .decorators import admin_required, admin_or_teacher_required, students_required
 from django.db import transaction
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 def register(request):
@@ -28,8 +29,24 @@ def register(request):
 @login_required
 @admin_required
 def user_list(request):
-    users = User.objects.all().order_by('-date_joined')
-    return render(request, 'admin/manage_user/user_list.html', {'users': users})
+    users_list = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_list, 10)  # Show 10 users per page
+    
+    page = request.GET.get('page')
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        users = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        users = paginator.page(paginator.num_pages)
+        
+    return render(request, 'admin/manage_user/user_list.html', {
+        'users': users,
+        'paginator': paginator
+    })
+    
 
 @login_required
 @admin_required
@@ -83,9 +100,25 @@ def category_create(request):
 @login_required
 @admin_required
 def category_list(request):
+    categories_list = Category.objects.all()
+    paginator = Paginator(categories_list, 10)  # Show 10 categories per page
+    
+    page = request.GET.get('page')
+    try:
+        categories = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        categories = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        categories = paginator.page(paginator.num_pages)
+        
     form = CategoryCreationForm()
-    categories = Category.objects.all()
-    return render(request, 'admin/manage_categories/category_list.html', {'categories': categories, 'form': form})
+    return render(request, 'admin/manage_categories/category_list.html', {
+        'categories': categories,
+        'form': form,
+        'paginator': paginator
+    })
 
 @login_required
 @admin_required
@@ -116,35 +149,51 @@ def category_delete(request, category_id):
 @login_required
 @admin_or_teacher_required
 def question_list(request):
-    questions = Question.objects.all()
-    return render(request, 'admin/manage_questions/question_list.html', {'questions': questions})
+    questions_list = Question.objects.all().order_by('-pub_date')
+    paginator = Paginator(questions_list, 10)  # Show 10 questions per page
+    
+    page = request.GET.get('page')
+    try:
+        questions = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        questions = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        questions = paginator.page(paginator.num_pages)
+        
+    return render(request, 'admin/manage_questions/question_list.html', {
+        'questions': questions,
+        'paginator': paginator
+    })
 
 @login_required
 @admin_or_teacher_required
 def question_create(request):
     if request.method == 'POST':
-        form = QuestionCreationForm(request.POST)
-        formset = ChoiceFormSet(request.POST, instance=Question())
+        form = QuestionForm(request.POST)
+        formset = ChoiceFormSet(request.POST, prefix='choices')
         
         if form.is_valid() and formset.is_valid():
             question = form.save(commit=False)
-            question.pub_date = timezone.now()
+            question.created_by = request.user
             question.save()
             
-            formset.instance = question
-            formset.save()
+            choices = formset.save(commit=False)
+            for choice in choices:
+                choice.question = question
+                choice.save()
             
             messages.success(request, 'Question created successfully!')
             return redirect('question_list')
-        else:
-            messages.error(request, 'Please correct the errors below.')
     else:
-        form = QuestionCreationForm()
-        formset = ChoiceFormSet(instance=Question())
-
+        form = QuestionForm()
+        formset = ChoiceFormSet(prefix='choices')
+    
     return render(request, 'admin/manage_questions/question_create.html', {
         'form': form,
-        'formset': formset
+        'formset': formset,
+        'categories': Category.objects.all()
     })
 
 @login_required
@@ -153,7 +202,7 @@ def question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     
     if request.method == 'POST':
-        form = QuestionUpdateForm(request.POST, instance=question)
+        form = QuestionForm(request.POST, instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
             fields=('choice_text', 'is_correct'),
@@ -171,7 +220,7 @@ def question_update(request, question_id):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = QuestionUpdateForm(instance=question)
+        form = QuestionForm(instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
             fields=('choice_text', 'is_correct'),
