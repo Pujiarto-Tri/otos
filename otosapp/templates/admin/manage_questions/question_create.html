@@ -33,7 +33,9 @@
                         <label for="{{ form.question_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                             Question Text
                         </label>
-                        {{ form.question_text }}
+                        <div class="w-full">
+                            {{ form.question_text }}
+                        </div>
                         {% if form.question_text.errors %}
                             <p class="text-red-500 text-sm mt-1">{{ form.question_text.errors.0 }}</p>
                         {% endif %}
@@ -73,7 +75,7 @@
                             <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
                                 {{ choice_form.id }}
                                 <div class="flex items-center gap-4">
-                                    <div class="flex-1">
+                                    <div class="flex-1 w-full">
                                         {{ choice_form.choice_text }}
                                     </div>
                                     <div class="flex items-center whitespace-nowrap">
@@ -108,85 +110,20 @@
 {% block extrajs %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize CKEditor for question text
-        ClassicEditor
-            .create(document.querySelector('#id_question_text'), {
-                toolbar: {
-                    items: [
-                        'heading',
-                        '|',
-                        'bold',
-                        'italic',
-                        'link',
-                        'bulletedList',
-                        'numberedList',
-                        '|',
-                        'outdent',
-                        'indent',
-                        '|',
-                        'imageUpload',
-                        'blockQuote',
-                        'insertTable',
-                        'undo',
-                        'redo',
-                        'mathType',
-                        'chemType'
-                    ]
-                },
-                language: 'en',
-                image: {
-                    toolbar: [
-                        'imageTextAlternative',
-                        'imageStyle:inline',
-                        'imageStyle:block',
-                        'imageStyle:side'
-                    ]
-                },
-                table: {
-                    contentToolbar: [
-                        'tableColumn',
-                        'tableRow',
-                        'mergeTableCells'
-                    ]
-                },
-                mathType: {
-                    mathJaxLib: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML'
-                }
-            })
-            .then(editor => {
-                console.log('Editor was initialized', editor);
-            })
-            .catch(error => {
-                console.error(error);
-            });
+        // Main question text
+        const questionText = document.querySelector('#id_question_text');
+        if (questionText) {
+            ClassicEditor.create(questionText)
+                .then(editor => console.log('Main editor initialized'))
+                .catch(error => console.error(error));
+        }
 
-        // Initialize CKEditor for choice text fields
+        // Choices
         document.querySelectorAll('textarea').forEach(element => {
             if (element.id.startsWith('id_choice_set-') && element.id.endsWith('-choice_text')) {
-                ClassicEditor
-                    .create(element, {
-                        toolbar: {
-                            items: [
-                                'bold',
-                                'italic',
-                                'link',
-                                'bulletedList',
-                                'numberedList',
-                                '|',
-                                'mathType',
-                                'chemType'
-                            ]
-                        },
-                        mathType: {
-                            mathJaxLib: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML'
-                        }
-                    })
-                    .then(editor => {
-                        console.log('Choice editor was initialized', editor);
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
+                ClassicEditor.create(element)
+                    .then(editor => console.log('Choice editor initialized'))
+                    .catch(error => console.error(error));
             }
         });
     });
