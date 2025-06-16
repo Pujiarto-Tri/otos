@@ -152,47 +152,23 @@ STATICFILES_FINDERS = [
 # CKEditor Configuration
 CKEDITOR_5_CONFIGS = {
     'extends': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link',
+                   'bulletedList', 'numberedList', 'blockQuote', 'imageUpload'],
         'blockToolbar': [
             'paragraph', 'heading1', 'heading2', 'heading3',
+            '|',
+            'bulletedList', 'numberedList',
+            '|',
+            'blockQuote', 'imageUpload'
         ],
-        'toolbar': [
-            'heading', '|',
-            'bold', 'italic', 'link', 'bulletedList', 'numberedList',
-            '|', 'outdent', 'indent', '|',
-            'blockQuote', 'insertTable', 'mediaEmbed',
-            '|', 'undo', 'redo', '|',
-            'sourceEditing'
-        ],
-        'height': '400px',
-        'toolbarLocation': 'top',
-        'removePlugins': ['Title'],
-        'contentsCss': [''],  # Remove default CSS
+        'image': {
+            'toolbar': ['imageStyle:full', 'imageStyle:side', '|', 'imageTextAlternative'],
+            'upload': {
+                'types': ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'jpg']
+            }
+        }
     }
 }
 
-customColorPalette = [
-    {
-        'color': 'hsl(4, 90%, 58%)',
-        'label': 'Red'
-    },
-    {
-        'color': 'hsl(340, 82%, 52%)',
-        'label': 'Pink'
-    },
-    {
-        'color': 'hsl(291, 64%, 42%)',
-        'label': 'Purple'
-    },
-    {
-        'color': 'hsl(262, 52%, 47%)',
-        'label': 'Deep Purple'
-    },
-    {
-        'color': 'hsl(231, 48%, 48%)',
-        'label': 'Indigo'
-    },
-    {
-        'color': 'hsl(207, 90%, 54%)',
-        'label': 'Blue'
-    },
-]
+CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+CKEDITOR_5_UPLOAD_PATH = "uploads/"  # Media directory where images will be uploaded
