@@ -1,5 +1,5 @@
-{% load compress %}
 {% load static %}
+{% load compress %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -7,24 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Exam System{% endblock %}</title>
     
-    {% if request.path|slice:":6" == "/admin" %}
-        {{ block.super }}
-        <link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
-        <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
-    {% endif %}
-
     {% compress css %}
     <link rel="stylesheet" href="{% static 'src/output.css' %}">
-    {% endcompress %} 
+    {% endcompress %}
     
-    <script>
-        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    </script>
+    {% block extrahead %}{% endblock %}
+    
+    <!-- Add this for CKEditor -->
+    {{ form.media }}
 </head>
 
 <body class="min-h-screen bg-gray-50 dark:bg-gray-900">

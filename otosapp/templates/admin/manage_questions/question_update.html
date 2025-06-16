@@ -2,6 +2,51 @@
 
 {% block title %}Edit Question{% endblock %}
 
+{% block extrahead %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    
+    <style>
+        /* CKEditor Styles */
+        .ck-editor__editable {
+            min-height: 200px;
+            background-color: white !important;
+            color: black !important;
+        }
+        
+        .ck.ck-editor__main>.ck-editor__editable {
+            background: white !important;
+        }
+        
+        .ck.ck-toolbar {
+            background: white !important;
+            border: 1px solid #d1d5db !important;
+        }
+        
+        .ck.ck-button {
+            color: #374151 !important;
+        }
+        
+        /* Dark mode styles */
+        .dark .ck-editor__editable {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+        
+        .dark .ck.ck-editor__main>.ck-editor__editable {
+            background: #1f2937 !important;
+        }
+        
+        .dark .ck.ck-toolbar {
+            background: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        
+        .dark .ck.ck-button {
+            color: #e5e7eb !important;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 min-h-screen">
     <div class="mx-auto max-w-5xl px-4 lg:px-12">
@@ -60,6 +105,7 @@
 
                 {{ formset.management_form }}
                 
+                <!-- Update the Choices Section -->
                 <div id="editChoicesContainer" class="space-y-4">
                     {% for choice_form in formset %}
                         <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
@@ -70,30 +116,14 @@
                                     <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                                         Choice Text
                                     </label>
-                                    <input type="text" 
-                                           name="{{ choice_form.choice_text.html_name }}"
-                                           id="{{ choice_form.choice_text.id_for_label }}"
-                                           value="{{ choice_form.choice_text.value|default:'' }}"
-                                           class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
-                                           required>
+                                    {{ choice_form.choice_text }}
                                 </div>
                                 <div class="flex items-center whitespace-nowrap">
                                     <label class="inline-flex items-center">
-                                        <input type="checkbox" 
-                                               name="{{ choice_form.is_correct.html_name }}"
-                                               id="{{ choice_form.is_correct.id_for_label }}"
-                                               {% if choice_form.is_correct.value %}checked{% endif %}
-                                               class="w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600">
+                                        {{ choice_form.is_correct }}
                                         <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
                                     </label>
                                 </div>
-                                {% comment %} <button type="button" 
-                                        onclick="removeEditChoice(this)" 
-                                        class="delete-choice-btn p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded-lg focus:ring-2 focus:ring-red-300 dark:text-red-500 dark:hover:text-white dark:border-red-500 dark:hover:bg-red-600 transition-colors duration-200">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </button> {% endcomment %}
                             </div>
                         </div>
                     {% endfor %}
@@ -192,4 +222,4 @@
         });
     }
 </script>
-{% endblock %} 
+{% endblock %}

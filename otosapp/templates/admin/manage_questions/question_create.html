@@ -4,8 +4,49 @@
 {% block title %}Create Question{% endblock %}
 
 {% block extrahead %}
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+    <!-- Remove the CDN CKEditor script as we're using django-ckeditor-5 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    
+    <style>
+        /* Add these styles to fix CKEditor appearance */
+        .ck-editor__editable {
+            min-height: 200px;
+            background-color: white !important;
+            color: black !important;
+        }
+        
+        .ck.ck-editor__main>.ck-editor__editable {
+            background: white !important;
+        }
+        
+        .ck.ck-toolbar {
+            background: white !important;
+            border: 1px solid #d1d5db !important;
+        }
+        
+        .ck.ck-button {
+            color: #374151 !important;
+        }
+        
+        /* Dark mode styles */
+        .dark .ck-editor__editable {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+        
+        .dark .ck.ck-editor__main>.ck-editor__editable {
+            background: #1f2937 !important;
+        }
+        
+        .dark .ck.ck-toolbar {
+            background: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        
+        .dark .ck.ck-button {
+            color: #e5e7eb !important;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -105,7 +146,7 @@
         </div>
     </div>
 </section>
-{% endblock %}
+
 
 {% comment %} {% block extrajs %}
 <script>

@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
@@ -132,6 +133,13 @@ class QuestionForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = ['question_text', 'category']
+    
+    def save(self, commit=True):
+        question = super().save(commit=False)
+        question.pub_date = timezone.now()  # Set the publication date
+        if commit:
+            question.save()
+        return question
 
 class ChoiceForm(forms.ModelForm):
     choice_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
