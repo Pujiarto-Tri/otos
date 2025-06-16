@@ -107,7 +107,7 @@
 </section>
 {% endblock %}
 
-{% block extrajs %}
+{% comment %} {% block extrajs %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Main question text
@@ -127,5 +127,5 @@
             }
         });
     });
-</script>
-{% endblock %} 
+</script> {% endcomment %}
+{% endblock %}
