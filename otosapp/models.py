@@ -1,6 +1,12 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
+import re
+from django.conf import settings
+import os
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from .utils import generate_unique_filename
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -40,16 +46,55 @@ class Question(models.Model):
     pub_date = models.DateTimeField('date published')
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
+    def delete_media_files(self):
+        """Delete associated media files without calling delete()"""
+        pattern = r'src="([^"]+)"'
+        matches = re.findall(pattern, self.question_text)
+        
+        for match in matches:
+            if match.startswith(settings.MEDIA_URL):
+                file_path = match[len(settings.MEDIA_URL):]
+                absolute_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                
+                if os.path.exists(absolute_path):
+                    try:
+                        os.remove(absolute_path)
+                    except (OSError, PermissionError):
+                        pass  # Handle file deletion errors gracefully
+
     def __str__(self):
         return self.question_text
 
-class Choice(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="choices")
-    choice_text = CKEditor5Field('Text', config_name='extends')
-    is_correct = models.BooleanField(default=False, help_text="Is this the correct answer?")
+    def delete(self, *args, **kwargs):
+        self.delete_media_files()
+        for choice in self.choices.all():
+            choice.delete_media_files()
+        super().delete(*args, **kwargs)
 
-    def __str__(self):
-        return self.choice_text
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    choice_text = CKEditor5Field('Text', config_name='extends')
+    is_correct = models.BooleanField(default=False)
+
+    def delete_media_files(self):
+        """Delete associated media files without calling delete()"""
+        pattern = r'src="([^"]+)"'
+        matches = re.findall(pattern, self.choice_text)
+        
+        for match in matches:
+            if match.startswith(settings.MEDIA_URL):
+                file_path = match[len(settings.MEDIA_URL):]
+                absolute_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                
+                if os.path.exists(absolute_path):
+                    try:
+                        os.remove(absolute_path)
+                    except (OSError, PermissionError):
+                        pass
+
+    def delete(self, *args, **kwargs):
+        self.delete_media_files()
+        super().delete(*args, **kwargs)
 
 class Test(models.Model):
     student = models.ForeignKey(
@@ -77,3 +122,13 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"Answer by {self.test.student.username} for {self.question.question_text}"
+
+@receiver(pre_delete, sender=Question)
+def question_pre_delete(sender, instance, **kwargs):
+    """Handle file deletion before the question is deleted"""
+    instance.delete_media_files()
+
+@receiver(pre_delete, sender=Choice)
+def choice_pre_delete(sender, instance, **kwargs):
+    """Handle file deletion before the choice is deleted"""
+    instance.delete_media_files()

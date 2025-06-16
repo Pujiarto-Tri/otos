@@ -162,13 +162,13 @@ CKEDITOR_5_CONFIGS = {
             'blockQuote', 'imageUpload'
         ],
         'image': {
-            'toolbar': ['imageStyle:full', 'imageStyle:side', '|', 'imageTextAlternative'],
             'upload': {
-                'types': ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'jpg']
+                'types': ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'jpg'],
             }
-        }
+        },
     }
 }
 
-CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-CKEDITOR_5_UPLOAD_PATH = "uploads/"  # Media directory where images will be uploaded
+CKEDITOR_5_FILE_STORAGE = "otosapp.storage.UniqueFileSystemStorage"
+CKEDITOR_5_UPLOAD_PATH = "uploads/"
+CKEDITOR_5_FILENAME_GENERATOR = 'otosapp.utils.generate_unique_filename'
