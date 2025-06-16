@@ -6,7 +6,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Exam System{% endblock %}</title>
-    {% comment %} <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> {% endcomment %}
+    
+    {% if request.path|slice:":6" == "/admin" %}
+        {{ block.super }}
+        <link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
+        <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+    {% endif %}
 
     {% compress css %}
     <link rel="stylesheet" href="{% static 'src/output.css' %}">
