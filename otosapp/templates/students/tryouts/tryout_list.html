@@ -3,14 +3,162 @@
 {% block title %}Select Question Category{% endblock %}
 
 {% block content %}
-<div class="max-w-screen-xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="max-w-screen-xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for tryout_list in tryout %}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4">
-        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ tryout_list.category_name }}</h3>
-        <a href="{% url 'take_test' tryout_list.id 0 %}" class="w-full inline-block px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-            Start Test
-        </a>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300 p-8 flex flex-col items-center border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-center w-16 h-16 mb-4 bg-indigo-100 dark:bg-indigo-900 rounded-full">
+            <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">{{ tryout_list.category_name }}</h3>
+        <p class="text-gray-500 dark:text-gray-300 mb-6 text-center">Uji kemampuanmu di kategori ini dan raih skor terbaik!</p>
+        <button onclick="showStartWarning('{{ tryout_list.category_name }}', '{{ tryout_list.id }}', '{{ tryout_list.time_limit }}')" class="w-full flex items-center justify-center gap-2 px-6 py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition font-semibold text-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9a2 2 0 00-2-2h-6a2 2 0 00-2 2v8m0 0H5a2 2 0 01-2-2V9a2 2 0 012-2h6a2 2 0 012 2v8z"></path></svg>
+            Mulai Tryout
+        </button>
     </div>
     {% endfor %}
 </div>
+
+<!-- Start Tryout Warning Modal -->
+<div id="start-warning-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overlay-hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4">
+                <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            
+            <h3 class="text-xl font-semibold text-center text-gray-900 dark:text-white mb-4">
+                Peringatan Sebelum Memulai Tryout
+            </h3>
+            
+            <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="text-sm text-yellow-800 dark:text-yellow-200">
+                        <p class="font-semibold mb-2">Hal-hal penting yang perlu diperhatikan:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Timer akan mulai berjalan segera setelah Anda mengklik "Mulai Sekarang"</li>
+                            <li>Waktu ujian: <span id="modal-time-limit" class="font-semibold"></span> menit</li>
+                            <li>Anda dapat keluar dan masuk kembali, namun timer tetap berjalan</li>
+                            <li>Ujian akan otomatis berakhir ketika waktu habis</li>
+                            <li>Pastikan koneksi internet Anda stabil</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mb-6">
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    <span id="modal-category-name"></span>
+                </h4>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Apakah Anda siap untuk memulai tryout ini?
+                </p>
+            </div>
+            
+            <div class="flex justify-center gap-4">
+                <button onclick="hideStartWarning()" class="px-6 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-base font-medium rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Batal
+                </button>
+                <button onclick="startTryout()" class="px-6 py-2 bg-indigo-600 text-white text-base font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9a2 2 0 00-2-2h-6a2 2 0 00-2 2v8m0 0H5a2 2 0 01-2-2V9a2 2 0 012-2h6a2 2 0 012 2v8z"></path>
+                    </svg>
+                    Mulai Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.overlay-hidden {
+    display: none;
+}
+
+.overlay-visible {
+    display: block;
+}
+
+@keyframes modal-appear {
+    from { 
+        opacity: 0; 
+        transform: scale(0.9) translateY(-20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+.modal-content {
+    animation: modal-appear 0.3s ease-out;
+}
+</style>
+
+<script>
+let selectedTryoutId = null;
+
+function showStartWarning(categoryName, tryoutId, timeLimit) {
+    selectedTryoutId = tryoutId;
+    
+    // Update modal content
+    document.getElementById('modal-category-name').textContent = categoryName;
+    document.getElementById('modal-time-limit').textContent = timeLimit;
+    
+    // Show modal
+    const modal = document.getElementById('start-warning-modal');
+    modal.classList.remove('overlay-hidden');
+    modal.classList.add('overlay-visible');
+    
+    // Add animation class to content
+    const modalContent = modal.querySelector('.relative');
+    modalContent.classList.add('modal-content');
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+function hideStartWarning() {
+    const modal = document.getElementById('start-warning-modal');
+    modal.classList.add('overlay-hidden');
+    modal.classList.remove('overlay-visible');
+    
+    // Restore body scroll
+    document.body.style.overflow = 'auto';
+    
+    selectedTryoutId = null;
+}
+
+function startTryout() {
+    if (selectedTryoutId) {
+        // Redirect to tryout
+        window.location.href = "{% url 'take_test' '0' 0 %}".replace('0', selectedTryoutId);
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('start-warning-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideStartWarning();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('start-warning-modal');
+        if (modal.classList.contains('overlay-visible')) {
+            hideStartWarning();
+        }
+    }
+});
+</script>
 {% endblock %}

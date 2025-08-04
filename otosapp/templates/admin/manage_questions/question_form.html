@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Question Form" }}{% endblock %}
+
+{% block extrahead %}
+    <!-- Remove the CDN CKEditor script as we're using django-ckeditor-5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    
+    <style>
+        /* Add these styles to fix CKEditor appearance */
+        .ck-editor__editable {
+            min-height: 200px;
+            background-color: white !important;
+            color: black !important;
+        }
+        
+        .ck.ck-editor__main>.ck-editor__editable {
+            background: white !important;
+        }
+        
+        .ck.ck-toolbar {
+            background: white !important;
+            border: 1px solid #d1d5db !important;
+        }
+        
+        .ck.ck-button {
+            color: #374151 !important;
+        }
+        
+        /* Dark mode styles */
+        .dark .ck-editor__editable {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+        
+        .dark .ck.ck-editor__main>.ck-editor__editable {
+            background: #1f2937 !important;
+        }
+        
+        .dark .ck.ck-toolbar {
+            background: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        
+        .dark .ck.ck-button {
+            color: #e5e7eb !important;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 min-h-screen">
+    <div class="mx-auto max-w-5xl px-4 lg:px-12">
+        <!-- Breadcrumb -->
+        <nav class="flex mb-5" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li><a href="{% url 'question_list' %}" class="text-gray-700 dark:text-gray-300 hover:text-primary-600">Questions</a></li>
+                <li class="text-gray-500 dark:text-gray-400">/ {{ title|default:"Question Form" }}</li>
+            </ol>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden p-4">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">{{ title|default:"Question Form" }}</h2>
+            
+            <form method="POST" class="space-y-6" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Question Text Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Question Details</h3>
+                    <div>
+                        <label for="{{ form.question_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Question Text
+                        </label>
+                        <div class="w-full">
+                            {{ form.question_text }}
+                        </div>
+                        {% if form.question_text.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.question_text.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Category and Weight Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category & Scoring</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Select Category
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.category.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        {% if form.custom_weight %}
+                        <div>
+                            <label for="{{ form.custom_weight.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Custom Weight <span class="text-sm text-gray-500">(for custom scoring)</span>
+                            </label>
+                            {{ form.custom_weight }}
+                            {% if form.custom_weight.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.custom_weight.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Choices Section -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
+                    </div>
+
+                    {{ formset.management_form }}
+                    <div class="hidden">
+                        <input type="hidden" name="choice_set-TOTAL_FORMS" id="id_choice_set-TOTAL_FORMS" value="2">
+                        <input type="hidden" name="choice_set-INITIAL_FORMS" id="id_choice_set-INITIAL_FORMS" value="0">
+                        <input type="hidden" name="choice_set-MIN_NUM_FORMS" id="id_choice_set-MIN_NUM_FORMS" value="2">
+                        <input type="hidden" name="choice_set-MAX_NUM_FORMS" id="id_choice_set-MAX_NUM_FORMS" value="10">
+                    </div>
+                    
+                    <div id="choicesContainer" class="space-y-4">
+                        {% for choice_form in formset %}
+                            <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
+                                {{ choice_form.id }}
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1 w-full">
+                                        {{ choice_form.choice_text }}
+                                    </div>
+                                    <div class="flex items-center whitespace-nowrap">
+                                        <label class="inline-flex items-center">
+                                            {{ choice_form.is_correct }}
+                                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'question_list' %}" 
+                       class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                        {% if title == "Update Question" %}Update Question{% else %}Create Question{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

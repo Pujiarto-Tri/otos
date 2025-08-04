@@ -1,7 +1,7 @@
 {% load static %}
 {% load compress %}
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,7 +29,10 @@
                   </svg>
                </button>
               <a href="{% url 'home' %}" class="flex ms-2 md:me-24">
-                <img src="https://flowbite.com/docs/images/logo.svg" class="h-8 me-3" alt="FlowBite Logo" />
+                <svg class="h-8 w-8 me-3 text-blue-600 dark:text-blue-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 0C4.612 0 0 4.612 0 10s4.612 10 10 10 10-4.612 10-10S15.388 0 10 0ZM8.5 7.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm6.993 4.993L12.5 15.5a1 1 0 0 1-1.414 0L8.5 13.007a1 1 0 0 1 0-1.414l2.586-2.586a1 1 0 0 1 1.414 0l2.993 2.993a.999.999 0 0 1 0 1.414v-.001Z"/>
+                  <path d="M10 2a8 8 0 1 0 8 8 8.009 8.009 0 0 0-8-8Zm0 14a6 6 0 1 1 6-6 6.007 6.007 0 0 1-6 6Z"/>
+                </svg>
                 <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Brainest</span>
               </a>
             </div>
@@ -94,10 +97,13 @@
                 var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
                 // Change the icons inside the button based on previous settings
-                if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                if (localStorage.getItem('color-theme') === 'dark') {
+                    document.documentElement.classList.add('dark');
                     themeToggleLightIcon.classList.remove('hidden');
                 } else {
+                    document.documentElement.classList.remove('dark');
                     themeToggleDarkIcon.classList.remove('hidden');
+                    localStorage.setItem('color-theme', 'light');
                 }
 
                 var themeToggleBtn = document.getElementById('theme-toggle');

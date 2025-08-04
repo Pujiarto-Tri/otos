@@ -1,4 +1,3 @@
-import json
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.utils import timezone
@@ -11,6 +10,91 @@ from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, C
 from .decorators import admin_required, admin_or_teacher_required, students_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Count, Avg, Max
+import json
+
+
+def home(request):
+    context = {}
+    
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'role') and request.user.role and request.user.role.role_name == 'Student':
+            # Data untuk student dashboard - hanya test yang sudah submitted
+            user_tests = Test.objects.filter(student=request.user, is_submitted=True).order_by('-date_taken')
+            
+            # Check for ongoing test (not submitted and not timed out)
+            ongoing_test = Test.objects.filter(
+                student=request.user, 
+                is_submitted=False
+            ).first()
+            
+            # If ongoing test exists, check if it's still valid (not timed out)
+            if ongoing_test:
+                if ongoing_test.is_time_up():
+                    # Auto-submit expired test
+                    ongoing_test.is_submitted = True
+                    ongoing_test.end_time = timezone.now()
+                    ongoing_test.calculate_score()
+                    ongoing_test.save()
+                    ongoing_test = None  # Clear ongoing test
+                elif not ongoing_test.start_time:
+                    # If no start_time, this test is invalid, remove it
+                    ongoing_test = None
+            
+            # Statistik untuk student
+            total_tests = user_tests.count()
+            completed_tests = user_tests.filter(score__gt=0).count()
+            
+            # Rata-rata skor - deteksi format berdasarkan nilai maksimum
+            avg_score_raw = user_tests.aggregate(avg_score=Avg('score'))['avg_score'] or 0
+            max_score_in_data = user_tests.aggregate(max_score=Max('score'))['max_score'] or 0
+            
+            # Jika skor maksimum <= 1, maka format adalah 0-1, konversi ke persen
+            # Jika skor maksimum > 1, maka sudah dalam format persen
+            if max_score_in_data <= 1:
+                avg_score = avg_score_raw * 100
+                highest_score = max_score_in_data * 100
+            else:
+                avg_score = avg_score_raw
+                highest_score = max_score_in_data
+            
+            # Test terbaru (maksimal 5)
+            recent_tests = user_tests[:5]
+            
+            # Kategori yang paling sering dikerjakan - berdasarkan test yang sudah submitted
+            popular_categories = []
+            if user_tests.exists():
+                categories_data = {}
+                for test in user_tests:
+                    # Get categories from test.categories many-to-many field
+                    for category in test.categories.all():
+                        category_name = category.category_name
+                        if category_name in categories_data:
+                            categories_data[category_name] += 1
+                        else:
+                            categories_data[category_name] = 1
+                
+                # Convert to list dan sort
+                popular_categories = [
+                    {'category_name': name, 'count': count} 
+                    for name, count in sorted(categories_data.items(), key=lambda x: x[1], reverse=True)[:3]
+                ]
+            
+            context.update({
+                'user_tests': recent_tests,
+                'total_tests': total_tests,
+                'completed_tests': completed_tests,
+                'avg_score': round(avg_score, 1),
+                'highest_score': round(highest_score, 1),
+                'popular_categories': popular_categories,
+                'ongoing_test': ongoing_test,
+            })
+        
+        # Data users untuk admin (jika diperlukan)
+        if request.user.is_superuser or (hasattr(request.user, 'role') and request.user.role and request.user.role.role_name == 'Admin'):
+            context['users'] = User.objects.all()[:10]
+    
+    return render(request, 'home.html', context)
 
 
 def register(request):
@@ -112,6 +196,17 @@ def category_list(request):
     except EmptyPage:
         # If page is out of range, deliver last page of results
         categories = paginator.page(paginator.num_pages)
+    
+    # Add scoring status info for each category
+    for category in categories:
+        if category.scoring_method == 'custom':
+            total_points = category.get_total_custom_points()
+            category.scoring_status = {
+                'complete': category.is_custom_scoring_complete(),
+                'total_points': total_points
+            }
+        else:
+            category.scoring_status = {'complete': True, 'total_points': 100}
         
     form = CategoryCreationForm()
     return render(request, 'admin/manage_categories/category_list.html', {
@@ -127,11 +222,40 @@ def category_update(request, category_id):
     if request.method == 'POST':
         form = CategoryUpdateForm(request.POST, instance=category)
         if form.is_valid():
-            form.save()
+            old_scoring_method = Category.objects.get(id=category_id).scoring_method
+            new_category = form.save()
+            
+            # Check custom scoring validation
+            if new_category.scoring_method == 'custom':
+                if not new_category.is_custom_scoring_complete():
+                    total_points = new_category.get_total_custom_points()
+                    messages.warning(
+                        request, 
+                        f'Warning: Custom scoring incomplete! Total points: {total_points}/100. Please update question weights.'
+                    )
+            
+            # Update UTBK coefficients if switching to UTBK method
+            if new_category.scoring_method == 'utbk' and old_scoring_method != 'utbk':
+                Test.update_utbk_difficulty_coefficients(category_id)
+                messages.info(request, 'UTBK difficulty coefficients have been calculated based on existing data.')
+            
             return redirect('category_list')
     else:
         form = CategoryUpdateForm(instance=category)
-    return render(request, None, {'form': form, 'category_id': category_id})
+    
+    # Add warnings for current category
+    warnings = []
+    if category.scoring_method == 'custom' and not category.is_custom_scoring_complete():
+        total_points = category.get_total_custom_points()
+        warnings.append(f'Custom scoring incomplete! Total points: {total_points}/100')
+    
+    context = {
+        'form': form, 
+        'category_id': category_id,
+        'category': category,
+        'warnings': warnings
+    }
+    return render(request, 'admin/manage_categories/category_form.html', context)
 
 @login_required
 @admin_required
@@ -142,6 +266,20 @@ def category_delete(request, category_id):
         return redirect('category_list')
     return render(request, {'category': category})
 
+@login_required
+@admin_required
+def update_utbk_coefficients(request, category_id):
+    """Manually update UTBK difficulty coefficients for a category"""
+    category = get_object_or_404(Category, id=category_id)
+    
+    if category.scoring_method != 'utbk':
+        messages.error(request, f'Category "{category.category_name}" is not using UTBK scoring method.')
+    else:
+        Test.update_utbk_difficulty_coefficients(category_id)
+        messages.success(request, f'UTBK difficulty coefficients updated for "{category.category_name}".')
+    
+    return redirect('category_list')
+
 
 
 ##Question View##
@@ -149,34 +287,78 @@ def category_delete(request, category_id):
 @login_required
 @admin_or_teacher_required
 def question_list(request):
-    questions_list = Question.objects.all().order_by('-pub_date')
-    paginator = Paginator(questions_list, 10)  # Show 10 questions per page
+    """Display category selection page for questions"""
+    categories = Category.objects.all().order_by('category_name')
+    
+    # Add question count and scoring status for each category
+    for category in categories:
+        category.question_count = category.question_set.count()
+        if category.scoring_method == 'custom':
+            total_points = category.get_total_custom_points()
+            category.scoring_status = {
+                'complete': category.is_custom_scoring_complete(),
+                'total_points': total_points
+            }
+        else:
+            category.scoring_status = {'complete': True, 'total_points': 100}
+    
+    return render(request, 'admin/manage_questions/category_selection.html', {
+        'categories': categories
+    })
+
+@login_required
+@admin_or_teacher_required
+def question_list_by_category(request, category_id):
+    """Display questions filtered by category"""
+    category = get_object_or_404(Category, id=category_id)
+    questions_list = Question.objects.filter(category=category).order_by('-pub_date')
+    
+    # Add scoring status for category
+    if category.scoring_method == 'custom':
+        total_points = category.get_total_custom_points()
+        category.scoring_status = {
+            'complete': category.is_custom_scoring_complete(),
+            'total_points': total_points
+        }
+    else:
+        category.scoring_status = {'complete': True, 'total_points': 100}
+    
+    paginator = Paginator(questions_list, 15)  # Show 15 questions per page
     
     page = request.GET.get('page')
     try:
         questions = paginator.page(page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page
         questions = paginator.page(1)
     except EmptyPage:
-        # If page is out of range, deliver last page of results
         questions = paginator.page(paginator.num_pages)
         
     return render(request, 'admin/manage_questions/question_list.html', {
         'questions': questions,
+        'category': category,
         'paginator': paginator
     })
 
 @login_required
 @admin_or_teacher_required
 def question_create(request):
+    # Pre-select category from URL parameter
+    category_id = request.GET.get('category')
+    initial_category = None
+    if category_id:
+        try:
+            initial_category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            pass
+    
     if request.method == 'POST':
         form = QuestionForm(request.POST)
         formset = ChoiceFormSet(request.POST, prefix='choices')
         
         if form.is_valid() and formset.is_valid():
             question = form.save(commit=False)
-            question.created_by = request.user
+            if hasattr(request.user, 'created_by'):
+                question.created_by = request.user
             question.save()
             
             choices = formset.save(commit=False)
@@ -185,15 +367,25 @@ def question_create(request):
                 choice.save()
             
             messages.success(request, 'Question created successfully!')
+            
+            # Redirect to category-specific question list if came from there
+            if question.category:
+                return redirect('question_list_by_category', category_id=question.category.id)
             return redirect('question_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = QuestionForm()
         formset = ChoiceFormSet(prefix='choices')
+        
+        # Set initial category if provided
+        if initial_category:
+            form.fields['category'].initial = initial_category
     
-    return render(request, 'admin/manage_questions/question_create.html', {
+    return render(request, 'admin/manage_questions/question_form.html', {
         'form': form,
         'formset': formset,
-        'categories': Category.objects.all()
+        'title': 'Add New Question'
     })
 
 @login_required
@@ -232,17 +424,57 @@ def question_update(request, question_id):
     return render(request, 'admin/manage_questions/question_update.html', {
         'form': form,
         'formset': formset,
-        'question': question
+        'question': question,
+        'title': 'Update Question'
     })
 
 @login_required
 @admin_or_teacher_required
 def question_delete(request, question_id):
     question = get_object_or_404(Question, id=question_id)
+    category_id = question.category.id  # Store category ID before deletion
+    
     if request.method == 'POST':
         question.delete()
-        return redirect('question_list')
-    return render(request, {'question': question})
+        messages.success(request, 'Question deleted successfully!')
+        return redirect('question_list_by_category', category_id=category_id)
+    
+    return render(request, 'admin/manage_questions/question_confirm_delete.html', {
+        'question': question
+    })
+
+@login_required
+@admin_required
+def update_utbk_coefficients(request, category_id):
+    """Update UTBK difficulty coefficients for a category"""
+    category = get_object_or_404(Category, id=category_id)
+    
+    if category.scoring_method != 'utbk':
+        messages.error(request, f'Category "{category.category_name}" is not using UTBK scoring method.')
+        return redirect('question_list_by_category', category_id=category_id)
+    
+    try:
+        # Update coefficients
+        Test.update_utbk_difficulty_coefficients(category_id)
+        
+        # Count questions updated
+        question_count = category.question_set.count()
+        
+        if question_count > 0:
+            messages.success(
+                request, 
+                f'Successfully updated UTBK difficulty coefficients for {question_count} questions in "{category.category_name}".'
+            )
+        else:
+            messages.warning(
+                request, 
+                f'No questions found in "{category.category_name}" to update coefficients.'
+            )
+            
+    except Exception as e:
+        messages.error(request, f'Error updating UTBK coefficients: {str(e)}')
+    
+    return redirect('question_list_by_category', category_id=category_id)
 
 
 
@@ -251,57 +483,454 @@ def question_delete(request, question_id):
 @login_required
 @students_required
 def tryout_list(request):
+    # Check if there's an ongoing test
+    ongoing_test = Test.objects.filter(
+        student=request.user, 
+        is_submitted=False
+    ).first()
+    
+    if ongoing_test:
+        # Check if test is still valid (not timed out)
+        if ongoing_test.is_time_up():
+            # Auto-submit expired test
+            ongoing_test.is_submitted = True
+            ongoing_test.end_time = timezone.now()
+            ongoing_test.calculate_score()
+            ongoing_test.save()
+        else:
+            # Redirect to ongoing test
+            category = ongoing_test.categories.first()
+            if category:
+                # Get current question index from session or start from 0
+                session_key = f'test_session_{category.id}_{request.user.id}'
+                current_question_index = 0
+                
+                if session_key in request.session:
+                    # Get last answered question index
+                    answered_questions = request.session[session_key].get('answered_questions', {})
+                    if answered_questions:
+                        # Find the next unanswered question
+                        questions = Question.objects.filter(category=category)
+                        for i, question in enumerate(questions):
+                            if question.id not in answered_questions:
+                                current_question_index = i
+                                break
+                        else:
+                            # All questions answered, go to last question
+                            current_question_index = len(questions) - 1 if questions else 0
+                
+                return redirect('take_test', category_id=category.id, question=current_question_index)
+    
+    # Clean up any unsubmitted test sessions for this user
+    # This prevents issues when student starts a new test
+    session_keys_to_remove = []
+    for key in request.session.keys():
+        if key.startswith(f'test_session_') and key.endswith(f'_{request.user.id}'):
+            # Check if there's an associated unsubmitted test
+            session_data = request.session[key]
+            if 'test_id' in session_data:
+                try:
+                    test = Test.objects.get(id=session_data['test_id'])
+                    # If test is submitted or time is up, remove session
+                    if test.is_submitted or test.is_time_up():
+                        session_keys_to_remove.append(key)
+                except Test.DoesNotExist:
+                    # Test doesn't exist, remove session
+                    session_keys_to_remove.append(key)
+    
+    # Remove invalid sessions
+    for key in session_keys_to_remove:
+        if key in request.session:
+            del request.session[key]
+    
     tryout_list = Category.objects.all() 
     return render(request, 'students/tryouts/tryout_list.html', {'tryout': tryout_list})
 
 @login_required
 @students_required
 def take_test(request, category_id, question):
+    from django.utils import timezone
+    
     category = get_object_or_404(Category, id=category_id)
     questions = Question.objects.filter(category=category)
 
     # Get the current question index from the request
     current_question_index = question
 
-    # Initialize a set to track answered questions
-    answered_questions = set(request.session.get('answered_questions', []))
+    # Get or create a unique session key for this test session
+    session_key = f'test_session_{category_id}_{request.user.id}'
+    
+    # Check if there's an existing unsubmitted test for this category and user
+    existing_test = Test.objects.filter(
+        student=request.user,
+        is_submitted=False,
+        categories=category
+    ).first()
+    
+    # Initialize test session if not exists OR if existing test is submitted
+    if session_key not in request.session or existing_test is None:
+        # Clear any old session data
+        if session_key in request.session:
+            del request.session[session_key]
+            
+        # Create a new test instance for this session
+        test = Test.objects.create(
+            student=request.user,
+            start_time=timezone.now(),
+            time_limit=category.time_limit
+        )
+        # Connect test to category
+        test.categories.add(category)
+        
+        request.session[session_key] = {
+            'test_id': test.id,
+            'answered_questions': {},  # question_id: choice_id
+            'category_id': category_id
+        }
+    else:
+        test_session = request.session[session_key]
+        test = get_object_or_404(Test, id=test_session['test_id'])
+        
+        # Ensure test is connected to category
+        if not test.categories.filter(id=category_id).exists():
+            test.categories.add(category)
+        
+        # Set start_time if not set
+        if not test.start_time:
+            test.start_time = timezone.now()
+            test.time_limit = category.time_limit
+            test.save()
+    
+    test_session = request.session[session_key]
+    
+    # Check if time is up or test is already submitted
+    if test.is_time_up() or test.is_submitted:
+        if not test.is_submitted:
+            # Time is up, auto-submit
+            test.is_submitted = True
+            test.end_time = timezone.now()
+            test.calculate_score()
+            test.save()
+            
+        # Clear session
+        if session_key in request.session:
+            del request.session[session_key]
+            
+        return redirect('test_results', test_id=test.id)
+    
+    # Get existing answers for this test
+    existing_answers = Answer.objects.filter(test=test).select_related('question', 'selected_choice')
+    answered_questions_dict = {answer.question.id: answer.selected_choice.id for answer in existing_answers}
+    
+    # Update session with existing answers
+    test_session['answered_questions'] = answered_questions_dict
+    request.session[session_key] = test_session
 
     if request.method == 'POST':
         # Process the answer for the current question
         choice_id = request.POST.get('answer')
+        question_instance = get_object_or_404(Question, id=questions[current_question_index].id)
+        
         if choice_id:
-            test = Test.objects.create(student=request.user)
-            question_instance = get_object_or_404(Question, id=questions[current_question_index].id)
+            # Soal dijawab - simpan jawaban
             choice = get_object_or_404(Choice, id=choice_id)
-            Answer.objects.create(test=test, question=question_instance, selected_choice=choice)
-
-            # Mark the question as answered
-            answered_questions.add(question_instance.id)
-            request.session['answered_questions'] = list(answered_questions)
-
-            # Redirect to the next question
-            next_question_index = current_question_index + 1
-            if next_question_index < len(questions):
-                return redirect('take_test', category_id=category_id, question=next_question_index)
+            
+            # Check if answer already exists for this question
+            existing_answer = Answer.objects.filter(test=test, question=question_instance).first()
+            if existing_answer:
+                # Update existing answer
+                existing_answer.selected_choice = choice
+                existing_answer.save()
             else:
-                # Redirect to results or completion page
-                return redirect('test_results', test_id=test.id)
+                # Create new answer
+                Answer.objects.create(test=test, question=question_instance, selected_choice=choice)
+
+            # Update session
+            test_session['answered_questions'][question_instance.id] = int(choice_id)
+            request.session[session_key] = test_session
+        else:
+            # Soal tidak dijawab - hapus jawaban jika ada
+            existing_answer = Answer.objects.filter(test=test, question=question_instance).first()
+            if existing_answer:
+                existing_answer.delete()
+            
+            # Remove from session if exists
+            if question_instance.id in test_session['answered_questions']:
+                del test_session['answered_questions'][question_instance.id]
+                request.session[session_key] = test_session
+
+        # Redirect to the next question
+        next_question_index = current_question_index + 1
+        if next_question_index < len(questions):
+            return redirect('take_test', category_id=category_id, question=next_question_index)
+        else:
+            # All questions answered, submit the test
+            if not test.is_submitted:
+                test.is_submitted = True
+                test.end_time = timezone.now()
+                test.calculate_score()
+                test.save()
+                
+                # Clear session
+                if session_key in request.session:
+                    del request.session[session_key]
+            
+            return redirect('test_results', test_id=test.id)
 
     # Get the current question
     current_question = questions[current_question_index] if questions else None
+    
+    # Get current question's selected answer if any
+    selected_choice_id = test_session['answered_questions'].get(current_question.id) if current_question else None
 
     return render(request, 'students/tests/take_test.html', {
         'category': category,
         'question': current_question,
         'current_question_index': current_question_index,
         'questions': questions,
-        'answered_questions': answered_questions,
+        'answered_questions': set(test_session['answered_questions'].keys()),
+        'selected_choice_id': selected_choice_id,
+        'test_id': test.id,
+        'remaining_time': test.get_remaining_time(),
+        'time_limit': test.time_limit,
     })
+
+@login_required
+@students_required
+def submit_test(request, test_id):
+    """Submit test manually"""
+    from django.utils import timezone
+    
+    if request.method == 'POST':
+        test = get_object_or_404(Test, id=test_id, student=request.user)
+        
+        if not test.is_submitted:
+            test.is_submitted = True
+            test.end_time = timezone.now()
+            test.calculate_score()
+            test.save()
+            
+            # Clear session - Use correct category_id from test
+            test_category = test.categories.first()
+            if test_category:
+                session_key = f'test_session_{test_category.id}_{request.user.id}'
+                if session_key in request.session:
+                    del request.session[session_key]
+        
+        return redirect('test_results', test_id=test.id)
+    
+    return redirect('home')
 
 @login_required
 @students_required
 def test_results(request, test_id):
     test = get_object_or_404(Test, id=test_id)
-    return render(request, 'students/tests/test_results.html', {'test': test})
+    
+    # Get category from test.categories (many-to-many relationship)
+    category = test.categories.first()
+    
+    # If no category found from test.categories, try to get from first answer (fallback)
+    if not category:
+        first_answer = test.answers.first()
+        category = first_answer.question.category if first_answer else None
+    
+    # Calculate score if not already calculated
+    if test.answers.exists():
+        test.calculate_score()
+    
+    return render(request, 'students/tests/test_results.html', {
+        'test': test,
+        'category': category
+    })
+
+@login_required
+@students_required
+def test_results_detail(request, test_id):
+    """Detailed test results showing each question, correct/incorrect answers, and scoring explanation"""
+    test = get_object_or_404(Test, id=test_id, student=request.user)
+    
+    # Get category from test.categories
+    category = test.categories.first()
+    if not category:
+        first_answer = test.answers.first()
+        category = first_answer.question.category if first_answer else None
+    
+    # Calculate score if not already calculated
+    if test.answers.exists():
+        test.calculate_score()
+    
+    # Get all questions and answers with detailed information
+    answers = test.answers.select_related('question', 'selected_choice').prefetch_related('question__choices')
+    
+    # Create detailed results for each question
+    question_results = []
+    correct_count = 0
+    total_score_earned = 0
+    total_possible_score = 0
+    
+    for answer in answers:
+        question = answer.question
+        selected_choice = answer.selected_choice
+        correct_choice = question.choices.filter(is_correct=True).first()
+        is_correct = selected_choice.is_correct
+        
+        if is_correct:
+            correct_count += 1
+        
+        # Calculate score for this question based on scoring method
+        question_score = 0
+        max_question_score = 0
+        
+        if category and category.scoring_method == 'custom':
+            max_question_score = question.custom_weight
+            if is_correct:
+                question_score = question.custom_weight
+        elif category and category.scoring_method == 'utbk':
+            max_question_score = question.difficulty_coefficient
+            if is_correct:
+                question_score = question.difficulty_coefficient
+        else:  # default scoring
+            max_question_score = 100 / answers.count() if answers.count() > 0 else 0
+            if is_correct:
+                question_score = max_question_score
+        
+        total_score_earned += question_score
+        total_possible_score += max_question_score
+        
+        question_results.append({
+            'question': question,
+            'selected_choice': selected_choice,
+            'correct_choice': correct_choice,
+            'is_correct': is_correct,
+            'question_score': question_score,
+            'max_question_score': max_question_score,
+            'all_choices': question.choices.all()
+        })
+    
+    # Calculate summary statistics
+    total_questions = len(question_results)
+    incorrect_count = total_questions - correct_count
+    accuracy_percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
+    
+    # Get scoring method explanation
+    scoring_explanation = get_scoring_explanation(category) if category else ""
+    
+    context = {
+        'test': test,
+        'category': category,
+        'question_results': question_results,
+        'total_questions': total_questions,
+        'correct_count': correct_count,
+        'incorrect_count': incorrect_count,
+        'accuracy_percentage': accuracy_percentage,
+        'total_score_earned': total_score_earned,
+        'total_possible_score': total_possible_score,
+        'scoring_explanation': scoring_explanation,
+    }
+    
+    return render(request, 'students/tests/test_results_detail.html', context)
+
+def get_scoring_explanation(category):
+    """Get explanation for the scoring method used"""
+    if not category:
+        return "Tidak ada informasi sistem penilaian."
+    
+    if category.scoring_method == 'default':
+        return f"Sistem Penilaian Default: Setiap soal memiliki bobot yang sama. Total skor dihitung dengan membagi 100 poin secara merata untuk semua soal. Jawaban benar = poin penuh, jawaban salah = 0 poin."
+    
+    elif category.scoring_method == 'custom':
+        return f"Sistem Penilaian Custom: Setiap soal memiliki bobot berbeda sesuai tingkat kesulitan atau kepentingan. Total bobot semua soal = 100 poin. Skor akhir adalah jumlah bobot dari soal-soal yang dijawab benar."
+    
+    elif category.scoring_method == 'utbk':
+        return f"Sistem Penilaian UTBK: Menggunakan metode penilaian berbasis tingkat kesulitan soal. Soal yang lebih sulit memiliki bobot lebih tinggi. Koefisien kesulitan dihitung berdasarkan tingkat keberhasilan siswa lain dalam menjawab soal tersebut."
+    
+    return "Sistem penilaian tidak diketahui."
+
+@login_required
+@students_required
+def test_history(request):
+    """Show all completed tests for the student with filtering and pagination"""
+    # Get all tests for the current student
+    tests = Test.objects.filter(
+        student=request.user, 
+        is_submitted=True
+    ).select_related().prefetch_related('categories').order_by('-date_taken')
+    
+    # Filter by category if specified
+    category_filter = request.GET.get('category')
+    if category_filter:
+        tests = tests.filter(categories__id=category_filter)
+    
+    # Filter by date range if specified
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        tests = tests.filter(date_taken__date__gte=date_from)
+    if date_to:
+        tests = tests.filter(date_taken__date__lte=date_to)
+    
+    # Search by category name
+    search = request.GET.get('search')
+    if search:
+        tests = tests.filter(categories__category_name__icontains=search)
+    
+    # Pagination
+    paginator = Paginator(tests, 10)  # Show 10 tests per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get all categories for filter dropdown
+    categories = Category.objects.all().order_by('category_name')
+    
+    # Calculate statistics
+    total_tests = tests.count()
+    if total_tests > 0:
+        avg_score = tests.aggregate(avg_score=Avg('score'))['avg_score'] or 0
+        highest_score = tests.aggregate(max_score=Max('score'))['max_score'] or 0
+        latest_test = tests.first()
+    else:
+        avg_score = 0
+        highest_score = 0
+        latest_test = None
+    
+    context = {
+        'page_obj': page_obj,
+        'categories': categories,
+        'total_tests': total_tests,
+        'avg_score': avg_score,
+        'highest_score': highest_score,
+        'latest_test': latest_test,
+        'current_category': category_filter,
+        'current_search': search,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    
+    return render(request, 'students/tests/test_history.html', context)
+
+@login_required
+@students_required
+def force_end_test(request, test_id):
+    """Force end ongoing test"""
+    if request.method == 'POST':
+        test = get_object_or_404(Test, id=test_id, student=request.user, is_submitted=False)
+        
+        # Submit the test
+        test.is_submitted = True
+        test.end_time = timezone.now()
+        test.calculate_score()
+        test.save()
+        
+        # Clear session
+        test_category = test.categories.first()
+        if test_category:
+            session_key = f'test_session_{test_category.id}_{request.user.id}'
+            if session_key in request.session:
+                del request.session[session_key]
+        
+        messages.success(request, 'Tryout telah diakhiri secara paksa. Skor dihitung berdasarkan jawaban yang telah dikerjakan.')
+        return redirect('test_results', test_id=test.id)
+    
+    return redirect('home')
 
 

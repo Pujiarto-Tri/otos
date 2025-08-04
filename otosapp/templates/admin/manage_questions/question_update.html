@@ -76,16 +76,31 @@
                 </div>
             </div>
 
-            <!-- Category Section -->
+            <!-- Category and Weight Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category</h3>
-                <div>
-                    <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Select Category
-                    </label>
-                    {{ form.category }}
-                    {% if form.category.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.category.errors.0 }}</p>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category & Scoring</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Select Category
+                        </label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.custom_weight %}
+                    <div>
+                        <label for="{{ form.custom_weight.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Custom Weight <span class="text-sm text-gray-500">(for custom scoring)</span>
+                        </label>
+                        {{ form.custom_weight }}
+                        {% if form.custom_weight.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.custom_weight.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ form.custom_weight.help_text }}</p>
+                    </div>
                     {% endif %}
                 </div>
             </div>
