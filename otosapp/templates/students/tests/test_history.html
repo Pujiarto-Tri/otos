@@ -150,18 +150,22 @@
                         <div class="flex items-start space-x-4">
                             <!-- Test Icon & Status -->
                             <div class="flex-shrink-0">
+                                {% with test.categories.first as category %}
                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center
-                                    {% if test.score >= 80 %}bg-green-100 dark:bg-green-900
-                                    {% elif test.score >= 60 %}bg-yellow-100 dark:bg-yellow-900
+                                    {% if test.is_passed %}bg-green-100 dark:bg-green-900
                                     {% else %}bg-red-100 dark:bg-red-900{% endif %}">
                                     <svg class="w-6 h-6 
-                                        {% if test.score >= 80 %}text-green-600 dark:text-green-400
-                                        {% elif test.score >= 60 %}text-yellow-600 dark:text-yellow-400
+                                        {% if test.is_passed %}text-green-600 dark:text-green-400
                                         {% else %}text-red-600 dark:text-red-400{% endif %}" 
                                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        {% if test.is_passed %}
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        {% else %}
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        {% endif %}
                                     </svg>
                                 </div>
+                                {% endwith %}
                             </div>
                             
                             <!-- Test Info -->
@@ -224,12 +228,16 @@
                             <!-- Score Display -->
                             <div class="text-center">
                                 <div class="text-2xl font-bold
-                                    {% if test.score >= 80 %}text-green-600 dark:text-green-400
-                                    {% elif test.score >= 60 %}text-yellow-600 dark:text-yellow-400
+                                    {% if test.is_passed %}text-green-600 dark:text-green-400
                                     {% else %}text-red-600 dark:text-red-400{% endif %}">
                                     {{ test.score|floatformat:1 }}%
                                 </div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">Skor</div>
+                                <div class="text-xs 
+                                    {% if test.is_passed %}text-green-600 dark:text-green-400
+                                    {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                    {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
+                                </div>
                             </div>
                             
                             <!-- Action Buttons -->

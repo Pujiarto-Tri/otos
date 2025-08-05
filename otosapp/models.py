@@ -45,9 +45,58 @@ class Category(models.Model):
     category_name = models.CharField(max_length=200)
     time_limit = models.IntegerField(default=60, help_text="Time limit in minutes (default: 60 minutes)")
     scoring_method = models.CharField(max_length=10, choices=SCORING_METHODS, default='default')
+    passing_score = models.FloatField(default=75.0, help_text="Minimum score required to pass (0-100)")
     
     def __str__(self):
         return self.category_name
+    
+    def get_question_count(self):
+        """Get total number of questions in this category"""
+        return self.question_set.count()
+    
+    def get_difficulty_level(self):
+        """Get difficulty level based on question count and time limit"""
+        question_count = self.get_question_count()
+        if question_count == 0:
+            return "Belum Ada Soal"
+        
+        time_per_question = self.time_limit / question_count
+        
+        if time_per_question >= 3:
+            return "Mudah"
+        elif time_per_question >= 2:
+            return "Menengah"
+        else:
+            return "Sulit"
+    
+    def get_difficulty_color(self):
+        """Get color class for difficulty badge"""
+        difficulty = self.get_difficulty_level()
+        if difficulty == "Mudah":
+            return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+        elif difficulty == "Menengah":
+            return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+        elif difficulty == "Sulit":
+            return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+        else:
+            return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+    
+    def get_passing_score(self):
+        """Get passing score for this category"""
+        return f"{self.passing_score}%"
+    
+    def is_passing_score(self, score):
+        """Check if the given score meets the passing requirement"""
+        return score >= self.passing_score
+    
+    def get_scoring_method_display_name(self):
+        """Get user-friendly scoring method name"""
+        method_names = {
+            'default': 'Penilaian Standar',
+            'custom': 'Penilaian Berbobot',
+            'utbk': 'Sistem UTBK'
+        }
+        return method_names.get(self.scoring_method, 'Penilaian Standar')
     
     def get_total_custom_points(self):
         """Calculate total points from custom question weights"""
@@ -203,6 +252,23 @@ class Test(models.Model):
         elapsed_time = timezone.now() - self.start_time
         remaining_seconds = (self.time_limit * 60) - elapsed_time.total_seconds()
         return max(0, int(remaining_seconds))
+    
+    def is_passed(self):
+        """Check if test score meets the category's passing requirement"""
+        answers = self.answers.all()
+        if not answers.exists():
+            return False
+        
+        # Get the category from the first answer (all questions in a test should be from same category)
+        category = answers.first().question.category
+        return category.is_passing_score(self.score)
+    
+    def get_pass_status(self):
+        """Get pass/fail status with color for display"""
+        if self.is_passed():
+            return {'status': 'LULUS', 'color': 'green'}
+        else:
+            return {'status': 'TIDAK LULUS', 'color': 'red'}
     
     @classmethod
     def update_utbk_difficulty_coefficients(cls, category_id):
