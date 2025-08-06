@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pesan Baru{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 rounded-t-lg">
+                <h1 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Kirim Pesan Baru
+                </h1>
+            </div>
+
+            <!-- Form -->
+            <div class="p-6">
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Title -->
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Judul Pesan <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" required maxlength="200"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                               placeholder="Masukkan judul pesan yang jelas dan deskriptif">
+                    </div>
+
+                    <!-- Thread Type -->
+                    <div>
+                        <label for="thread_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tipe Pertanyaan <span class="text-red-500">*</span>
+                        </label>
+                        <select id="thread_type" name="thread_type" required onchange="toggleCategoryField()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            {% for value, label in thread_type_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Pilih jenis pertanyaan untuk membantu mengarahkan pesan ke pihak yang tepat
+                        </p>
+                    </div>
+
+                    <!-- Category (conditional) -->
+                    <div id="category_field" style="display: none;">
+                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Kategori Materi
+                        </label>
+                        <select id="category" name="category"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Pilih kategori materi (opsional)</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.category_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Priority -->
+                    <div>
+                        <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tingkat Prioritas
+                        </label>
+                        <select id="priority" name="priority"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            {% for value, label in priority_choices %}
+                                <option value="{{ value }}" {% if value == 'normal' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Content -->
+                    <div>
+                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Isi Pesan <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="content" name="content" required rows="8"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder="Tuliskan pertanyaan atau pesan Anda secara detail..."></textarea>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Jelaskan pertanyaan atau masalah Anda sejelas mungkin untuk mendapatkan bantuan yang tepat
+                        </p>
+                    </div>
+
+                    <!-- Attachment -->
+                    <div>
+                        <label for="attachment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Lampiran (Opsional)
+                        </label>
+                        <input type="file" id="attachment" name="attachment"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                               accept="image/*,.pdf,.doc,.docx,.txt">
+                        <p class="mt-1 text-sm text-gray-500">
+                            Maksimal 10MB. Format yang didukung: gambar, PDF, Word, txt
+                        </p>
+                    </div>
+
+                    <!-- Preview Card -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border-l-4 border-blue-500">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">💡 Tips untuk pesan yang efektif:</h4>
+                        <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                            <li>• <strong>Pertanyaan Materi:</strong> Sebutkan topik/bab yang ditanyakan dan jelaskan bagian yang tidak dipahami</li>
+                            <li>• <strong>Masalah Teknis:</strong> Jelaskan langkah-langkah yang sudah dicoba dan screenshot error (jika ada)</li>
+                            <li>• <strong>Pelaporan:</strong> Berikan detail waktu, tempat, dan kronologi kejadian</li>
+                            <li>• Gunakan bahasa yang sopan dan jelas</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <a href="{% url 'message_inbox' %}" 
+                           class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                            ← Kembali
+                        </a>
+                        
+                        <button type="submit" 
+                                class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            Kirim Pesan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCategoryField() {
+    const threadType = document.getElementById('thread_type').value;
+    const categoryField = document.getElementById('category_field');
+    
+    if (threadType === 'academic') {
+        categoryField.style.display = 'block';
+    } else {
+        categoryField.style.display = 'none';
+        document.getElementById('category').value = '';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCategoryField();
+});
+
+// File size validation
+document.getElementById('attachment').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.size > 10 * 1024 * 1024) { // 10MB
+        alert('Ukuran file terlalu besar. Maksimal 10MB.');
+        e.target.value = '';
+    }
+});
+</script>
+{% endblock %}

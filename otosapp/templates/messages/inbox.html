@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pesan{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    Kotak Pesan
+                </h1>
+                {% if user.role.role_name == 'Student' %}
+                <a href="{% url 'create_message_thread' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition duration-200">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Pesan Baru
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <form method="GET" class="flex flex-wrap gap-4 items-center">
+                <!-- Search -->
+                <div class="flex-1 min-w-64">
+                    <input type="text" name="search" value="{{ current_search }}" 
+                           placeholder="Cari pesan..." 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                
+                <!-- Status Filter -->
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">Semua Status</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Type Filter -->
+                <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="">Semua Tipe</option>
+                    {% for value, label in thread_type_choices %}
+                        <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Filter
+                </button>
+                
+                {% if current_search or current_status or current_type %}
+                <a href="{% url 'message_inbox' %}" class="text-gray-500 hover:text-gray-700 px-2 py-2">
+                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Reset
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Messages List -->
+        <div class="p-6">
+            {% if threads %}
+                <div class="space-y-4">
+                    {% for thread in threads %}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition duration-200">
+                        <a href="{% url 'message_thread' thread.id %}" class="block p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ thread.title }}</h3>
+                                        
+                                        <!-- Status Badge -->
+                                        {% if thread.status == 'open' %}
+                                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">Terbuka</span>
+                                        {% elif thread.status == 'pending' %}
+                                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">Menunggu</span>
+                                        {% elif thread.status == 'resolved' %}
+                                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">Selesai</span>
+                                        {% else %}
+                                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded-full">Ditutup</span>
+                                        {% endif %}
+                                        
+                                        <!-- Priority Badge -->
+                                        {% if thread.priority == 'urgent' %}
+                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Mendesak</span>
+                                        {% elif thread.priority == 'high' %}
+                                            <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded-full">Tinggi</span>
+                                        {% endif %}
+                                        
+                                        <!-- Type Badge -->
+                                        {% if thread.thread_type == 'academic' %}
+                                            <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">Materi</span>
+                                        {% elif thread.thread_type == 'technical' %}
+                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Teknis</span>
+                                        {% elif thread.thread_type == 'report' %}
+                                            <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded-full">Laporan</span>
+                                        {% endif %}
+                                        
+                                        <!-- Unread Count -->
+                                        {% if thread.unread_count > 0 %}
+                                            <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ thread.unread_count }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                        {% if user.role.role_name == 'Student' %}
+                                            {% if thread.teacher_or_admin %}
+                                                Ditangani oleh: {{ thread.teacher_or_admin.username }}
+                                            {% else %}
+                                                Belum ditangani
+                                            {% endif %}
+                                        {% else %}
+                                            Dari: {{ thread.student.username }} ({{ thread.student.email }})
+                                        {% endif %}
+                                        
+                                        {% if thread.category %}
+                                            | Kategori: {{ thread.category.category_name }}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% with last_message=thread.get_last_message %}
+                                    {% if last_message %}
+                                        <p class="text-gray-700 dark:text-gray-300 text-sm">
+                                            {{ last_message.content|truncatechars:150 }}
+                                        </p>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                                
+                                <div class="text-right text-sm text-gray-500 dark:text-gray-400 ml-4">
+                                    <div>{{ thread.last_activity|date:"d M Y" }}</div>
+                                    <div>{{ thread.last_activity|time:"H:i" }}</div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if threads.has_other_pages %}
+                <div class="mt-6 flex justify-center">
+                    <nav class="flex space-x-2">
+                        {% if threads.has_previous %}
+                            <a href="?page={{ threads.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}" 
+                               class="px-3 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md">
+                                ← Sebelumnya
+                            </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-2 text-gray-700 border border-gray-300 rounded-md bg-gray-50">
+                            {{ threads.number }} dari {{ threads.paginator.num_pages }}
+                        </span>
+                        
+                        {% if threads.has_next %}
+                            <a href="?page={{ threads.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}" 
+                               class="px-3 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md">
+                                Selanjutnya →
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+                
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Tidak ada pesan</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">
+                        {% if current_search or current_status or current_type %}
+                            Tidak ada pesan yang sesuai dengan filter Anda.
+                        {% else %}
+                            {% if user.role.role_name == 'Student' %}
+                                Belum ada pesan. Mulai berkomunikasi dengan guru atau admin!
+                            {% else %}
+                                Belum ada pesan dari siswa yang perlu ditangani.
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                    {% if user.role.role_name == 'Student' %}
+                    <a href="{% url 'create_message_thread' %}" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                        Kirim Pesan Pertama
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh unread count every 30 seconds
+setInterval(function() {
+    fetch('{% url "message_api_unread_count" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update badge in navbar if exists
+            const badge = document.querySelector('#message-unread-badge');
+            if (badge) {
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => console.log('Error fetching unread count:', error));
+}, 30000);
+</script>
+{% endblock %}

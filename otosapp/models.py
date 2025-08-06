@@ -387,3 +387,122 @@ def question_pre_delete(sender, instance, **kwargs):
 def choice_pre_delete(sender, instance, **kwargs):
     """Handle file deletion before the choice is deleted"""
     instance.delete_media_files()
+
+
+class MessageThread(models.Model):
+    """Model untuk thread pesan antara siswa dan guru/admin"""
+    THREAD_TYPES = [
+        ('academic', 'Pertanyaan Materi'),
+        ('technical', 'Masalah Teknis/Aplikasi'),
+        ('report', 'Pelaporan Masalah'),
+        ('general', 'Umum'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('open', 'Terbuka'),
+        ('pending', 'Menunggu Respons'),
+        ('resolved', 'Selesai'),
+        ('closed', 'Ditutup'),
+    ]
+    
+    title = models.CharField(max_length=200, help_text="Judul thread pesan")
+    thread_type = models.CharField(max_length=20, choices=THREAD_TYPES, default='general')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    
+    # Participants
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_threads')
+    teacher_or_admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                       related_name='handled_threads', 
+                                       help_text="Guru atau admin yang menangani")
+    
+    # Optional: Category untuk pertanyaan materi
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True,
+                               help_text="Kategori materi (untuk pertanyaan akademik)")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    
+    # Priority level
+    priority = models.CharField(max_length=10, choices=[
+        ('low', 'Rendah'),
+        ('normal', 'Normal'),
+        ('high', 'Tinggi'),
+        ('urgent', 'Mendesak')
+    ], default='normal')
+    
+    class Meta:
+        ordering = ['-last_activity']
+        verbose_name = "Thread Pesan"
+        verbose_name_plural = "Thread Pesan"
+    
+    def __str__(self):
+        return f"{self.title} - {self.student.username}"
+    
+    def get_last_message(self):
+        """Ambil pesan terakhir dalam thread"""
+        return self.messages.last()
+    
+    def get_unread_count_for_user(self, user):
+        """Hitung pesan yang belum dibaca oleh user tertentu"""
+        return self.messages.filter(is_read=False).exclude(sender=user).count()
+    
+    def mark_as_read_for_user(self, user):
+        """Tandai semua pesan sebagai sudah dibaca untuk user tertentu"""
+        self.messages.exclude(sender=user).update(is_read=True)
+    
+    def get_participants(self):
+        """Ambil semua participant dalam thread"""
+        participants = [self.student]
+        if self.teacher_or_admin:
+            participants.append(self.teacher_or_admin)
+        return participants
+
+
+class Message(models.Model):
+    """Model untuk pesan individual dalam thread"""
+    thread = models.ForeignKey(MessageThread, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField(help_text="Isi pesan")
+    
+    # Optional attachment
+    attachment = models.FileField(upload_to='message_attachments/', null=True, blank=True,
+                                help_text="File lampiran (opsional)")
+    
+    # Status
+    is_read = models.BooleanField(default=False)
+    is_edited = models.BooleanField(default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Pesan"
+        verbose_name_plural = "Pesan"
+    
+    def __str__(self):
+        return f"Pesan dari {self.sender.username} - {self.created_at.strftime('%d/%m/%Y %H:%M')}"
+    
+    def save(self, *args, **kwargs):
+        # Update last activity di thread ketika ada pesan baru
+        if not self.pk:  # Only for new messages
+            super().save(*args, **kwargs)
+            self.thread.last_activity = self.created_at
+            self.thread.save()
+        else:
+            super().save(*args, **kwargs)
+    
+    def delete_attachment(self):
+        """Hapus file attachment jika ada"""
+        if self.attachment:
+            if os.path.isfile(self.attachment.path):
+                os.remove(self.attachment.path)
+
+
+@receiver(pre_delete, sender=Message)
+def message_pre_delete(sender, instance, **kwargs):
+    """Handle file deletion sebelum message dihapus"""
+    instance.delete_attachment()

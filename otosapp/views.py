@@ -5,12 +5,12 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet
 from .decorators import admin_required, admin_or_teacher_required, students_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Count, Avg, Max
+from django.db.models import Count, Avg, Max, Q
 import json
 
 
@@ -869,33 +869,33 @@ def test_history(request):
         is_submitted=True
     ).select_related().prefetch_related('categories').order_by('-date_taken')
     
-    # Filter by category if specified
-    category_filter = request.GET.get('category')
-    if category_filter:
-        tests = tests.filter(categories__id=category_filter)
+    # Get filter parameters
+    category_filter = request.GET.get('category', '').strip()
+    search = request.GET.get('search', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
     
-    # Filter by date range if specified
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    if date_from:
-        tests = tests.filter(date_taken__date__gte=date_from)
-    if date_to:
-        tests = tests.filter(date_taken__date__lte=date_to)
+    # Apply filters
+    if category_filter and category_filter.isdigit():
+        tests = tests.filter(categories__id=int(category_filter)).distinct()
     
-    # Search by category name
-    search = request.GET.get('search')
     if search:
-        tests = tests.filter(categories__category_name__icontains=search)
+        # Search in both category name and test-related fields
+        tests = tests.filter(categories__category_name__icontains=search).distinct()
     
-    # Pagination
-    paginator = Paginator(tests, 10)  # Show 10 tests per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    if date_from:
+        try:
+            tests = tests.filter(date_taken__date__gte=date_from)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, skip filter
     
-    # Get all categories for filter dropdown
-    categories = Category.objects.all().order_by('category_name')
+    if date_to:
+        try:
+            tests = tests.filter(date_taken__date__lte=date_to)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, skip filter
     
-    # Calculate statistics
+    # Calculate statistics before pagination (for the filtered results)
     total_tests = tests.count()
     if total_tests > 0:
         avg_score = tests.aggregate(avg_score=Avg('score'))['avg_score'] or 0
@@ -906,6 +906,34 @@ def test_history(request):
         highest_score = 0
         latest_test = None
     
+    # Pagination
+    paginator = Paginator(tests, 10)  # Show 10 tests per page
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    # Get all categories for filter dropdown (only categories that have tests)
+    categories = Category.objects.filter(
+        id__in=Test.objects.filter(
+            student=request.user, 
+            is_submitted=True
+        ).values_list('categories__id', flat=True)
+    ).distinct().order_by('category_name')
+    
+    # Get selected category name for display
+    selected_category_name = None
+    if category_filter and category_filter.isdigit():
+        try:
+            selected_category = Category.objects.get(id=int(category_filter))
+            selected_category_name = selected_category.category_name
+        except Category.DoesNotExist:
+            pass
+    
     context = {
         'page_obj': page_obj,
         'categories': categories,
@@ -914,6 +942,7 @@ def test_history(request):
         'highest_score': highest_score,
         'latest_test': latest_test,
         'current_category': category_filter,
+        'current_category_name': selected_category_name,
         'current_search': search,
         'date_from': date_from,
         'date_to': date_to,
@@ -1031,4 +1060,253 @@ def settings_view(request):
     }
     
     return render(request, 'settings.html', context)
+
+
+# ======================= MESSAGING SYSTEM VIEWS =======================
+
+@login_required
+def message_inbox(request):
+    """View untuk melihat daftar thread pesan"""
+    user = request.user
+    
+    # Filter thread berdasarkan role user
+    if user.role and user.role.role_name == 'Student':
+        # Siswa: lihat thread yang mereka buat
+        threads = MessageThread.objects.filter(student=user)
+    else:
+        # Guru/Admin: lihat thread yang ditugaskan ke mereka atau belum ditugaskan
+        threads = MessageThread.objects.filter(
+            Q(teacher_or_admin=user) | Q(teacher_or_admin=None)
+        )
+    
+    # Filter berdasarkan status dan tipe jika ada
+    status_filter = request.GET.get('status', '')
+    type_filter = request.GET.get('type', '')
+    search_query = request.GET.get('search', '')
+    
+    if status_filter:
+        threads = threads.filter(status=status_filter)
+    
+    if type_filter:
+        threads = threads.filter(thread_type=type_filter)
+    
+    if search_query:
+        threads = threads.filter(
+            Q(title__icontains=search_query) |
+            Q(messages__content__icontains=search_query)
+        ).distinct()
+    
+    # Urutkan berdasarkan aktivitas terakhir
+    threads = threads.order_by('-last_activity')
+    
+    # Pagination
+    paginator = Paginator(threads, 10)
+    page = request.GET.get('page')
+    try:
+        threads_page = paginator.page(page)
+    except PageNotAnInteger:
+        threads_page = paginator.page(1)
+    except EmptyPage:
+        threads_page = paginator.page(paginator.num_pages)
+    
+    # Add unread count for each thread
+    for thread in threads_page:
+        thread.unread_count = thread.get_unread_count_for_user(user)
+    
+    # Data untuk filter options
+    context = {
+        'threads': threads_page,
+        'status_choices': MessageThread.STATUS_CHOICES,
+        'thread_type_choices': MessageThread.THREAD_TYPES,
+        'current_status': status_filter,
+        'current_type': type_filter,
+        'current_search': search_query,
+    }
+    
+    return render(request, 'messages/inbox.html', context)
+
+
+@login_required
+def create_message_thread(request):
+    """View untuk membuat thread pesan baru (khusus siswa)"""
+    if not (request.user.role and request.user.role.role_name == 'Student'):
+        messages.error(request, 'Hanya siswa yang dapat membuat thread pesan baru.')
+        return redirect('message_inbox')
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        thread_type = request.POST.get('thread_type', 'general')
+        category_id = request.POST.get('category', None)
+        priority = request.POST.get('priority', 'normal')
+        content = request.POST.get('content', '').strip()
+        attachment = request.FILES.get('attachment', None)
+        
+        # Validasi
+        if not title or not content:
+            messages.error(request, 'Judul dan isi pesan harus diisi.')
+        else:
+            try:
+                with transaction.atomic():
+                    # Buat thread baru
+                    thread = MessageThread.objects.create(
+                        title=title,
+                        thread_type=thread_type,
+                        student=request.user,
+                        priority=priority,
+                        category_id=category_id if category_id else None
+                    )
+                    
+                    # Buat pesan pertama
+                    Message.objects.create(
+                        thread=thread,
+                        sender=request.user,
+                        content=content,
+                        attachment=attachment
+                    )
+                    
+                    messages.success(request, 'Pesan berhasil dikirim!')
+                    return redirect('message_thread', thread_id=thread.id)
+                    
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+    
+    # Data untuk form
+    categories = Category.objects.all().order_by('category_name')
+    context = {
+        'categories': categories,
+        'thread_type_choices': MessageThread.THREAD_TYPES,
+        'priority_choices': [
+            ('low', 'Rendah'),
+            ('normal', 'Normal'),
+            ('high', 'Tinggi'),
+            ('urgent', 'Mendesak')
+        ]
+    }
+    
+    return render(request, 'messages/create_thread.html', context)
+
+
+@login_required
+def message_thread(request, thread_id):
+    """View untuk melihat detail thread dan pesan-pesannya"""
+    thread = get_object_or_404(MessageThread, id=thread_id)
+    
+    # Cek akses user
+    user = request.user
+    has_access = False
+    
+    if user.role and user.role.role_name == 'Student':
+        # Siswa hanya bisa akses thread mereka sendiri
+        has_access = (thread.student == user)
+    else:
+        # Guru/Admin bisa akses thread yang ditugaskan atau tidak ada yang menangani
+        has_access = (thread.teacher_or_admin == user or thread.teacher_or_admin is None)
+    
+    if not has_access:
+        messages.error(request, 'Anda tidak memiliki akses ke thread ini.')
+        return redirect('message_inbox')
+    
+    # Assign guru/admin jika belum ada yang menangani
+    if not thread.teacher_or_admin and user.role and user.role.role_name != 'Student':
+        thread.teacher_or_admin = user
+        thread.save()
+    
+    # Handle POST request (mengirim balasan)
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        attachment = request.FILES.get('attachment', None)
+        action = request.POST.get('action', 'reply')
+        
+        if action == 'reply' and content:
+            try:
+                Message.objects.create(
+                    thread=thread,
+                    sender=user,
+                    content=content,
+                    attachment=attachment
+                )
+                
+                # Update status thread jika perlu
+                if thread.status == 'closed':
+                    thread.status = 'open'
+                    thread.save()
+                
+                messages.success(request, 'Balasan berhasil dikirim!')
+                return redirect('message_thread', thread_id=thread.id)
+                
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan: {str(e)}')
+        
+        elif action == 'update_status':
+            new_status = request.POST.get('status')
+            if new_status in dict(MessageThread.STATUS_CHOICES):
+                thread.status = new_status
+                thread.save()
+                messages.success(request, f'Status thread diubah menjadi {dict(MessageThread.STATUS_CHOICES)[new_status]}')
+                return redirect('message_thread', thread_id=thread.id)
+    
+    # Tandai pesan sebagai sudah dibaca
+    thread.mark_as_read_for_user(user)
+    
+    # Ambil semua pesan dalam thread
+    messages_list = thread.messages.all().order_by('created_at')
+    
+    context = {
+        'thread': thread,
+        'messages_list': messages_list,
+        'status_choices': MessageThread.STATUS_CHOICES,
+        'can_manage': user.role and user.role.role_name != 'Student',
+    }
+    
+    return render(request, 'messages/thread_detail.html', context)
+
+
+@login_required
+@admin_or_teacher_required
+def assign_thread(request, thread_id):
+    """View untuk assign thread ke guru/admin tertentu"""
+    thread = get_object_or_404(MessageThread, id=thread_id)
+    
+    if request.method == 'POST':
+        teacher_id = request.POST.get('teacher_id')
+        
+        if teacher_id:
+            try:
+                teacher = User.objects.get(id=teacher_id)
+                if teacher.role and teacher.role.role_name in ['Teacher', 'Admin']:
+                    thread.teacher_or_admin = teacher
+                    thread.save()
+                    messages.success(request, f'Thread berhasil di-assign ke {teacher.username}')
+                else:
+                    messages.error(request, 'User yang dipilih bukan guru atau admin.')
+            except User.DoesNotExist:
+                messages.error(request, 'User tidak ditemukan.')
+        else:
+            # Unassign thread
+            thread.teacher_or_admin = None
+            thread.save()
+            messages.success(request, 'Thread berhasil di-unassign.')
+    
+    return redirect('message_thread', thread_id=thread.id)
+
+
+@login_required
+def message_api_unread_count(request):
+    """API untuk mendapatkan jumlah pesan yang belum dibaca"""
+    user = request.user
+    
+    if user.role and user.role.role_name == 'Student':
+        # Siswa: hitung pesan belum dibaca dari guru/admin
+        unread_count = Message.objects.filter(
+            thread__student=user,
+            is_read=False
+        ).exclude(sender=user).count()
+    else:
+        # Guru/Admin: hitung pesan belum dibaca dari siswa
+        unread_count = Message.objects.filter(
+            Q(thread__teacher_or_admin=user) | Q(thread__teacher_or_admin=None),
+            is_read=False
+        ).exclude(sender=user).count()
+    
+    return JsonResponse({'unread_count': unread_count})
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import User, Role, Category, Question, Choice, Test, Answer
+from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message
 
 class CustomUserAdmin(UserAdmin):
     model = User
@@ -52,3 +52,58 @@ admin.site.register(Question, QuestionAdmin)
 admin.site.register(Choice)
 admin.site.register(Test)
 admin.site.register(Answer)
+
+
+class MessageInline(admin.TabularInline):
+    model = Message
+    extra = 0
+    readonly_fields = ('sender', 'created_at', 'is_read')
+    fields = ('sender', 'content', 'is_read', 'created_at')
+
+
+class MessageThreadAdmin(admin.ModelAdmin):
+    list_display = ('title', 'student', 'teacher_or_admin', 'thread_type', 'status', 'priority', 'last_activity')
+    list_filter = ('thread_type', 'status', 'priority', 'created_at')
+    search_fields = ('title', 'student__username', 'student__email', 'teacher_or_admin__username')
+    readonly_fields = ('created_at', 'updated_at', 'last_activity')
+    date_hierarchy = 'created_at'
+    inlines = [MessageInline]
+    
+    fieldsets = (
+        ('Informasi Utama', {
+            'fields': ('title', 'thread_type', 'status', 'priority')
+        }),
+        ('Peserta', {
+            'fields': ('student', 'teacher_or_admin', 'category')
+        }),
+        ('Timestamp', {
+            'fields': ('created_at', 'updated_at', 'last_activity'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('student', 'teacher_or_admin', 'category')
+
+
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('thread_title', 'sender', 'content_preview', 'is_read', 'created_at')
+    list_filter = ('is_read', 'created_at', 'thread__thread_type')
+    search_fields = ('content', 'sender__username', 'thread__title')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    
+    def thread_title(self, obj):
+        return obj.thread.title
+    thread_title.short_description = 'Thread'
+    
+    def content_preview(self, obj):
+        return obj.content[:100] + "..." if len(obj.content) > 100 else obj.content
+    content_preview.short_description = 'Preview Pesan'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('thread', 'sender')
+
+
+admin.site.register(MessageThread, MessageThreadAdmin)
+admin.site.register(Message, MessageAdmin)

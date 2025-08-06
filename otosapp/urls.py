@@ -35,4 +35,11 @@ urlpatterns = [
     path('students/tests/<int:test_id>/results/', views.test_results, name='test_results'),
     path('students/tests/<int:test_id>/results/detail/', views.test_results_detail, name='test_results_detail'),
     path('students/tests/history/', views.test_history, name='test_history'),
+    
+    # Messaging System URLs
+    path('messages/', views.message_inbox, name='message_inbox'),
+    path('messages/create/', views.create_message_thread, name='create_message_thread'),
+    path('messages/thread/<int:thread_id>/', views.message_thread, name='message_thread'),
+    path('messages/thread/<int:thread_id>/assign/', views.assign_thread, name='assign_thread'),
+    path('api/messages/unread-count/', views.message_api_unread_count, name='message_api_unread_count'),
 ]

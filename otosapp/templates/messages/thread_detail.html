@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ thread.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h1 class="text-2xl font-bold text-white mb-2">{{ thread.title }}</h1>
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Status -->
+                            {% if thread.status == 'open' %}
+                                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">Terbuka</span>
+                            {% elif thread.status == 'pending' %}
+                                <span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">Menunggu Respons</span>
+                            {% elif thread.status == 'resolved' %}
+                                <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">Selesai</span>
+                            {% else %}
+                                <span class="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">Ditutup</span>
+                            {% endif %}
+                            
+                            <!-- Priority -->
+                            {% if thread.priority == 'urgent' %}
+                                <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">Mendesak</span>
+                            {% elif thread.priority == 'high' %}
+                                <span class="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">Tinggi</span>
+                            {% elif thread.priority == 'low' %}
+                                <span class="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">Rendah</span>
+                            {% endif %}
+                            
+                            <!-- Type -->
+                            {% if thread.thread_type == 'academic' %}
+                                <span class="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full">Pertanyaan Materi</span>
+                            {% elif thread.thread_type == 'technical' %}
+                                <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">Masalah Teknis</span>
+                            {% elif thread.thread_type == 'report' %}
+                                <span class="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">Pelaporan</span>
+                            {% else %}
+                                <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">Umum</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        {% if can_manage %}
+                        <button onclick="toggleStatusModal()" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition duration-200">
+                            Ubah Status
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'message_inbox' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition duration-200">
+                            ← Kembali
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thread Info -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Penanya:</span>
+                        <span class="text-gray-600 dark:text-gray-400">{{ thread.student.username }} ({{ thread.student.email }})</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Ditangani oleh:</span>
+                        <span class="text-gray-600 dark:text-gray-400">
+                            {% if thread.teacher_or_admin %}
+                                {{ thread.teacher_or_admin.username }}
+                            {% else %}
+                                Belum ditugaskan
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Dibuat:</span>
+                        <span class="text-gray-600 dark:text-gray-400">{{ thread.created_at|date:"d M Y H:i" }}</span>
+                    </div>
+                    {% if thread.category %}
+                    <div class="md:col-span-3">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">Kategori Materi:</span>
+                        <span class="text-gray-600 dark:text-gray-400">{{ thread.category.category_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="space-y-4 mb-6">
+            {% for message in messages_list %}
+            <div class="flex {% if message.sender == user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-2xl {% if message.sender == user %}bg-blue-500 text-white{% else %}bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700{% endif %} rounded-lg shadow-md">
+                    <!-- Message Header -->
+                    <div class="{% if message.sender == user %}bg-blue-600{% else %}bg-gray-50 dark:bg-gray-700{% endif %} px-4 py-2 rounded-t-lg border-b {% if message.sender == user %}border-blue-400{% else %}border-gray-200 dark:border-gray-600{% endif %}">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium {% if message.sender == user %}text-white{% else %}text-gray-900 dark:text-white{% endif %}">
+                                    {{ message.sender.username }}
+                                </span>
+                                {% if message.sender.role %}
+                                <span class="text-xs {% if message.sender == user %}text-blue-200{% else %}text-gray-500 dark:text-gray-400{% endif %} bg-opacity-50 px-2 py-1 rounded">
+                                    {{ message.sender.role.role_name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs {% if message.sender == user %}text-blue-200{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                {{ message.created_at|date:"d M Y H:i" }}
+                                {% if message.is_edited %}
+                                    <span class="ml-1">(diedit)</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Content -->
+                    <div class="p-4">
+                        <div class="{% if message.sender == user %}text-white{% else %}text-gray-700 dark:text-gray-300{% endif %} whitespace-pre-line">
+                            {{ message.content }}
+                        </div>
+                        
+                        <!-- Attachment -->
+                        {% if message.attachment %}
+                        <div class="mt-3 pt-3 border-t {% if message.sender == user %}border-blue-400{% else %}border-gray-200 dark:border-gray-600{% endif %}">
+                            <a href="{{ message.attachment.url }}" target="_blank" 
+                               class="inline-flex items-center gap-2 {% if message.sender == user %}text-blue-200 hover:text-white{% else %}text-blue-600 hover:text-blue-800{% endif %} text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                </svg>
+                                {{ message.attachment.name|truncatechars:30 }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Reply Form -->
+        {% if thread.status != 'closed' %}
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+            <div class="bg-gray-50 dark:bg-gray-700 px-6 py-3 rounded-t-lg border-b border-gray-200 dark:border-gray-600">
+                <h3 class="font-medium text-gray-900 dark:text-white">Kirim Balasan</h3>
+            </div>
+            
+            <div class="p-6">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reply">
+                    
+                    <div class="mb-4">
+                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Isi Balasan <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="content" name="content" required rows="4"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder="Tulis balasan Anda..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="attachment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Lampiran (Opsional)
+                        </label>
+                        <input type="file" id="attachment" name="attachment"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                               accept="image/*,.pdf,.doc,.docx,.txt">
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            Kirim Balasan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 text-center">
+            <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Thread Ditutup</h3>
+            <p class="text-gray-600 dark:text-gray-400">Thread ini telah ditutup dan tidak dapat menerima balasan baru.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+{% if can_manage %}
+<div id="statusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Ubah Status Thread</h3>
+            
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_status">
+                
+                <div class="mb-4">
+                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Status Baru
+                    </label>
+                    <select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if thread.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="toggleStatusModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+{% if can_manage %}
+function toggleStatusModal() {
+    const modal = document.getElementById('statusModal');
+    modal.classList.toggle('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('statusModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        toggleStatusModal();
+    }
+});
+{% endif %}
+
+// Auto-scroll to bottom on page load
+document.addEventListener('DOMContentLoaded', function() {
+    window.scrollTo(0, document.body.scrollHeight);
+});
+
+// File size validation
+document.getElementById('attachment').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.size > 10 * 1024 * 1024) { // 10MB
+        alert('Ukuran file terlalu besar. Maksimal 10MB.');
+        e.target.value = '';
+    }
+});
+</script>
+{% endblock %}
