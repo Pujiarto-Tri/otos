@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
 from .models import User, Role, Category, Question, Choice
 from django_ckeditor_5.widgets import CKEditor5Widget
@@ -22,6 +22,77 @@ class CustomUserCreationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            })
+
+class ProfilePictureForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['profile_picture']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['profile_picture'].widget.attrs.update({
+            'accept': 'image/*',
+            'class': 'hidden'
+        })
+        # Add file size validation help text
+        self.fields['profile_picture'].help_text = 'Maksimal ukuran file 250KB. File akan dikompres otomatis jika terlalu besar.'
+    
+    def clean_profile_picture(self):
+        from .utils import validate_image_size
+        
+        profile_picture = self.cleaned_data.get('profile_picture')
+        
+        if profile_picture:
+            # Validate file type
+            if not profile_picture.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                raise forms.ValidationError('Format file tidak didukung. Gunakan format: PNG, JPG, JPEG, GIF, BMP, atau WebP.')
+            
+            # Check file size (will raise ValidationError if too large)
+            try:
+                validate_image_size(profile_picture)
+            except Exception:
+                # If validation fails, we'll compress it in the save method
+                pass
+                
+        return profile_picture
+    
+    def save(self, commit=True):
+        from .utils import compress_image
+        
+        instance = super().save(commit=False)
+        
+        # Get the uploaded file
+        profile_picture = self.cleaned_data.get('profile_picture')
+        
+        if profile_picture:
+            # Always compress the image to ensure optimal size and quality
+            compressed_image = compress_image(profile_picture)
+            instance.profile_picture = compressed_image
+        
+        if commit:
+            instance.save()
+        
+        return instance
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            })
     
 class UserUpdateForm(forms.ModelForm):
     email = forms.EmailField(

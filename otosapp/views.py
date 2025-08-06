@@ -631,6 +631,9 @@ def take_test(request, category_id, question):
         choice_id = request.POST.get('answer')
         question_instance = get_object_or_404(Question, id=questions[current_question_index].id)
         
+        # Check if this is an AJAX request (for saving answers without navigation)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if choice_id:
             # Soal dijawab - simpan jawaban
             choice = get_object_or_404(Choice, id=choice_id)
@@ -648,6 +651,10 @@ def take_test(request, category_id, question):
             # Update session
             test_session['answered_questions'][question_instance.id] = int(choice_id)
             request.session[session_key] = test_session
+            
+            # If this is an AJAX request, return JSON response
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': 'Answer saved'})
         else:
             # Soal tidak dijawab - hapus jawaban jika ada
             existing_answer = Answer.objects.filter(test=test, question=question_instance).first()
@@ -658,24 +665,30 @@ def take_test(request, category_id, question):
             if question_instance.id in test_session['answered_questions']:
                 del test_session['answered_questions'][question_instance.id]
                 request.session[session_key] = test_session
-
-        # Redirect to the next question
-        next_question_index = current_question_index + 1
-        if next_question_index < len(questions):
-            return redirect('take_test', category_id=category_id, question=next_question_index)
-        else:
-            # All questions answered, submit the test
-            if not test.is_submitted:
-                test.is_submitted = True
-                test.end_time = timezone.now()
-                test.calculate_score()
-                test.save()
-                
-                # Clear session
-                if session_key in request.session:
-                    del request.session[session_key]
             
-            return redirect('test_results', test_id=test.id)
+            # If this is an AJAX request, return JSON response
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': 'Answer removed'})
+
+        # If not AJAX, continue with normal navigation
+        if not is_ajax:
+            # Redirect to the next question
+            next_question_index = current_question_index + 1
+            if next_question_index < len(questions):
+                return redirect('take_test', category_id=category_id, question=next_question_index)
+            else:
+                # All questions answered, submit the test
+                if not test.is_submitted:
+                    test.is_submitted = True
+                    test.end_time = timezone.now()
+                    test.calculate_score()
+                    test.save()
+                    
+                    # Clear session
+                    if session_key in request.session:
+                        del request.session[session_key]
+                
+                return redirect('test_results', test_id=test.id)
 
     # Get the current question
     current_question = questions[current_question_index] if questions else None
@@ -933,4 +946,89 @@ def force_end_test(request, test_id):
     
     return redirect('home')
 
+@login_required
+def settings_view(request):
+    from .forms import UserProfileForm, ProfilePictureForm, CustomPasswordChangeForm
+    from django.contrib.auth import update_session_auth_hash
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'update_profile':
+            form = UserProfileForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Profil berhasil diperbarui!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Terjadi kesalahan saat memperbarui profil.')
+                
+        elif action == 'update_profile_picture':
+            try:
+                form = ProfilePictureForm(request.POST, request.FILES, instance=request.user)
+                if form.is_valid():
+                    # Get original file size for feedback
+                    uploaded_file = request.FILES.get('profile_picture')
+                    if uploaded_file:
+                        original_size_kb = uploaded_file.size / 1024
+                        form.save()
+                        if original_size_kb > 250:
+                            messages.success(
+                                request, 
+                                f'Foto profil berhasil diperbarui dan dikompres dari {original_size_kb:.0f}KB ke ukuran optimal!'
+                            )
+                        else:
+                            messages.success(request, 'Foto profil berhasil diperbarui!')
+                    else:
+                        form.save()
+                        messages.success(request, 'Foto profil berhasil diperbarui!')
+                    return redirect('settings')
+                else:
+                    # Extract specific error messages
+                    error_messages = []
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            error_messages.append(error)
+                    
+                    if error_messages:
+                        messages.error(request, ' '.join(error_messages))
+                    else:
+                        messages.error(request, 'Terjadi kesalahan saat mengupload foto profil.')
+                        
+            except Exception as e:
+                messages.error(request, f'Terjadi kesalahan saat memproses foto profil: {str(e)}')
+                return redirect('settings')
+                
+        elif action == 'change_password':
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            # Validate current password
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Password saat ini tidak valid.')
+                return redirect('settings')
+            
+            # Validate new password match
+            if new_password != confirm_password:
+                messages.error(request, 'Password baru dan konfirmasi password tidak cocok.')
+                return redirect('settings')
+            
+            # Validate password strength
+            if len(new_password) < 8:
+                messages.error(request, 'Password harus minimal 8 karakter.')
+                return redirect('settings')
+            
+            # Update password
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  # Keep user logged in
+            messages.success(request, 'Password berhasil diubah!')
+            return redirect('settings')
+    
+    context = {
+        'user': request.user,
+    }
+    
+    return render(request, 'settings.html', context)
 

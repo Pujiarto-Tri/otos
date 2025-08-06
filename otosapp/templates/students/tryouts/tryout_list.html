@@ -5,115 +5,134 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     <!-- Header Section -->
-    <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">Pilih Kategori Tryout</h1>
-        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Uji kemampuan Anda dengan berbagai kategori soal yang telah disiapkan. Pilih kategori yang ingin Anda kerjakan dan raih skor terbaik!
+    <div class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">🎯 Pilih Kategori Tryout</h1>
+        <p class="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-sm md:text-base">
+            Uji kemampuan Anda dengan berbagai kategori soal. Pilih dan raih skor terbaik!
         </p>
     </div>
 
     <!-- Tryout Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {% for tryout_list in tryout %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-700 overflow-hidden group hover:scale-105">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group hover:-translate-y-1">
             <!-- Header Card -->
-            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
+            <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 p-6 text-white relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full transform translate-x-16 -translate-y-16"></div>
+                <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full transform -translate-x-10 translate-y-10"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <span class="bg-white/20 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">TRYOUT</span>
                     </div>
-                    <span class="bg-white/20 text-xs font-semibold px-3 py-1 rounded-full">TRYOUT</span>
+                    <h3 class="text-2xl font-bold mb-1 leading-tight">{{ tryout_list.category_name }}</h3>
+                    <p class="text-white/80 text-sm">{{ tryout_list.get_question_count }} soal • {{ tryout_list.time_limit }} menit</p>
                 </div>
-                <h3 class="text-2xl font-bold mb-2">{{ tryout_list.category_name }}</h3>
-                <p class="text-indigo-100 text-sm">Kategori Ujian Online</p>
             </div>
 
             <!-- Content Card -->
             <div class="p-6">
-                <!-- Statistics Grid -->
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                        <div class="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg mx-auto mb-2">
-                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ tryout_list.get_question_count }}</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Total Soal</p>
+                <!-- Quick Stats -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ tryout_list.get_passing_score }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Nilai Lulus</div>
                     </div>
                     
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                        <div class="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg mx-auto mb-2">
-                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ tryout_list.time_limit }}</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Menit</p>
+                    {% with stats=tryout_list.get_test_statistics %}
+                    {% if stats.total_tests > 0 %}
+                    <div class="text-center">
+                        <div class="text-2xl font-bold {% if stats.pass_rate >= 60 %}text-green-600 dark:text-green-400{% elif stats.pass_rate >= 40 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ stats.pass_rate }}%</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Tingkat Lulus</div>
                     </div>
-                </div>
-
-                <!-- Details List -->
-                <div class="space-y-3 mb-6">
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>Pilihan Ganda</span>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.total_students }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Peserta</div>
                     </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>{{ tryout_list.get_scoring_method_display_name }}</span>
+                    {% else %}
+                    <div class="text-center opacity-50">
+                        <div class="text-2xl font-bold text-gray-400">-</div>
+                        <div class="text-xs text-gray-400">Belum Ada Data</div>
                     </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>Dapat Keluar-Masuk</span>
+                    <div class="text-center opacity-50">
+                        <div class="text-2xl font-bold text-gray-400">0</div>
+                        <div class="text-xs text-gray-400">Peserta</div>
                     </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>Hasil Langsung</span>
-                    </div>
+                    {% endif %}
+                    {% endwith %}
                 </div>
 
                 <!-- Difficulty Badge -->
-                <div class="flex items-center justify-between mb-6">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ tryout_list.get_difficulty_color }}">
-                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                        </svg>
-                        {{ tryout_list.get_difficulty_level }}
-                    </span>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Passing Score</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ tryout_list.get_passing_score }}</p>
+                <div class="flex items-center justify-center mb-6">
+                    {% with stats=tryout_list.get_test_statistics %}
+                    <div class="relative group">
+                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold {{ tryout_list.get_difficulty_color }} cursor-help shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                            {{ tryout_list.get_difficulty_level }}
+                        </span>
+                        
+                        <!-- Tooltip -->
+                        {% if stats.total_tests > 0 %}
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-10 shadow-lg">
+                            <div class="text-center">
+                                <div class="font-semibold mb-1">Berdasarkan {{ stats.total_students }} peserta</div>
+                                <div class="{% if stats.pass_rate >= 60 %}text-green-300{% elif stats.pass_rate >= 40 %}text-yellow-300{% else %}text-red-300{% endif %}">
+                                    {{ stats.pass_rate }}% tingkat kelulusan
+                                </div>
+                            </div>
+                            <!-- Tooltip Arrow -->
+                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                </div>
+
+                <!-- Features -->
+                <div class="grid grid-cols-2 gap-3 mb-6 text-xs">
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <span>Auto-Save</span>
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                        <span>Hasil Instan</span>
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                        <span>Pilihan Ganda</span>
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                        <span>Timer Aktif</span>
                     </div>
                 </div>
 
                 <!-- Action Button -->
                 {% if tryout_list.get_question_count > 0 %}
-                <button onclick="showStartWarning('{{ tryout_list.category_name }}', '{{ tryout_list.id }}', '{{ tryout_list.time_limit }}', '{{ tryout_list.get_question_count }}')" class="w-full flex items-center justify-center gap-3 px-6 py-4 text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 font-semibold text-base group-hover:shadow-lg">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Mulai Tryout Sekarang
-                    <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                    </svg>
+                <button onclick="showStartWarning('{{ tryout_list.category_name }}', '{{ tryout_list.id }}', '{{ tryout_list.time_limit }}', '{{ tryout_list.get_question_count }}')" class="w-full px-6 py-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50 transition-all duration-300 font-bold text-base shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Mulai Tryout
+                    </div>
                 </button>
                 {% else %}
-                <div class="w-full flex items-center justify-center gap-3 px-6 py-4 text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 rounded-lg font-semibold text-base cursor-not-allowed">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                    Belum Ada Soal
+                <div class="w-full px-6 py-4 text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 rounded-xl font-bold text-base cursor-not-allowed opacity-75">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Belum Ada Soal
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -121,42 +140,52 @@
         {% endfor %}
     </div>
 
-    <!-- Info Section -->
-    <div class="mt-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-8 border border-blue-200 dark:border-gray-600">
-        <div class="text-center mb-8">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Tips Mengerjakan Tryout</h3>
-            <p class="text-gray-600 dark:text-gray-400">Ikuti tips berikut untuk mendapatkan hasil terbaik</p>
+    <!-- Quick Info Section -->
+    <div class="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-blue-200 dark:border-gray-600">
+        <div class="text-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">💡 Tips Sukses Tryout</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Panduan singkat untuk hasil terbaik</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="text-center">
-                <div class="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mx-auto mb-4">
-                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Kelola Waktu</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">Bagi waktu dengan baik untuk setiap soal dan jangan terlalu lama di satu soal</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
+                <div class="text-2xl mb-2">⏰</div>
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Kelola Waktu</h4>
+                <p class="text-gray-600 dark:text-gray-400 text-xs">Bagi waktu dengan baik</p>
             </div>
             
-            <div class="text-center">
-                <div class="flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mx-auto mb-4">
-                    <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Baca Teliti</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">Baca soal dan pilihan jawaban dengan teliti sebelum memilih jawaban</p>
+            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
+                <div class="text-2xl mb-2">📖</div>
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Baca Teliti</h4>
+                <p class="text-gray-600 dark:text-gray-400 text-xs">Pahami soal dengan baik</p>
             </div>
             
-            <div class="text-center">
-                <div class="flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full mx-auto mb-4">
-                    <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
+            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
+                <div class="text-2xl mb-2">💾</div>
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Auto-Save</h4>
+                <p class="text-gray-600 dark:text-gray-400 text-xs">Jawaban tersimpan otomatis</p>
+            </div>
+        </div>
+        
+        <!-- Difficulty Legend -->
+        <div class="mt-6 pt-4 border-t border-blue-200 dark:border-gray-600">
+            <div class="text-center mb-3">
+                <h4 class="font-semibold text-gray-900 dark:text-white text-sm">🏆 Tingkat Kesulitan</h4>
+            </div>
+            
+            <div class="flex justify-center gap-4 text-xs">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                    <span class="text-gray-600 dark:text-gray-400">Mudah (≥60%)</span>
                 </div>
-                <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Koneksi Stabil</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">Pastikan koneksi internet stabil untuk menghindari gangguan saat mengerjakan</p>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
+                    <span class="text-gray-600 dark:text-gray-400">Sedang (40-59%)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
+                    <span class="text-gray-600 dark:text-gray-400">Sulit (<40%)</span>
+                </div>
             </div>
         </div>
     </div>

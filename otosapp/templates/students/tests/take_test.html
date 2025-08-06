@@ -67,6 +67,14 @@
                     <div class="ml-4 text-lg font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-relaxed ckeditor-content">{{ choice.choice_text|safe }}</div>
                 </label>
                 {% endfor %}
+                
+                <!-- Saving indicator -->
+                <div id="saving-indicator" class="hidden flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                    <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Menyimpan jawaban...</span>
+                </div>
             </div>
 
             <!-- Action Buttons -->
@@ -544,25 +552,67 @@ function autoSubmitTest() {
 
 // Show submit confirmation modal
 function showSubmitConfirmation() {
-    const modal = document.getElementById('submit-modal');
-    const answeredCount = answeredQuestions.length;
-    const totalQuestions = {{ questions|length }};
+    const selectedAnswer = document.querySelector('input[name="answer"]:checked');
     
-    document.getElementById('answered-summary').textContent = answeredCount;
-    
-    // Update modal message based on completion status
-    const modalText = document.querySelector('#submit-modal .text-sm.text-gray-500');
-    if (answeredCount === totalQuestions) {
-        modalText.innerHTML = 'Selamat! Anda telah menjawab semua soal. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.';
-        modalText.classList.remove('text-gray-500');
-        modalText.classList.add('text-green-600', 'dark:text-green-400');
+    if (selectedAnswer) {
+        // Add current question to answered questions if not already there
+        if (!answeredQuestions.includes(currentQuestionId)) {
+            answeredQuestions.push(currentQuestionId);
+        }
+        
+        // Save the answer via AJAX before showing modal
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('answer', selectedAnswer.value);
+        
+        // Save answer via fetch API
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            if (response.ok) {
+                // Answer saved successfully, update UI and show modal
+                updateNavigationColors();
+                showModal();
+            } else {
+                console.error('Error saving answer');
+                // Show modal anyway but warn user
+                showModal();
+            }
+        }).catch(error => {
+            console.error('Error saving answer:', error);
+            // Show modal anyway but warn user
+            showModal();
+        });
     } else {
-        modalText.innerHTML = `Anda masih memiliki <strong>${totalQuestions - answeredCount}</strong> soal yang belum dijawab. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.`;
-        modalText.classList.remove('text-green-600', 'dark:text-green-400');
-        modalText.classList.add('text-gray-500', 'dark:text-gray-300');
+        // No answer selected, show modal directly
+        showModal();
     }
     
-    modal.style.display = 'block';
+    function showModal() {
+        const modal = document.getElementById('submit-modal');
+        const answeredCount = answeredQuestions.length;
+        const totalQuestions = {{ questions|length }};
+        
+        document.getElementById('answered-summary').textContent = answeredCount;
+        
+        // Update modal message based on completion status
+        const modalText = document.querySelector('#submit-modal .text-sm.text-gray-500');
+        if (answeredCount === totalQuestions) {
+            modalText.innerHTML = 'Selamat! Anda telah menjawab semua soal. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.';
+            modalText.classList.remove('text-gray-500');
+            modalText.classList.add('text-green-600', 'dark:text-green-400');
+        } else {
+            modalText.innerHTML = `Anda masih memiliki <strong>${totalQuestions - answeredCount}</strong> soal yang belum dijawab. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.`;
+            modalText.classList.remove('text-green-600', 'dark:text-green-400');
+            modalText.classList.add('text-gray-500', 'dark:text-gray-300');
+        }
+        
+        modal.style.display = 'block';
+    }
 }
 
 // Hide submit confirmation modal
@@ -727,6 +777,69 @@ function updateSubmitButtonColor(answeredCount, totalQuestions) {
     }
 }
 
+// Fungsi untuk menampilkan feedback visual bahwa jawaban tersimpan
+function showSaveConfirmation() {
+    // Create or update save notification
+    let notification = document.getElementById('save-notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'save-notification';
+        notification.className = 'fixed top-4 right-4 z-50 px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg transition-all duration-300 transform translate-x-full opacity-0';
+        notification.innerHTML = `
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Jawaban tersimpan</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+    }
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full', 'opacity-0');
+        notification.classList.add('translate-x-0', 'opacity-100');
+    }, 10);
+    
+    // Hide after 2 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full', 'opacity-0');
+        notification.classList.remove('translate-x-0', 'opacity-100');
+    }, 2000);
+}
+
+function showSaveError() {
+    // Create or update error notification
+    let notification = document.getElementById('error-notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'error-notification';
+        notification.className = 'fixed top-4 right-4 z-50 px-4 py-2 bg-red-500 text-white rounded-lg shadow-lg transition-all duration-300 transform translate-x-full opacity-0';
+        notification.innerHTML = `
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span>Error menyimpan jawaban</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+    }
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full', 'opacity-0');
+        notification.classList.add('translate-x-0', 'opacity-100');
+    }, 10);
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full', 'opacity-0');
+        notification.classList.remove('translate-x-0', 'opacity-100');
+    }, 3000);
+}
+
 // Fungsi update progress bar
 function updateProgressBar(answeredCount, totalQuestions) {
     const percentage = Math.round((answeredCount / totalQuestions) * 100);
@@ -798,20 +911,175 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Event listener untuk radio buttons - preview update navigasi
+    // Event listener untuk radio buttons - auto-save dan update navigasi
     document.querySelectorAll('input[name="answer"]').forEach(radio => {
         radio.addEventListener('change', function() {
-            // Berikan preview bahwa soal akan dijawab
-            if (!answeredQuestions.includes(currentQuestionId)) {
-                answeredQuestions.push(currentQuestionId);
-                updateNavigationColors();
-                
-                // Update submit button color immediately
-                const totalQuestions = {{ questions|length }};
-                updateSubmitButtonColor(answeredQuestions.length, totalQuestions);
+            // Show saving indicator
+            const savingIndicator = document.getElementById('saving-indicator');
+            if (savingIndicator) {
+                savingIndicator.classList.remove('hidden');
+                savingIndicator.classList.add('flex');
             }
+            
+            // Save answer immediately for ALL questions (not just last question)
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('answer', this.value);
+            
+            // Save answer via AJAX
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                // Hide saving indicator
+                if (savingIndicator) {
+                    savingIndicator.classList.add('hidden');
+                    savingIndicator.classList.remove('flex');
+                }
+                
+                if (response.ok) {
+                    // Answer saved successfully, update UI
+                    if (!answeredQuestions.includes(currentQuestionId)) {
+                        answeredQuestions.push(currentQuestionId);
+                        updateNavigationColors();
+                        
+                        const totalQuestions = {{ questions|length }};
+                        updateSubmitButtonColor(answeredQuestions.length, totalQuestions);
+                    }
+                    
+                    // Show visual feedback that answer was saved
+                    showSaveConfirmation();
+                } else {
+                    console.error('Error saving answer');
+                    showSaveError();
+                }
+            }).catch(error => {
+                // Hide saving indicator
+                if (savingIndicator) {
+                    savingIndicator.classList.add('hidden');
+                    savingIndicator.classList.remove('flex');
+                }
+                
+                console.error('Error saving answer:', error);
+                showSaveError();
+            });
         });
     });
+    
+    // Add event listeners for navigation buttons to check for unsaved answers
+    document.querySelectorAll('.nav-button').forEach(navBtn => {
+        navBtn.addEventListener('click', function(e) {
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            const questionId = parseInt(this.dataset.questionId);
+            const targetIndex = parseInt(this.dataset.questionIndex);
+            const currentIndex = {{ current_question_index }};
+            
+            // If there's a selected answer and current question is not yet saved
+            if (selectedAnswer && !answeredQuestions.includes(currentQuestionId)) {
+                e.preventDefault(); // Prevent navigation
+                
+                // Save the answer first
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('answer', selectedAnswer.value);
+                
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // Answer saved successfully
+                        if (!answeredQuestions.includes(currentQuestionId)) {
+                            answeredQuestions.push(currentQuestionId);
+                        }
+                        updateNavigationColors();
+                        showSaveConfirmation();
+                        
+                        // Now navigate to the target page
+                        setTimeout(() => {
+                            window.location.href = this.href;
+                        }, 500);
+                    } else {
+                        console.error('Error saving answer');
+                        showSaveError();
+                        // Still allow navigation even if save failed
+                        setTimeout(() => {
+                            window.location.href = this.href;
+                        }, 1000);
+                    }
+                }).catch(error => {
+                    console.error('Error saving answer:', error);
+                    showSaveError();
+                    // Still allow navigation even if save failed
+                    setTimeout(() => {
+                        window.location.href = this.href;
+                    }, 1000);
+                });
+            }
+            // If no answer selected or answer already saved, allow normal navigation
+        });
+    });
+    
+    // Add event listeners for Previous button
+    const prevButton = document.querySelector('a[href*="take_test"]');
+    if (prevButton && prevButton.textContent.includes('Sebelumnya')) {
+        prevButton.addEventListener('click', function(e) {
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            
+            // If there's a selected answer and current question is not yet saved
+            if (selectedAnswer && !answeredQuestions.includes(currentQuestionId)) {
+                e.preventDefault(); // Prevent navigation
+                
+                // Save the answer first
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('answer', selectedAnswer.value);
+                
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // Answer saved successfully
+                        if (!answeredQuestions.includes(currentQuestionId)) {
+                            answeredQuestions.push(currentQuestionId);
+                        }
+                        updateNavigationColors();
+                        showSaveConfirmation();
+                        
+                        // Now navigate to the previous page
+                        setTimeout(() => {
+                            window.location.href = this.href;
+                        }, 500);
+                    } else {
+                        console.error('Error saving answer');
+                        showSaveError();
+                        // Still allow navigation even if save failed
+                        setTimeout(() => {
+                            window.location.href = this.href;
+                        }, 1000);
+                    }
+                }).catch(error => {
+                    console.error('Error saving answer:', error);
+                    showSaveError();
+                    // Still allow navigation even if save failed
+                    setTimeout(() => {
+                        window.location.href = this.href;
+                    }, 1000);
+                });
+            }
+            // If no answer selected or answer already saved, allow normal navigation
+        });
+    }
     
     // Modal event listeners
     document.getElementById('cancel-submit').addEventListener('click', hideSubmitConfirmation);

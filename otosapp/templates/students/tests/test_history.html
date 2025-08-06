@@ -3,60 +3,74 @@
 {% block title %}Riwayat Test - Exam System{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     <!-- Header Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Riwayat Test</h1>
-                <p class="text-lg text-gray-600 dark:text-gray-400">Semua test yang pernah Anda kerjakan</p>
-            </div>
-            <div class="mt-4 md:mt-0">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                    Total: {{ total_tests }} test
-                </span>
+    <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">📊 Riwayat Test</h1>
+                    <p class="text-xl text-white/90">Semua test yang pernah Anda kerjakan</p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-white/20 backdrop-blur-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Total: {{ total_tests }} test
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-100 text-sm font-medium">Rata-rata Skor</p>
-                        <p class="text-2xl font-bold">{{ avg_score|floatformat:1 }}%</p>
-                    </div>
-                    <svg class="w-8 h-8 text-blue-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Rata-rata Skor</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|floatformat:1 }}%</p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
                 </div>
             </div>
-            
-            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-green-100 text-sm font-medium">Skor Tertinggi</p>
-                        <p class="text-2xl font-bold">{{ highest_score|floatformat:1 }}%</p>
-                    </div>
-                    <svg class="w-8 h-8 text-green-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Skor Tertinggi</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|floatformat:1 }}%</p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
                 </div>
             </div>
-            
-            <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-purple-100 text-sm font-medium">Test Terakhir</p>
-                        <p class="text-lg font-bold">
-                            {% if latest_test %}
-                                {{ latest_test.date_taken|date:"d M Y" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </p>
-                    </div>
-                    <svg class="w-8 h-8 text-purple-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Test Terakhir</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        {% if latest_test %}
+                            {{ latest_test.date_taken|date:"d M Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
@@ -64,28 +78,34 @@
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filter & Pencarian</h2>
+    <!-- Filter Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 mb-8 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center space-x-3 mb-6">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            </svg>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Filter & Pencarian</h2>
+        </div>
+        
         <form method="get" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- Search -->
                 <div>
-                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cari Kategori</label>
+                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Test</label>
                     <input type="text" 
                            id="search" 
                            name="search" 
                            value="{{ current_search }}"
-                           placeholder="Nama kategori..."
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                           placeholder="Nama test..."
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
                 </div>
                 
                 <!-- Category Filter -->
                 <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori</label>
+                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategori</label>
                     <select id="category" 
                             name="category"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         <option value="">Semua Kategori</option>
                         {% for category in categories %}
                         <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
@@ -97,35 +117,35 @@
                 
                 <!-- Date From -->
                 <div>
-                    <label for="date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dari Tanggal</label>
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dari Tanggal</label>
                     <input type="date" 
                            id="date_from" 
                            name="date_from" 
                            value="{{ date_from }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
                 
                 <!-- Date To -->
                 <div>
-                    <label for="date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sampai Tanggal</label>
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sampai Tanggal</label>
                     <input type="date" 
                            id="date_to" 
                            name="date_to" 
                            value="{{ date_to }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
             </div>
             
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-3 pt-2">
                 <button type="submit" 
-                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium">
+                        class="inline-flex items-center px-6 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                     Filter
                 </button>
                 <a href="{% url 'test_history' %}" 
-                   class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium">
+                   class="inline-flex items-center px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
@@ -137,127 +157,125 @@
 
     <!-- Tests List -->
     {% if page_obj %}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Daftar Test</h2>
+    <div class="space-y-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Test</h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ page_obj.paginator.count }} test ditemukan</span>
         </div>
         
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="grid gap-6">
             {% for test in page_obj %}
-            <div class="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-start space-x-4">
-                            <!-- Test Icon & Status -->
-                            <div class="flex-shrink-0">
-                                {% with test.categories.first as category %}
-                                <div class="w-12 h-12 rounded-lg flex items-center justify-center
-                                    {% if test.is_passed %}bg-green-100 dark:bg-green-900
-                                    {% else %}bg-red-100 dark:bg-red-900{% endif %}">
-                                    <svg class="w-6 h-6 
-                                        {% if test.is_passed %}text-green-600 dark:text-green-400
-                                        {% else %}text-red-600 dark:text-red-400{% endif %}" 
-                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        {% if test.is_passed %}
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        {% else %}
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        {% endif %}
-                                    </svg>
-                                </div>
-                                {% endwith %}
+                    <!-- Test Information -->
+                    <div class="flex items-start space-x-4 flex-1">
+                        <!-- Status Icon -->
+                        <div class="flex-shrink-0">
+                            {% with test.categories.first as category %}
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center
+                                {% if test.is_passed %}bg-gradient-to-br from-green-400 to-green-600
+                                {% else %}bg-gradient-to-br from-red-400 to-red-600{% endif %}">
+                                <svg class="w-6 h-6 text-white" 
+                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    {% if test.is_passed %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    {% else %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    {% endif %}
+                                </svg>
+                            </div>
+                            {% endwith %}
+                        </div>
+                        
+                        <!-- Test Details -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate">
+                                    {% with test.categories.first as category %}
+                                        {{ category.category_name|default:"Test" }}
+                                    {% endwith %}
+                                </h3>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                    {% with test.categories.first as category %}
+                                        {% if category.scoring_method == 'default' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                        {% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
+                                        {% elif category.scoring_method == 'utbk' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                        {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}
+                                    {% endwith %}">
+                                    {% with test.categories.first as category %}
+                                        {% if category.scoring_method == 'default' %}Default
+                                        {% elif category.scoring_method == 'custom' %}Custom
+                                        {% elif category.scoring_method == 'utbk' %}UTBK
+                                        {% else %}Unknown{% endif %}
+                                    {% endwith %}
+                                </span>
                             </div>
                             
-                            <!-- Test Info -->
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                                        {% with test.categories.first as category %}
-                                            {{ category.category_name|default:"Test" }}
-                                        {% endwith %}
-                                    </h3>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                        {% with test.categories.first as category %}
-                                            {% if category.scoring_method == 'default' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                            {% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                                            {% elif category.scoring_method == 'utbk' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
-                                            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}
-                                        {% endwith %}">
-                                        {% with test.categories.first as category %}
-                                            {% if category.scoring_method == 'default' %}Default
-                                            {% elif category.scoring_method == 'custom' %}Custom
-                                            {% elif category.scoring_method == 'utbk' %}UTBK
-                                            {% else %}Unknown{% endif %}
-                                        {% endwith %}
-                                    </span>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>{{ test.date_taken|date:"d M Y, H:i" }}</span>
                                 </div>
                                 
-                                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                                    <div class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        {{ test.date_taken|date:"d M Y, H:i" }}
-                                    </div>
-                                    
-                                    <div class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>
                                         {% if test.end_time and test.start_time %}
                                             {{ test.end_time|timesince:test.start_time }}
                                         {% else %}
                                             {{ test.time_limit }} menit
                                         {% endif %}
-                                    </div>
-                                    
-                                    <div class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        {{ test.answers.count }} soal
-                                    </div>
+                                    </span>
+                                </div>
+                                
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span>{{ test.answers.count }} soal</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Score & Actions -->
-                    <div class="mt-4 lg:mt-0 lg:ml-4 flex-shrink-0">
-                        <div class="flex items-center space-x-4">
-                            <!-- Score Display -->
-                            <div class="text-center">
-                                <div class="text-2xl font-bold
-                                    {% if test.is_passed %}text-green-600 dark:text-green-400
-                                    {% else %}text-red-600 dark:text-red-400{% endif %}">
-                                    {{ test.score|floatformat:1 }}%
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">Skor</div>
-                                <div class="text-xs 
-                                    {% if test.is_passed %}text-green-600 dark:text-green-400
-                                    {% else %}text-red-600 dark:text-red-400{% endif %}">
-                                    {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
-                                </div>
+                    <!-- Score & Actions Section -->
+                    <div class="mt-6 lg:mt-0 lg:ml-6 flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+                        <!-- Score Display -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 text-center mb-4 lg:mb-0">
+                            <div class="text-3xl font-bold
+                                {% if test.is_passed %}text-green-600 dark:text-green-400
+                                {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ test.score|floatformat:1 }}%
                             </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="flex flex-col space-y-2">
-                                <a href="{% url 'test_results' test.id %}" 
-                                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    Lihat Hasil
-                                </a>
-                                <a href="{% url 'test_results_detail' test.id %}" 
-                                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 border border-green-200 dark:border-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition-colors">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    Detail Soal
-                                </a>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skor Akhir</div>
+                            <div class="text-xs font-medium mt-1
+                                {% if test.is_passed %}text-green-600 dark:text-green-400
+                                {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
                             </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col space-y-2">
+                            <a href="{% url 'test_results' test.id %}" 
+                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Lihat Hasil
+                            </a>
+                            <a href="{% url 'test_results_detail' test.id %}" 
+                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Detail Soal
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -268,36 +286,44 @@
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div class="flex items-center justify-between">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 px-6 py-4 mt-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="text-sm text-gray-700 dark:text-gray-300">
-                Menampilkan {{ page_obj.start_index }}-{{ page_obj.end_index }} dari {{ page_obj.paginator.count }} test
+                Menampilkan <span class="font-medium">{{ page_obj.start_index }}-{{ page_obj.end_index }}</span> dari <span class="font-medium">{{ page_obj.paginator.count }}</span> test
             </div>
             
-            <nav class="flex items-center space-x-2">
+            <nav class="flex items-center space-x-1">
                 {% if page_obj.has_previous %}
                 <a href="?page=1{% if current_search %}&search={{ current_search }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                    ««
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                    </svg>
                 </a>
                 <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                    «
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
                 </a>
                 {% endif %}
                 
-                <span class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-300 dark:bg-indigo-900 dark:text-indigo-300">
+                <span class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-lg">
                     {{ page_obj.number }}
                 </span>
                 
                 {% if page_obj.has_next %}
                 <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                    »
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </a>
                 <a href="?page={{ page_obj.paginator.num_pages }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                    »»
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-r-xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                    </svg>
                 </a>
                 {% endif %}
             </nav>
@@ -307,24 +333,30 @@
 
     {% else %}
     <!-- Empty State -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-12 text-center border border-gray-200 dark:border-gray-700">
-        <div class="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-12 text-center border border-gray-100 dark:border-gray-700">
+        <div class="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-6">
             <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Belum Ada Test</h3>
-        <p class="text-gray-500 dark:text-gray-400 mb-6">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
             {% if current_search or current_category or date_from or date_to %}
-                Tidak ada test yang sesuai dengan filter yang dipilih.
+                Tidak Ada Hasil
             {% else %}
-                Anda belum mengerjakan test apa pun. Mulai test pertama Anda sekarang!
+                Belum Ada Test
+            {% endif %}
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
+            {% if current_search or current_category or date_from or date_to %}
+                Tidak ada test yang sesuai dengan filter yang dipilih. Coba ubah kriteria pencarian Anda.
+            {% else %}
+                Anda belum mengerjakan test apa pun. Mulai perjalanan belajar Anda dengan test pertama!
             {% endif %}
         </p>
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
             {% if current_search or current_category or date_from or date_to %}
             <a href="{% url 'test_history' %}" 
-               class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium">
+               class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
@@ -332,7 +364,7 @@
             </a>
             {% endif %}
             <a href="{% url 'tryout_list' %}" 
-               class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
+               class="inline-flex items-center px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>

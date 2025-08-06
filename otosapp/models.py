@@ -13,6 +13,7 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
 
     groups = models.ManyToManyField(
         Group,
@@ -55,17 +56,15 @@ class Category(models.Model):
         return self.question_set.count()
     
     def get_difficulty_level(self):
-        """Get difficulty level based on question count and time limit"""
-        question_count = self.get_question_count()
-        if question_count == 0:
-            return "Belum Ada Soal"
+        """Get difficulty level based on pass rate statistics"""
+        pass_rate = self.get_pass_rate()
         
-        time_per_question = self.time_limit / question_count
-        
-        if time_per_question >= 3:
+        if pass_rate is None:
+            return "Belum Ada Data"
+        elif pass_rate >= 60:
             return "Mudah"
-        elif time_per_question >= 2:
-            return "Menengah"
+        elif pass_rate >= 40:
+            return "Sedang"
         else:
             return "Sulit"
     
@@ -74,12 +73,67 @@ class Category(models.Model):
         difficulty = self.get_difficulty_level()
         if difficulty == "Mudah":
             return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-        elif difficulty == "Menengah":
+        elif difficulty == "Sedang":
             return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
         elif difficulty == "Sulit":
             return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
         else:
             return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+    
+    def get_pass_rate(self):
+        """Calculate pass rate percentage for this category"""
+        # Get all submitted tests for this category
+        completed_tests = Test.objects.filter(
+            categories=self,
+            is_submitted=True
+        )
+        
+        if not completed_tests.exists():
+            return None
+        
+        total_tests = completed_tests.count()
+        passed_tests = completed_tests.filter(score__gte=self.passing_score).count()
+        
+        return round((passed_tests / total_tests) * 100, 1)
+    
+    def get_test_statistics(self):
+        """Get comprehensive test statistics for this category"""
+        completed_tests = Test.objects.filter(
+            categories=self,
+            is_submitted=True
+        )
+        
+        if not completed_tests.exists():
+            return {
+                'total_tests': 0,
+                'total_students': 0,
+                'passed_tests': 0,
+                'failed_tests': 0,
+                'pass_rate': None,
+                'average_score': None
+            }
+        
+        total_tests = completed_tests.count()
+        
+        # Count unique students who took the test
+        total_students = completed_tests.values('student').distinct().count()
+        
+        passed_tests = completed_tests.filter(score__gte=self.passing_score).count()
+        failed_tests = total_tests - passed_tests
+        pass_rate = round((passed_tests / total_tests) * 100, 1)
+        
+        # Calculate average score
+        total_score = sum(test.score for test in completed_tests)
+        average_score = round(total_score / total_tests, 1)
+        
+        return {
+            'total_tests': total_tests,
+            'total_students': total_students,
+            'passed_tests': passed_tests,
+            'failed_tests': failed_tests,
+            'pass_rate': pass_rate,
+            'average_score': average_score
+        }
     
     def get_passing_score(self):
         """Get passing score for this category"""
