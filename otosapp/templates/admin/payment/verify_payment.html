@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verifikasi Pembayaran - {{ payment.user.first_name }} {{ payment.user.last_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        🔍 Verifikasi Pembayaran
+                    </h1>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Review dan verifikasi bukti pembayaran dari user
+                    </p>
+                </div>
+                <a href="{% url 'admin_payment_verifications' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m0 0l-7 7l7 7m1-13l6 6l-6 6"/>
+                    </svg>
+                    Kembali
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Payment Details -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Detail Pembayaran
+                </h2>
+
+                <!-- User Info -->
+                <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center mb-3">
+                        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                            {{ payment.user.first_name|first|upper }}{{ payment.user.last_name|first|upper }}
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                                {{ payment.user.first_name }} {{ payment.user.last_name }}
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ payment.user.email }}</p>
+                            <p class="text-sm text-blue-600 dark:text-blue-400">
+                                Role: {{ payment.user.role.role_name }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package Info -->
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 class="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">
+                        📦 {{ payment.package.name }}
+                    </h4>
+                    <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <p><strong>Harga:</strong> Rp {{ payment.package.price|floatformat:0 }}</p>
+                        <p><strong>Durasi:</strong> {{ payment.package.duration_days }} hari</p>
+                        <p><strong>Deskripsi:</strong> {{ payment.package.description|default:"Tidak ada deskripsi" }}</p>
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Jumlah Bayar:</span>
+                        <span class="text-lg font-bold text-gray-900 dark:text-white">
+                            Rp {{ payment.amount_paid|floatformat:0 }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Metode Pembayaran:</span>
+                        <span class="text-sm text-gray-900 dark:text-white">{{ payment.payment_method }}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Tanggal Pembayaran:</span>
+                        <span class="text-sm text-gray-900 dark:text-white">
+                            {{ payment.payment_date|date:"d M Y H:i" }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Tanggal Upload:</span>
+                        <span class="text-sm text-gray-900 dark:text-white">
+                            {{ payment.created_at|date:"d M Y H:i" }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Status Saat Ini:</span>
+                        <span class="text-sm">
+                            {% if payment.status == 'pending' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+                                    ⏳ Menunggu Verifikasi
+                                </span>
+                            {% elif payment.status == 'approved' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                                    ✅ Disetujui
+                                </span>
+                            {% elif payment.status == 'rejected' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
+                                    ❌ Ditolak
+                                </span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    {% if payment.notes %}
+                    <div class="py-2">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Catatan User:</span>
+                        <p class="text-sm text-gray-900 dark:text-white mt-1 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            {{ payment.notes }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if payment.verified_by %}
+                    <div class="py-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Diverifikasi oleh:</span>
+                        <p class="text-sm text-gray-900 dark:text-white">
+                            {{ payment.verified_by.first_name }} {{ payment.verified_by.last_name }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ payment.verified_at|date:"d M Y H:i" }}
+                        </p>
+                        {% if payment.admin_notes %}
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                            <strong>Catatan Admin:</strong> {{ payment.admin_notes }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Proof Image & Verification Form -->
+            <div class="space-y-6">
+                <!-- Proof Image -->
+                {% if payment.proof_image %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Bukti Pembayaran
+                    </h2>
+                    <div class="text-center">
+                        <img src="{{ payment.proof_image.url }}" 
+                             alt="Bukti Pembayaran" 
+                             class="max-w-full h-auto rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200"
+                             onclick="viewImageModal('{{ payment.proof_image.url }}')">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Klik gambar untuk memperbesar
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Verification Form -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Verifikasi Pembayaran
+                    </h2>
+
+                    <form method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <!-- Status Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Status Verifikasi *
+                            </label>
+                            
+                            {% if payment.status == 'approved' %}
+                            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                                <div class="flex items-start">
+                                    <svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                    </svg>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-red-800 dark:text-red-200">⚠️ Peringatan Perubahan Status</h4>
+                                        <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                                            Pembayaran ini saat ini <strong>DISETUJUI</strong>. Jika Anda mengubah status menjadi "Ditolak":
+                                        </p>
+                                        <ul class="text-xs text-red-600 dark:text-red-400 mt-2 list-disc list-inside space-y-1">
+                                            <li>Subscription user akan <strong>dinonaktifkan</strong></li>
+                                            <li>User akan diturunkan ke role <strong>Visitor</strong> (jika tidak ada subscription aktif lain)</li>
+                                            <li>User kehilangan akses fitur premium</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="space-y-3">
+                                <label class="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                    <input type="radio" name="status" value="approved" 
+                                           class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                           {% if form.status.value == 'approved' %}checked{% endif %}>
+                                    <div class="ml-3">
+                                        <span class="text-sm font-medium text-green-700 dark:text-green-300">✅ Setujui Pembayaran</span>
+                                        <p class="text-xs text-green-600 dark:text-green-400">User akan otomatis diupgrade ke Student dengan akses penuh</p>
+                                    </div>
+                                </label>
+                                
+                                <label class="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                    <input type="radio" name="status" value="rejected" 
+                                           class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
+                                           {% if form.status.value == 'rejected' %}checked{% endif %}>
+                                    <div class="ml-3">
+                                        <span class="text-sm font-medium text-red-700 dark:text-red-300">❌ Tolak Pembayaran</span>
+                                        <p class="text-xs text-red-600 dark:text-red-400">
+                                            {% if payment.status == 'approved' %}
+                                                AKAN MENONAKTIFKAN subscription dan menurunkan user ke Visitor
+                                            {% else %}
+                                                User tetap sebagai Visitor dan perlu upload ulang bukti yang valid
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </label>
+                                
+                                <label class="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                    <input type="radio" name="status" value="pending" 
+                                           class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300"
+                                           {% if form.status.value == 'pending' or not form.status.value %}checked{% endif %}>
+                                    <div class="ml-3">
+                                        <span class="text-sm font-medium text-yellow-700 dark:text-yellow-300">⏳ Tunda Verifikasi</span>
+                                        <p class="text-xs text-yellow-600 dark:text-yellow-400">Simpan untuk review lebih lanjut</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Admin Notes -->
+                        <div>
+                            <label for="admin_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Catatan Admin
+                            </label>
+                            <textarea name="admin_notes" 
+                                      id="admin_notes" 
+                                      rows="4" 
+                                      placeholder="Tambahkan catatan untuk user (opsional)..."
+                                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ form.admin_notes.value|default:'' }}</textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Catatan ini akan terlihat oleh user dan admin lain
+                            </p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button type="submit" 
+                                    class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Simpan Verifikasi
+                            </button>
+                            
+                            <a href="{% url 'admin_payment_verifications' %}" 
+                               class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                Batal
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Actions -->
+                {% if payment.status == 'pending' %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">🚀 Aksi Cepat</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <form method="POST" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="approved">
+                            <input type="hidden" name="admin_notes" value="Pembayaran telah diverifikasi dan disetujui.">
+                            <button type="submit" 
+                                    onclick="return confirm('Yakin ingin menyetujui pembayaran ini?')"
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                                ✅ Setujui Langsung
+                            </button>
+                        </form>
+                        
+                        <form method="POST" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="rejected">
+                            <input type="hidden" name="admin_notes" value="Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.">
+                            <button type="submit" 
+                                    onclick="return confirm('Yakin ingin menolak pembayaran ini?')"
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                                ❌ Tolak Langsung
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+    <div class="relative max-w-6xl max-h-full">
+        <button onclick="closeImageModal()" 
+                class="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors duration-200">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        <img id="modalImage" src="" alt="Payment Proof" class="max-w-full max-h-full rounded-lg shadow-lg">
+    </div>
+</div>
+
+<script>
+function viewImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('imageModal').classList.remove('hidden');
+}
+
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside the image
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeImageModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
+</script>
+{% endblock %}

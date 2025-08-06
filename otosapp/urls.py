@@ -42,4 +42,23 @@ urlpatterns = [
     path('messages/thread/<int:thread_id>/', views.message_thread, name='message_thread'),
     path('messages/thread/<int:thread_id>/assign/', views.assign_thread, name='assign_thread'),
     path('api/messages/unread-count/', views.message_api_unread_count, name='message_api_unread_count'),
+    
+    # Subscription & Payment URLs
+    path('subscription/packages/', views.subscription_packages, name='subscription_packages'),
+    path('subscription/upload-payment/<int:package_id>/', views.upload_payment_proof, name='upload_payment_proof'),
+    path('subscription/payment-status/', views.payment_status, name='payment_status'),
+    
+    # Admin Subscription Management URLs
+    path('admin/subscription/packages/', views.admin_subscription_packages, name='admin_subscription_packages'),
+    path('admin/subscription/packages/create/', views.create_subscription_package, name='create_subscription_package'),
+    path('admin/subscription/packages/<int:package_id>/edit/', views.update_subscription_package, name='update_subscription_package'),
+    path('admin/subscription/packages/<int:package_id>/delete/', views.delete_subscription_package, name='delete_subscription_package'),
+    path('admin/payment/verifications/', views.admin_payment_verifications, name='admin_payment_verifications'),
+    path('admin/payment/verify/<int:payment_id>/', views.verify_payment, name='verify_payment'),
+    path('admin/subscription/users/', views.admin_user_subscriptions, name='admin_user_subscriptions'),
+    path('admin/subscription/<int:subscription_id>/details/', views.subscription_details, name='subscription_details'),
+    path('admin/subscription/<int:subscription_id>/edit/', views.edit_user_subscription, name='edit_user_subscription'),
+    path('admin/subscription/extend/<int:subscription_id>/', views.extend_user_subscription, name='extend_user_subscription'),
+    path('admin/subscription/toggle/<int:subscription_id>/', views.toggle_subscription_status, name='toggle_subscription_status'),
+    path('admin/users/<int:user_id>/change-role/', views.manual_role_change, name='manual_role_change'),
 ]

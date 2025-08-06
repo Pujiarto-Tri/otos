@@ -110,6 +110,32 @@
                <span class="flex-1 ms-3 whitespace-nowrap">Settings</span>
             </a>
          </li>
+         
+         <!-- Subscription Management Section -->
+         <li class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
+            <div class="px-3 py-2">
+               <span class="text-xs text-gray-500 uppercase dark:text-gray-400">Subscription Management</span>
+            </div>
+         </li>
+         <li>
+            <a href="{% url 'admin_payment_verifications' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+               <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+               </svg>
+               <span class="flex-1 ms-3 whitespace-nowrap">Payment Verification</span>
+               {% if pending_payments_count > 0 %}
+               <span class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full">{{ pending_payments_count }}</span>
+               {% endif %}
+            </a>
+         </li>
+         <li>
+            <a href="{% url 'admin_user_subscriptions' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+               <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M1 5h1.424a3.228 3.228 0 0 0 6.152 0H9a2 2 0 1 1 0 4H5a2 2 0 1 1 0-4ZM7.089 15.6A3.228 3.228 0 0 0 14 16a2 2 0 1 1 0-4h3a2 2 0 1 1 0 4h-1.424a3.228 3.228 0 0 0-6.152 0H7.089A3.228 3.228 0 0 0 1 15.6V19a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3.4ZM19 6H1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"/>
+               </svg>
+               <span class="flex-1 ms-3 whitespace-nowrap">User Subscriptions</span>
+            </a>
+         </li>
          {% endif %}
 
          {% if user.role.role_name == 'Teacher' %}

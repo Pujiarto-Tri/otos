@@ -33,7 +33,230 @@
             </div>
         </div>
 
-        {% if user.role.role_name == 'Student' %}
+        {% if user.is_visitor %}
+            <!-- Visitor Dashboard -->
+            <div class="bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+                
+                <div class="relative z-10 text-center">
+                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">🎓 Selamat Datang, Visitor!</h2>
+                    <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                        Bergabunglah dengan ribuan siswa yang telah merasakan pengalaman belajar terbaik dengan platform tryout online kami.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Subscription Status -->
+            {% if subscription_status.status == 'none' %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">💡 Akses Tryout Terbatas</h3>
+                            <p class="text-yellow-700 dark:text-yellow-300">Berlangganan untuk mendapatkan akses penuh ke semua fitur tryout online</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800 transition-colors">
+                        Lihat Paket
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Pending Payment Alert -->
+            {% if pending_payment %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 dark:bg-blue-900/20 dark:border-blue-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">⏳ Pembayaran Sedang Diverifikasi</h3>
+                            <p class="text-blue-700 dark:text-blue-300">
+                                Bukti pembayaran untuk <strong>{{ pending_payment.package.name }}</strong> sedang diverifikasi oleh admin.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{% url 'payment_status' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-lg dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors">
+                        Lihat Status
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Featured Packages -->
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+                    🎯 Paket Berlangganan Terpopuler
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-{{ packages|length|default:3 }} gap-6">
+                    {% for package in packages %}
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 {% if package.is_featured %}ring-2 ring-blue-500 dark:ring-blue-400{% endif %}">
+                        {% if package.is_featured %}
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4">
+                            ⭐ Terpopuler
+                        </div>
+                        {% endif %}
+                        
+                        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ package.name }}</h4>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <span class="text-lg text-gray-500 dark:text-gray-400">Rp</span>
+                            {{ package.price|floatformat:0 }}
+                            <span class="text-base text-gray-500 dark:text-gray-400 font-normal">K</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">{{ package.duration_days }} hari akses</p>
+                        
+                        <div class="mb-4">
+                            <ul class="space-y-2">
+                                {% for feature in package.get_features_list|slice:":3" %}
+                                <li class="flex items-center text-sm">
+                                    <svg class="w-4 h-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span>
+                                </li>
+                                {% endfor %}
+                                {% if package.get_features_list|length > 3 %}
+                                <li class="text-sm text-gray-500 dark:text-gray-400 ml-6">+ {{ package.get_features_list|length|add:"-3" }} fitur lainnya</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <a href="{% url 'subscription_packages' %}" 
+                           class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r {% if package.is_featured %}from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700{% else %}from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800{% endif %} rounded-lg transition-all duration-300">
+                            Lihat Detail
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="text-center mt-8">
+                    <a href="{% url 'subscription_packages' %}" 
+                       class="inline-flex items-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        Lihat Semua Paket
+                    </a>
+                </div>
+            </div>
+
+        {% elif user.is_student %}
+            <!-- Student Dashboard -->
+            <!-- Subscription Status Alert -->
+            {% if subscription_status.status == 'expiring_soon' %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">⚠️ Subscription Akan Berakhir</h3>
+                            <p class="text-yellow-700 dark:text-yellow-300">{{ subscription_status.message }}</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800 transition-colors">
+                        Perpanjang
+                    </a>
+                </div>
+            </div>
+            {% elif subscription_status.status == 'expired' %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 dark:bg-red-900/20 dark:border-red-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-red-800 dark:text-red-200">❌ Subscription Berakhir</h3>
+                            <p class="text-red-700 dark:text-red-300">{{ subscription_status.message }}</p>
+                            <p class="text-sm text-red-600 dark:text-red-400 mt-1">Data progress Anda tetap aman, namun akses tryout telah dibatasi.</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                        Berlangganan Lagi
+                    </a>
+                </div>
+            </div>
+            {% elif subscription_status.status == 'deactivated' %}
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-8 dark:bg-orange-900/20 dark:border-orange-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200">⚠️ Subscription Dinonaktifkan</h3>
+                            <p class="text-orange-700 dark:text-orange-300">{{ subscription_status.message }}</p>
+                            <p class="text-sm text-orange-600 dark:text-orange-400 mt-1">Hubungi admin untuk informasi lebih lanjut atau berlangganan kembali.</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
+                        Berlangganan Lagi
+                    </a>
+                </div>
+            </div>
+            {% elif subscription_status.status == 'active' %}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8 dark:bg-green-900/20 dark:border-green-800">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">✅ Subscription Aktif</h3>
+                        <p class="text-green-700 dark:text-green-300">{{ subscription_status.message }}</p>
+                        <p class="text-sm text-green-600 dark:text-green-400 mt-1">Paket: {{ subscription_status.package.name }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Access Restriction Notice -->
+            {% if not can_access_tryouts %}
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-8 dark:bg-orange-900/20 dark:border-orange-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200">🔒 Akses Tryout Dibatasi</h3>
+                            <p class="text-orange-700 dark:text-orange-300">Subscription Anda tidak aktif. Silakan berlangganan untuk mengakses tryout.</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-orange-800 bg-orange-100 hover:bg-orange-200 rounded-lg dark:bg-orange-900 dark:text-orange-300 dark:hover:bg-orange-800 transition-colors">
+                        Berlangganan
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Quick Actions -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
@@ -48,9 +271,15 @@
                             <p class="text-sm text-gray-600 dark:text-gray-400">Pilih kategori dan mulai ujian</p>
                         </div>
                     </div>
+                    {% if can_access_tryouts %}
                     <a href="{% url 'tryout_list' %}" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 font-semibold text-center block transition-all duration-300 shadow-md hover:shadow-lg">
                         Mulai Sekarang
                     </a>
+                    {% else %}
+                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">
+                        Akses Dibatasi
+                    </button>
+                    {% endif %}
                 </div>
                 
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
@@ -65,9 +294,15 @@
                             <p class="text-sm text-gray-600 dark:text-gray-400">Riwayat dan progress ujian</p>
                         </div>
                     </div>
+                    {% if can_access_tryouts %}
                     <a href="{% url 'test_history' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 font-semibold text-center block transition-all duration-300 shadow-md hover:shadow-lg">
                         Lihat Detail
                     </a>
+                    {% else %}
+                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">
+                        Akses Dibatasi
+                    </button>
+                    {% endif %}
                 </div>
             </div>
                 
@@ -349,48 +584,234 @@
                 </div>
             </div>
         {% elif user.role.role_name == 'Admin' %}
-            <!-- Admin Dashboard -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
-                    <div class="flex items-center mb-6">
-                        <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-600 rounded-2xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                        </div>
+            <!-- Admin Dashboard with Comprehensive Analytics -->
+            
+            <!-- Overview Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Revenue -->
+                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white">⚙️ Panel Admin</h3>
-                            <p class="text-gray-600 dark:text-gray-400">Kelola seluruh sistem ujian</p>
+                            <p class="text-green-100 text-sm font-medium">Total Pendapatan</p>
+                            <p class="text-2xl font-bold">Rp {{ admin_stats.total_revenue|floatformat:0 }}</p>
                         </div>
-                    </div>
-                    <div class="space-y-3">
-                        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                            <span>Manage users, roles, questions, and categories</span>
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
                         </div>
                     </div>
                 </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">🚀 Menu Utama</h3>
+
+                <!-- Monthly Revenue -->
+                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm font-medium">Pendapatan Bulan Ini</p>
+                            <p class="text-2xl font-bold">Rp {{ admin_stats.current_month_revenue|floatformat:0 }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
                     </div>
-                    <div class="space-y-3">
-                        <a href="{% url 'user_list' %}" class="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 font-semibold text-center block transition-all duration-300 shadow-md hover:shadow-lg">
-                            <div class="flex items-center justify-center">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                                Kelola Pengguna
+                </div>
+
+                <!-- Total Users -->
+                <div class="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-100 text-sm font-medium">Total Users</p>
+                            <p class="text-2xl font-bold">{{ admin_stats.total_users }}</p>
+                            <p class="text-purple-200 text-xs">+{{ admin_stats.new_users_today }} hari ini</p>
+                        </div>
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Subscriptions -->
+                <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-orange-100 text-sm font-medium">Subscription Aktif</p>
+                            <p class="text-2xl font-bold">{{ admin_stats.active_subscriptions }}</p>
+                            <p class="text-orange-200 text-xs">dari {{ admin_stats.total_subscriptions }} total</p>
+                        </div>
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment & Subscription Analytics -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Payment Status Overview -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📊 Status Pembayaran</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-yellow-400 rounded-full mr-3"></div>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Menunggu Verifikasi</span>
                             </div>
+                            <span class="text-xl font-bold text-yellow-600">{{ admin_stats.pending_payments }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Disetujui</span>
+                            </div>
+                            <span class="text-xl font-bold text-green-600">{{ admin_stats.approved_payments }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Ditolak</span>
+                            </div>
+                            <span class="text-xl font-bold text-red-600">{{ admin_stats.rejected_payments }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <a href="{% url 'admin_payment_verifications' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold text-center block transition-all duration-300">
+                            Kelola Verifikasi Pembayaran
                         </a>
                     </div>
+                </div>
+
+                <!-- Monthly Trends Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📈 Trend 6 Bulan Terakhir</h3>
+                    
+                    <div class="space-y-4">
+                        {% for month in admin_stats.monthly_data %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-gray-700 dark:text-gray-300">{{ month.month_short }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ month.subscriptions }} subscription</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-gray-900 dark:text-white">Rp {{ month.revenue|floatformat:0 }}</p>
+                                <div class="w-20 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-1">
+                                    <div class="h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full" 
+                                         style="width: {% if month.revenue > 0 %}{{ month.revenue|floatformat:0|length|add:"-1" }}0{% else %}0{% endif %}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Popular Packages & Recent Activities -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Popular Packages -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🎯 Package Terpopuler</h3>
+                    
+                    <div class="space-y-3">
+                        {% for package in admin_stats.popular_packages %}
+                        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl">
+                            <div>
+                                <p class="font-semibold text-gray-800 dark:text-gray-200">{{ package.name }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Rp {{ package.price|floatformat:0 }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+                                    {{ package.subscription_count }} subscriber
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">Belum ada data subscription</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aktivitas Terbaru</h3>
+                    
+                    <div class="space-y-3">
+                        {% for payment in admin_stats.recent_payments %}
+                        <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center text-white mr-3">
+                                💰
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800 dark:text-gray-200">{{ payment.user.email|truncatechars:20 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ payment.package.name }} - {{ payment.get_status_display }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-medium 
+                                    {% if payment.status == 'approved' %}text-green-600{% elif payment.status == 'pending' %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                    {{ payment.created_at|timesince }} ago
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">Belum ada aktivitas pembayaran</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Administrasi</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="{% url 'user_list' %}" class="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-center">
+                        <div class="w-8 h-8 mx-auto mb-2">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="font-semibold">Kelola Users</p>
+                    </a>
+                    
+                    <a href="{% url 'admin_subscription_packages' %}" class="p-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-center">
+                        <div class="w-8 h-8 mx-auto mb-2">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>
+                        <p class="font-semibold">Kelola Packages</p>
+                    </a>
+                    
+                    <a href="{% url 'admin_payment_verifications' %}" class="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 text-center">
+                        <div class="w-8 h-8 mx-auto mb-2">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="font-semibold">Verifikasi Bayar</p>
+                    </a>
+                    
+                    <a href="{% url 'categories_list' %}" class="p-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 text-center">
+                        <div class="w-8 h-8 mx-auto mb-2">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                        </div>
+                        <p class="font-semibold">Kelola Kategori</p>
+                    </a>
                 </div>
             </div>
         {% endif %}
     {% else %}
-        <!-- Not Logged In -->
+        <!-- Not logged in - show public home with packages preview -->
         <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
             <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
@@ -425,6 +846,64 @@
                 </div>
             </div>
         </div>
+
+        <!-- Featured Packages Preview -->
+        {% if featured_packages %}
+        <div class="mt-12">
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+                💎 Paket Berlangganan Unggulan
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-{{ featured_packages|length }} gap-6 mb-8">
+                {% for package in featured_packages %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 ring-2 ring-blue-500 dark:ring-blue-400">
+                    <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4">
+                        ⭐ Terpopuler
+                    </div>
+                    
+                    <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ package.name }}</h4>
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        <span class="text-lg text-gray-500 dark:text-gray-400">Rp</span>
+                        {{ package.price|floatformat:0 }}
+                        <span class="text-base text-gray-500 dark:text-gray-400 font-normal">K</span>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">{{ package.duration_days }} hari akses</p>
+                    
+                    <div class="mb-6">
+                        <ul class="space-y-2">
+                            {% for feature in package.get_features_list|slice:":4" %}
+                            <li class="flex items-center text-sm">
+                                <svg class="w-4 h-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <a href="{% url 'register' %}" 
+                       class="w-full inline-flex items-center justify-center px-4 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        Daftar & Berlangganan
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center">
+                <a href="{% url 'subscription_packages' %}" 
+                   class="inline-flex items-center px-6 py-3 text-lg font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl transition-all duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Lihat Semua Paket
+                </a>
+            </div>
+        </div>
+        {% endif %}
     {% endif %}
 </div>
 

@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentProof, UserSubscription
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
@@ -14,9 +14,9 @@ class CustomUserCreationForm(UserCreationForm):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']
         
-        # Set default role if none is specified
+        # Set default role sebagai Visitor untuk user baru
         if not user.role:
-            default_role = Role.objects.get(role_name='Student')  # or get your default role
+            default_role, created = Role.objects.get_or_create(role_name='Visitor')
             user.role = default_role
             
         if commit:
@@ -352,3 +352,225 @@ class AnswerForm(forms.Form):
                     widget=forms.RadioSelect,
                     label=question.question_text
                 )
+
+
+# ======================= SUBSCRIPTION & PAYMENT FORMS =======================
+
+class SubscriptionPackageForm(forms.ModelForm):
+    """Form untuk admin mengelola paket berlangganan"""
+    class Meta:
+        model = SubscriptionPackage
+        fields = ['name', 'package_type', 'description', 'features', 'price', 'duration_days', 'is_active', 'is_featured']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Nama paket berlangganan'
+            }),
+            'package_type': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'rows': 4,
+                'placeholder': 'Deskripsi paket berlangganan'
+            }),
+            'features': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'rows': 6,
+                'placeholder': 'Fitur 1\nFitur 2\nFitur 3\n...'
+            }),
+            'price': forms.NumberInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Harga dalam rupiah',
+                'min': '0',
+                'step': '1000'
+            }),
+            'duration_days': forms.NumberInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Durasi dalam hari',
+                'min': '1'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
+            }),
+            'is_featured': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['features'].help_text = "Masukkan setiap fitur dalam baris terpisah"
+        self.fields['duration_days'].help_text = "Durasi berlangganan dalam hari (contoh: 30 untuk 1 bulan)"
+        self.fields['is_featured'].help_text = "Tandai jika ini adalah paket unggulan"
+
+
+class PaymentProofForm(forms.ModelForm):
+    """Form untuk visitor upload bukti pembayaran"""
+    class Meta:
+        model = PaymentProof
+        fields = ['package', 'proof_image', 'payment_method', 'payment_date', 'amount_paid', 'notes']
+        widgets = {
+            'package': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+            }),
+            'proof_image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400',
+                'accept': 'image/*'
+            }),
+            'payment_method': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+                'placeholder': 'Contoh: Transfer Bank BCA, OVO, GoPay, dll'
+            }),
+            'payment_date': forms.DateTimeInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+                'type': 'datetime-local'
+            }),
+            'amount_paid': forms.NumberInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+                'placeholder': 'Jumlah yang dibayarkan',
+                'min': '0',
+                'step': '1000'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+                'rows': 3,
+                'placeholder': 'Catatan tambahan (opsional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hanya tampilkan paket yang aktif
+        self.fields['package'].queryset = SubscriptionPackage.objects.filter(is_active=True)
+        self.fields['proof_image'].help_text = "Upload screenshot atau foto bukti pembayaran (format: JPG, PNG, max 5MB)"
+        self.fields['payment_date'].help_text = "Tanggal dan waktu melakukan pembayaran"
+        
+    def clean_proof_image(self):
+        image = self.cleaned_data.get('proof_image')
+        if image:
+            if image.size > 5 * 1024 * 1024:  # 5MB
+                raise forms.ValidationError('Ukuran file terlalu besar. Maksimal 5MB.')
+            
+            # Check file type
+            if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                raise forms.ValidationError('Format file tidak didukung. Gunakan format JPG atau PNG.')
+        
+        return image
+    
+    def clean_amount_paid(self):
+        amount = self.cleaned_data.get('amount_paid')
+        package = self.cleaned_data.get('package')
+        
+        if amount and package:
+            if amount != package.price:
+                raise forms.ValidationError(f'Jumlah pembayaran harus sesuai dengan harga paket: Rp {package.price:,.0f}')
+        
+        return amount
+
+
+class PaymentVerificationForm(forms.ModelForm):
+    """Form untuk admin verifikasi pembayaran"""
+    class Meta:
+        model = PaymentProof
+        fields = ['status', 'admin_notes']
+        widgets = {
+            'status': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'admin_notes': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'rows': 4,
+                'placeholder': 'Catatan untuk user mengenai status pembayaran'
+            }),
+        }
+
+
+class UserRoleChangeForm(forms.ModelForm):
+    """Form khusus untuk admin mengubah role user"""
+    subscription_days = forms.IntegerField(
+        required=False,
+        initial=30,
+        min_value=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'placeholder': 'Jumlah hari berlangganan'
+        })
+    )
+    
+    subscription_package = forms.ModelChoiceField(
+        queryset=SubscriptionPackage.objects.filter(is_active=True),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+        })
+    )
+    
+    class Meta:
+        model = User
+        fields = ['role']
+        widgets = {
+            'role': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['subscription_days'].help_text = "Durasi berlangganan (hanya untuk upgrade ke Student)"
+        self.fields['subscription_package'].help_text = "Paket berlangganan (hanya untuk upgrade ke Student)"
+
+
+class UserSubscriptionEditForm(forms.ModelForm):
+    """Form untuk admin mengedit subscription user"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show active packages
+        self.fields['package'].queryset = SubscriptionPackage.objects.filter(is_active=True)
+        self.fields['end_date'].help_text = "Tanggal berakhir berlangganan (tidak boleh sebelum hari ini)"
+        self.fields['is_active'].help_text = "Status aktif subscription"
+        
+        # Format the initial value for datetime-local input
+        if self.instance and self.instance.end_date:
+            # Convert to local timezone and format for datetime-local input
+            from django.utils import timezone
+            local_dt = timezone.localtime(self.instance.end_date)
+            formatted_dt = local_dt.strftime('%Y-%m-%dT%H:%M')
+            self.fields['end_date'].widget.attrs['value'] = formatted_dt
+    
+    def clean_end_date(self):
+        """Validate that end_date is not in the past"""
+        from django.utils import timezone
+        end_date = self.cleaned_data.get('end_date')
+        
+        if end_date:
+            # Make sure end_date is timezone aware
+            if timezone.is_naive(end_date):
+                end_date = timezone.make_aware(end_date)
+            
+            # Check if end_date is in the past
+            now = timezone.now()
+            if end_date < now:
+                raise forms.ValidationError(
+                    'End date cannot be in the past. Please select a future date and time.'
+                )
+        
+        return end_date
+    
+    class Meta:
+        model = UserSubscription
+        fields = ['package', 'end_date', 'is_active']
+        widgets = {
+            'package': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'end_date': forms.DateTimeInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'type': 'datetime-local',
+                'step': '1'  # Allow seconds
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
+            }),
+        }

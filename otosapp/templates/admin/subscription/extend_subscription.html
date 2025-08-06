@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}Extend User Subscription - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header Section -->
+    <div class="mb-6">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                        <svg class="w-3 h-3 mr-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <a href="{% url 'admin_user_subscriptions' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">User Subscriptions</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">Extend Subscription</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Extend User Subscription</h1>
+                <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">Perpanjang masa langganan pengguna</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User & Subscription Information -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Current Subscription Details</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User Information -->
+                <div class="space-y-4">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white uppercase tracking-wide">User Information</h4>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            {% if subscription.user.profile_picture %}
+                                <img class="h-16 w-16 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600" src="{{ subscription.user.profile_picture.url }}" alt="Profile">
+                            {% else %}
+                                <div class="h-16 w-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                {{ subscription.user.get_full_name|default:subscription.user.username }}
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ subscription.user.email }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                Role: <span class="font-medium">{{ subscription.user.role.role_name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Information -->
+                <div class="space-y-4">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white uppercase tracking-wide">Subscription Information</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Package</label>
+                            <div class="mt-1 text-sm text-gray-900 dark:text-white">{{ subscription.package.name }}</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
+                            <div class="mt-1 text-sm text-gray-900 dark:text-white">{{ subscription.package.duration_days }} days</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
+                            <div class="mt-1 text-sm text-gray-900 dark:text-white">Rp {{ subscription.package.price|floatformat:0 }}</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                            <div class="mt-1 text-sm text-gray-900 dark:text-white">{{ subscription.start_date|date:"d M Y" }}</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Current End Date</label>
+                            <div class="mt-1 text-sm text-gray-900 dark:text-white">{{ subscription.end_date|date:"d M Y" }}</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                            <div class="mt-1">
+                                {% now "Y-m-d" as today %}
+                                {% if subscription.is_active and subscription.end_date|date:"Y-m-d" > today %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                        Active
+                                    </span>
+                                {% elif subscription.end_date|date:"Y-m-d" <= today %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                        Expired
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extend Subscription Form -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Extend Subscription</h3>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Tambahkan hari ke masa langganan pengguna ini</p>
+        </div>
+        <div class="p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Days Input -->
+                <div>
+                    <label for="days" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Additional Days
+                    </label>
+                    <div class="relative">
+                        <input type="number" 
+                               id="days" 
+                               name="days" 
+                               min="1" 
+                               max="365" 
+                               value="30"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="Enter number of days to extend">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm">days</span>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        Minimum: 1 day, Maximum: 365 days
+                    </p>
+                </div>
+
+                <!-- Quick Selection Buttons -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Quick Selection
+                    </label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <button type="button" onclick="setDays(7)" class="quick-select-btn px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            7 Days
+                        </button>
+                        <button type="button" onclick="setDays(14)" class="quick-select-btn px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            14 Days
+                        </button>
+                        <button type="button" onclick="setDays(30)" class="quick-select-btn px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            30 Days
+                        </button>
+                        <button type="button" onclick="setDays(90)" class="quick-select-btn px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            90 Days
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">Extension Preview</h4>
+                    <div class="text-sm text-blue-800 dark:text-blue-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span>Current End Date:</span>
+                            <span class="font-medium">{{ subscription.end_date|date:"d M Y" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>New End Date:</span>
+                            <span class="font-medium" id="new-end-date">{{ subscription.end_date|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button type="submit" 
+                            class="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            id="submit-btn">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Extend Subscription
+                    </button>
+                    <a href="{% url 'admin_user_subscriptions' %}" 
+                       class="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Function to set days value
+function setDays(days) {
+    document.getElementById('days').value = days;
+    updatePreview();
+    
+    // Update active state for quick select buttons
+    document.querySelectorAll('.quick-select-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-100', 'dark:bg-blue-800', 'text-blue-700', 'dark:text-blue-200');
+        btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+    });
+    
+    event.target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+    event.target.classList.add('bg-blue-100', 'dark:bg-blue-800', 'text-blue-700', 'dark:text-blue-200');
+}
+
+// Function to update preview
+function updatePreview() {
+    const daysInput = document.getElementById('days');
+    const newEndDateSpan = document.getElementById('new-end-date');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    const days = parseInt(daysInput.value) || 0;
+    
+    if (days > 0 && days <= 365) {
+        // Calculate new end date
+        const currentEndDate = new Date('{{ subscription.end_date|date:"Y-m-d" }}');
+        const newEndDate = new Date(currentEndDate.getTime() + (days * 24 * 60 * 60 * 1000));
+        
+        // Format date
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        newEndDateSpan.textContent = newEndDate.toLocaleDateString('en-GB', options);
+        
+        // Enable submit button
+        submitBtn.disabled = false;
+    } else {
+        newEndDateSpan.textContent = '{{ subscription.end_date|date:"d M Y" }}';
+        submitBtn.disabled = true;
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    const daysInput = document.getElementById('days');
+    
+    // Update preview when days input changes
+    daysInput.addEventListener('input', updatePreview);
+    
+    // Initial preview update
+    updatePreview();
+    
+    // Set default selection to 30 days button
+    document.querySelectorAll('.quick-select-btn').forEach(btn => {
+        if (btn.textContent.trim() === '30 Days') {
+            btn.click();
+        }
+    });
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const daysInput = document.getElementById('days');
+    const days = parseInt(daysInput.value) || 0;
+    
+    if (days < 1 || days > 365) {
+        e.preventDefault();
+        alert('Please enter a valid number of days (1-365).');
+        return false;
+    }
+    
+    if (!confirm(`Are you sure you want to extend this subscription by ${days} days?`)) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+
+{% endblock %}

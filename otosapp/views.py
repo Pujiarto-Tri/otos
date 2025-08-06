@@ -5,21 +5,65 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet
-from .decorators import admin_required, admin_or_teacher_required, students_required
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentProof, UserSubscription
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
+from .decorators import admin_required, admin_or_teacher_required, students_required, visitor_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Count, Avg, Max, Q
+from django.db.models import Count, Avg, Max, Q, Sum
 import json
+
+
+def check_and_downgrade_expired_subscriptions():
+    """Check and automatically downgrade expired subscriptions"""
+    expired_subscriptions = UserSubscription.objects.filter(
+        is_active=True,
+        end_date__lt=timezone.now(),
+        auto_downgrade_processed=False
+    )
+    
+    visitor_role, created = Role.objects.get_or_create(role_name='Visitor')
+    
+    for subscription in expired_subscriptions:
+        # Change user role back to Visitor
+        subscription.user.role = visitor_role
+        subscription.user.save()
+        
+        # Mark subscription as processed
+        subscription.is_active = False
+        subscription.auto_downgrade_processed = True
+        subscription.save()
+        
+        # You could also send notification here
+        print(f"Downgraded user {subscription.user.email} to Visitor due to expired subscription")
 
 
 def home(request):
     context = {}
     
     if request.user.is_authenticated:
-        if hasattr(request.user, 'role') and request.user.role and request.user.role.role_name == 'Student':
-            # Data untuk student dashboard - hanya test yang sudah submitted
+        # Auto downgrade expired subscriptions
+        check_and_downgrade_expired_subscriptions()
+        
+        if request.user.is_visitor():
+            # Visitor dashboard - show subscription packages
+            packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
+            
+            # Check if user has pending payment
+            pending_payment = PaymentProof.objects.filter(
+                user=request.user, 
+                status='pending'
+            ).first()
+            
+            context.update({
+                'is_visitor': True,
+                'packages': packages,
+                'pending_payment': pending_payment,
+                'subscription_status': request.user.get_subscription_status()
+            })
+            
+        elif request.user.is_student():
+            # Student dashboard - existing code with subscription check
             user_tests = Test.objects.filter(student=request.user, is_submitted=True).order_by('-date_taken')
             
             # Check for ongoing test (not submitted and not timed out)
@@ -81,6 +125,7 @@ def home(request):
                 ]
             
             context.update({
+                'is_student': True,
                 'user_tests': recent_tests,
                 'total_tests': total_tests,
                 'completed_tests': completed_tests,
@@ -88,11 +133,110 @@ def home(request):
                 'highest_score': round(highest_score, 1),
                 'popular_categories': popular_categories,
                 'ongoing_test': ongoing_test,
+                'subscription_status': request.user.get_subscription_status(),
+                'can_access_tryouts': request.user.can_access_tryouts()
             })
         
-        # Data users untuk admin (jika diperlukan)
-        if request.user.is_superuser or (hasattr(request.user, 'role') and request.user.role and request.user.role.role_name == 'Admin'):
-            context['users'] = User.objects.all()[:10]
+        # Data untuk admin dashboard dengan statistik lengkap
+        if request.user.is_superuser or request.user.is_admin():
+            from django.utils import timezone
+            from django.db.models import Count, Sum, Q
+            from datetime import datetime, timedelta
+            
+            # Basic user stats
+            total_users = User.objects.count()
+            new_users_today = User.objects.filter(date_joined__date=timezone.now().date()).count()
+            new_users_this_month = User.objects.filter(date_joined__month=timezone.now().month, 
+                                                     date_joined__year=timezone.now().year).count()
+            
+            # Payment statistics
+            total_payments = PaymentProof.objects.count()
+            pending_payments = PaymentProof.objects.filter(status='pending').count()
+            approved_payments = PaymentProof.objects.filter(status='approved').count()
+            rejected_payments = PaymentProof.objects.filter(status='rejected').count()
+            
+            # Revenue calculation (from approved payments)
+            total_revenue = PaymentProof.objects.filter(status='approved').aggregate(
+                total=Sum('amount_paid')
+            )['total'] or 0
+            
+            # Monthly revenue (current month)
+            current_month_revenue = PaymentProof.objects.filter(
+                status='approved',
+                verified_at__month=timezone.now().month,
+                verified_at__year=timezone.now().year
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0
+            
+            # Subscription statistics
+            total_subscriptions = UserSubscription.objects.count()
+            active_subscriptions = UserSubscription.objects.filter(is_active=True, end_date__gt=timezone.now()).count()
+            expired_subscriptions = UserSubscription.objects.filter(
+                Q(is_active=False) | Q(end_date__lt=timezone.now())
+            ).count()
+            
+            # Package popularity
+            popular_packages = SubscriptionPackage.objects.annotate(
+                subscription_count=Count('usersubscription')
+            ).order_by('-subscription_count')[:5]
+            
+            # Recent activities
+            recent_payments = PaymentProof.objects.order_by('-created_at')[:5]
+            recent_subscriptions = UserSubscription.objects.order_by('-created_at')[:5]
+            
+            # Monthly trends (last 6 months)
+            monthly_data = []
+            for i in range(6):
+                month_date = timezone.now() - timedelta(days=30*i)
+                month_revenue = PaymentProof.objects.filter(
+                    status='approved',
+                    verified_at__month=month_date.month,
+                    verified_at__year=month_date.year
+                ).aggregate(total=Sum('amount_paid'))['total'] or 0
+                
+                month_subscriptions = UserSubscription.objects.filter(
+                    created_at__month=month_date.month,
+                    created_at__year=month_date.year
+                ).count()
+                
+                monthly_data.append({
+                    'month': month_date.strftime('%B %Y'),
+                    'month_short': month_date.strftime('%b'),
+                    'revenue': float(month_revenue),
+                    'subscriptions': month_subscriptions
+                })
+            
+            monthly_data.reverse()  # Oldest to newest
+            
+            context.update({
+                'admin_stats': {
+                    'total_users': total_users,
+                    'new_users_today': new_users_today,
+                    'new_users_this_month': new_users_this_month,
+                    'total_payments': total_payments,
+                    'pending_payments': pending_payments,
+                    'approved_payments': approved_payments,
+                    'rejected_payments': rejected_payments,
+                    'total_revenue': float(total_revenue),
+                    'current_month_revenue': float(current_month_revenue),
+                    'total_subscriptions': total_subscriptions,
+                    'active_subscriptions': active_subscriptions,
+                    'expired_subscriptions': expired_subscriptions,
+                    'popular_packages': popular_packages,
+                    'recent_payments': recent_payments,
+                    'recent_subscriptions': recent_subscriptions,
+                    'monthly_data': monthly_data,
+                }
+            })
+    else:
+        # Not logged in - show public home with packages preview
+        featured_packages = SubscriptionPackage.objects.filter(
+            is_active=True, 
+            is_featured=True
+        ).order_by('price')[:3]
+        
+        context.update({
+            'featured_packages': featured_packages
+        })
     
     return render(request, 'home.html', context)
 
@@ -481,7 +625,7 @@ def update_utbk_coefficients(request, category_id):
 ##STUDENTS##
 
 @login_required
-@students_required
+@active_subscription_required
 def tryout_list(request):
     # Check if there's an ongoing test
     ongoing_test = Test.objects.filter(
@@ -547,7 +691,7 @@ def tryout_list(request):
     return render(request, 'students/tryouts/tryout_list.html', {'tryout': tryout_list})
 
 @login_required
-@students_required
+@active_subscription_required
 def take_test(request, category_id, question):
     from django.utils import timezone
     
@@ -709,7 +853,7 @@ def take_test(request, category_id, question):
     })
 
 @login_required
-@students_required
+@active_subscription_required
 def submit_test(request, test_id):
     """Submit test manually"""
     from django.utils import timezone
@@ -735,7 +879,7 @@ def submit_test(request, test_id):
     return redirect('home')
 
 @login_required
-@students_required
+@active_subscription_required
 def test_results(request, test_id):
     test = get_object_or_404(Test, id=test_id)
     
@@ -757,7 +901,7 @@ def test_results(request, test_id):
     })
 
 @login_required
-@students_required
+@active_subscription_required
 def test_results_detail(request, test_id):
     """Detailed test results showing each question, correct/incorrect answers, and scoring explanation"""
     test = get_object_or_404(Test, id=test_id, student=request.user)
@@ -860,7 +1004,7 @@ def get_scoring_explanation(category):
     return "Sistem penilaian tidak diketahui."
 
 @login_required
-@students_required
+@active_subscription_required
 def test_history(request):
     """Show all completed tests for the student with filtering and pagination"""
     # Get all tests for the current student
@@ -951,7 +1095,7 @@ def test_history(request):
     return render(request, 'students/tests/test_history.html', context)
 
 @login_required
-@students_required
+@active_subscription_required
 def force_end_test(request, test_id):
     """Force end ongoing test"""
     if request.method == 'POST':
@@ -1309,4 +1453,574 @@ def message_api_unread_count(request):
         ).exclude(sender=user).count()
     
     return JsonResponse({'unread_count': unread_count})
+
+
+# ======================= SUBSCRIPTION & PAYMENT VIEWS =======================
+
+def subscription_packages(request):
+    """View untuk menampilkan paket berlangganan"""
+    packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
+    
+    # Check if user has pending payment
+    pending_payment = None
+    if request.user.is_authenticated:
+        pending_payment = PaymentProof.objects.filter(
+            user=request.user, 
+            status='pending'
+        ).first()
+    
+    context = {
+        'packages': packages,
+        'pending_payment': pending_payment,
+    }
+    
+    if request.user.is_authenticated:
+        context['subscription_status'] = request.user.get_subscription_status()
+    
+    return render(request, 'subscription/packages.html', context)
+
+
+@login_required
+@visitor_required
+def upload_payment_proof(request, package_id):
+    """View untuk visitor upload bukti pembayaran"""
+    package = get_object_or_404(SubscriptionPackage, id=package_id, is_active=True)
+    
+    # Check if user already has pending payment for this package
+    existing_payment = PaymentProof.objects.filter(
+        user=request.user,
+        package=package,
+        status='pending'
+    ).first()
+    
+    if existing_payment:
+        messages.warning(request, 'Anda sudah memiliki bukti pembayaran yang sedang diverifikasi untuk paket ini.')
+        return redirect('subscription_packages')
+    
+    if request.method == 'POST':
+        form = PaymentProofForm(request.POST, request.FILES)
+        if form.is_valid():
+            payment_proof = form.save(commit=False)
+            payment_proof.user = request.user
+            payment_proof.save()
+            
+            messages.success(request, 'Bukti pembayaran berhasil diupload! Silakan tunggu verifikasi dari admin.')
+            return redirect('subscription_packages')
+    else:
+        form = PaymentProofForm(initial={'package': package, 'amount_paid': package.price})
+    
+    context = {
+        'form': form,
+        'package': package,
+    }
+    
+    return render(request, 'subscription/upload_payment.html', context)
+
+
+@login_required
+def payment_status(request):
+    """View untuk melihat status pembayaran user"""
+    payments = PaymentProof.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'payments': payments,
+        'subscription_status': request.user.get_subscription_status(),
+    }
+    
+    return render(request, 'subscription/payment_status.html', context)
+
+
+# ======================= ADMIN SUBSCRIPTION MANAGEMENT =======================
+
+@login_required
+@admin_required
+def admin_subscription_packages(request):
+    """Admin view untuk mengelola paket berlangganan"""
+    packages = SubscriptionPackage.objects.all().order_by('price')
+    
+    context = {
+        'packages': packages,
+    }
+    
+    return render(request, 'admin/subscription/package_list.html', context)
+
+
+@login_required
+@admin_required
+def create_subscription_package(request):
+    """Admin view untuk membuat paket berlangganan baru"""
+    if request.method == 'POST':
+        form = SubscriptionPackageForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Paket berlangganan berhasil dibuat!')
+            return redirect('admin_subscription_packages')
+    else:
+        form = SubscriptionPackageForm()
+    
+    context = {
+        'form': form,
+        'title': 'Buat Paket Berlangganan Baru'
+    }
+    
+    return render(request, 'admin/subscription/package_form.html', context)
+
+
+@login_required
+@admin_required
+def update_subscription_package(request, package_id):
+    """Admin view untuk update paket berlangganan"""
+    package = get_object_or_404(SubscriptionPackage, id=package_id)
+    
+    if request.method == 'POST':
+        form = SubscriptionPackageForm(request.POST, instance=package)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Paket berlangganan berhasil diupdate!')
+            return redirect('admin_subscription_packages')
+    else:
+        form = SubscriptionPackageForm(instance=package)
+    
+    context = {
+        'form': form,
+        'package': package,
+        'title': 'Edit Paket Berlangganan'
+    }
+    
+    return render(request, 'admin/subscription/package_form.html', context)
+
+
+@login_required
+@admin_required
+def delete_subscription_package(request, package_id):
+    """Admin view untuk delete paket berlangganan"""
+    package = get_object_or_404(SubscriptionPackage, id=package_id)
+    
+    if request.method == 'POST':
+        package.delete()
+        messages.success(request, 'Paket berlangganan berhasil dihapus!')
+        return redirect('admin_subscription_packages')
+    
+    context = {
+        'package': package,
+    }
+    
+    return render(request, 'admin/subscription/package_confirm_delete.html', context)
+
+
+@login_required
+@admin_required
+def admin_payment_verifications(request):
+    """Admin view untuk verifikasi pembayaran"""
+    status_filter = request.GET.get('status', '')
+    search_query = request.GET.get('search', '')
+    
+    payments = PaymentProof.objects.all().order_by('-created_at')
+    
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    
+    if search_query:
+        payments = payments.filter(
+            Q(user__email__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(package__name__icontains=search_query)
+        )
+    
+    # Calculate statistics for all payments (not filtered)
+    all_payments = PaymentProof.objects.all()
+    payment_stats = {
+        'total_count': all_payments.count(),
+        'pending_count': all_payments.filter(status='pending').count(),
+        'approved_count': all_payments.filter(status='approved').count(),
+        'rejected_count': all_payments.filter(status='rejected').count(),
+    }
+    
+    # Pagination
+    paginator = Paginator(payments, 10)
+    page = request.GET.get('page')
+    try:
+        payments_page = paginator.page(page)
+    except PageNotAnInteger:
+        payments_page = paginator.page(1)
+    except EmptyPage:
+        payments_page = paginator.page(paginator.num_pages)
+    
+    context = {
+        'payments': payments_page,
+        'status_choices': PaymentProof.STATUS_CHOICES,
+        'current_status': status_filter,
+        'current_search': search_query,
+        'payment_stats': payment_stats,
+    }
+    
+    return render(request, 'admin/payment/verification_list.html', context)
+
+
+@login_required
+@admin_required
+def verify_payment(request, payment_id):
+    """Admin view untuk verifikasi individual payment"""
+    payment = get_object_or_404(PaymentProof, id=payment_id)
+    original_status = payment.status  # Store original status to detect changes
+    
+    if request.method == 'POST':
+        form = PaymentVerificationForm(request.POST, instance=payment)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.verified_by = request.user
+            payment.verified_at = timezone.now()
+            payment.save()
+            
+            # Handle status changes
+            if payment.status == 'approved' and original_status != 'approved':
+                # Payment newly approved - upgrade user
+                upgrade_user_to_student(payment.user, payment.package, payment)
+                messages.success(request, f'Pembayaran disetujui! User {payment.user.email} telah diupgrade ke Student.')
+            
+            elif payment.status == 'rejected' and original_status == 'approved':
+                # Payment was approved but now rejected - deactivate subscription
+                deactivate_user_subscription(payment.user, payment)
+                
+                # Check current user status to provide accurate message
+                payment.user.refresh_from_db()
+                if payment.user.role.role_name == 'Visitor':
+                    messages.warning(request, f'Pembayaran ditolak! User {payment.user.email} telah diturunkan ke Visitor dan subscription dinonaktifkan.')
+                else:
+                    messages.warning(request, f'Pembayaran ditolak! Subscription terkait telah dinonaktifkan, namun user {payment.user.email} masih memiliki subscription aktif lain.')
+            
+            elif payment.status == 'rejected':
+                # Payment rejected (not previously approved)
+                messages.info(request, f'Pembayaran user {payment.user.email} ditolak.')
+            
+            else:
+                # Other status changes
+                messages.info(request, f'Status pembayaran user {payment.user.email} telah diupdate.')
+            
+            return redirect('admin_payment_verifications')
+    else:
+        form = PaymentVerificationForm(instance=payment)
+    
+    context = {
+        'form': form,
+        'payment': payment,
+    }
+    
+    return render(request, 'admin/payment/verify_payment.html', context)
+
+
+def upgrade_user_to_student(user, package, payment_proof):
+    """Upgrade visitor to student with subscription"""
+    try:
+        student_role = Role.objects.get(role_name='Student')
+        
+        with transaction.atomic():
+            # Change user role
+            user.role = student_role
+            user.save()
+            
+            # Create or update subscription
+            subscription, created = UserSubscription.objects.get_or_create(
+                user=user,
+                defaults={
+                    'package': package,
+                    'end_date': timezone.now() + timezone.timedelta(days=package.duration_days),
+                    'payment_proof': payment_proof
+                }
+            )
+            
+            if not created:
+                # Extend existing subscription
+                subscription.package = package
+                subscription.extend_subscription(package.duration_days)
+                subscription.payment_proof = payment_proof
+                subscription.is_active = True
+                subscription.save()
+    
+    except Role.DoesNotExist:
+        # Create Student role if it doesn't exist
+        student_role = Role.objects.create(role_name='Student')
+        upgrade_user_to_student(user, package, payment_proof)
+
+
+def deactivate_user_subscription(user, payment_proof):
+    """Deactivate user subscription and downgrade to Visitor when payment is rejected"""
+    try:
+        visitor_role = Role.objects.get(role_name='Visitor')
+        
+        with transaction.atomic():
+            # Since UserSubscription uses OneToOneField, each user has only one subscription
+            try:
+                subscription = user.subscription  # OneToOneField reverse lookup
+                
+                # Check if this subscription is linked to the rejected payment
+                if subscription.payment_proof == payment_proof:
+                    # This subscription is directly linked to the rejected payment
+                    subscription.is_active = False
+                    subscription.save()
+                    
+                    # Downgrade user to Visitor since their payment was rejected
+                    user.role = visitor_role
+                    user.save()
+                    
+                    print(f"Deactivated subscription {subscription.id} and downgraded user {user.email} to Visitor due to rejected payment {payment_proof.id}")
+                else:
+                    # The subscription is linked to a different payment
+                    # Check if that payment is still approved
+                    if subscription.payment_proof and subscription.payment_proof.status == 'approved':
+                        # User has an active subscription with an approved payment, don't downgrade
+                        print(f"User {user.email} has active subscription linked to approved payment {subscription.payment_proof.id}, not downgrading")
+                    else:
+                        # The subscription's payment is also not approved, deactivate
+                        subscription.is_active = False
+                        subscription.save()
+                        user.role = visitor_role
+                        user.save()
+                        print(f"Deactivated subscription {subscription.id} and downgraded user {user.email} to Visitor")
+                        
+            except UserSubscription.DoesNotExist:
+                # User has no subscription, just ensure they're a Visitor
+                if user.role.role_name != 'Visitor':
+                    user.role = visitor_role
+                    user.save()
+                    print(f"Downgraded user {user.email} to Visitor (no subscription found)")
+    
+    except Role.DoesNotExist:
+        # Create Visitor role if it doesn't exist
+        visitor_role = Role.objects.create(role_name='Visitor')
+        deactivate_user_subscription(user, payment_proof)
+
+
+@login_required
+@admin_required
+def admin_user_subscriptions(request):
+    """Admin view untuk melihat semua subscription users"""
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    
+    subscriptions = UserSubscription.objects.select_related('user', 'package').all().order_by('-created_at')
+    
+    if search_query:
+        subscriptions = subscriptions.filter(
+            Q(user__email__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query)
+        )
+    
+    if status_filter == 'active':
+        subscriptions = subscriptions.filter(is_active=True, end_date__gt=timezone.now())
+    elif status_filter == 'expired':
+        subscriptions = subscriptions.filter(end_date__lt=timezone.now())
+    elif status_filter == 'expiring_soon':
+        week_from_now = timezone.now() + timezone.timedelta(days=7)
+        subscriptions = subscriptions.filter(
+            is_active=True, 
+            end_date__gt=timezone.now(),
+            end_date__lt=week_from_now
+        )
+    
+    # Pagination
+    paginator = Paginator(subscriptions, 15)
+    page = request.GET.get('page')
+    try:
+        subscriptions_page = paginator.page(page)
+    except PageNotAnInteger:
+        subscriptions_page = paginator.page(1)
+    except EmptyPage:
+        subscriptions_page = paginator.page(paginator.num_pages)
+    
+    # Calculate statistics
+    all_subscriptions = UserSubscription.objects.all()
+    current_time = timezone.now()
+    week_from_now = current_time + timezone.timedelta(days=7)
+    
+    total_count = all_subscriptions.count()
+    active_count = all_subscriptions.filter(
+        is_active=True, 
+        end_date__gt=current_time
+    ).count()
+    expired_count = all_subscriptions.filter(
+        end_date__lt=current_time
+    ).count()
+    expiring_soon_count = all_subscriptions.filter(
+        is_active=True,
+        end_date__gt=current_time,
+        end_date__lt=week_from_now
+    ).count()
+    
+    context = {
+        'subscriptions': subscriptions_page,
+        'current_search': search_query,
+        'current_status': status_filter,
+        'status_choices': [
+            ('', 'Semua'),
+            ('active', 'Aktif'),
+            ('expired', 'Kadaluarsa'),
+            ('expiring_soon', 'Akan Berakhir'),
+        ],
+        'total_count': total_count,
+        'active_count': active_count,
+        'expired_count': expired_count,
+        'expiring_soon_count': expiring_soon_count,
+    }
+    
+    return render(request, 'admin/subscription/user_subscriptions.html', context)
+
+
+@login_required
+@admin_required
+def extend_user_subscription(request, subscription_id):
+    """Admin view untuk extend subscription user"""
+    subscription = get_object_or_404(UserSubscription, id=subscription_id)
+    
+    if request.method == 'POST':
+        days = request.POST.get('days')
+        try:
+            days = int(days)
+            if days > 0:
+                subscription.extend_subscription(days)
+                messages.success(request, f'Subscription user {subscription.user.email} berhasil diperpanjang {days} hari.')
+            else:
+                messages.error(request, 'Jumlah hari harus lebih dari 0.')
+        except ValueError:
+            messages.error(request, 'Jumlah hari tidak valid.')
+        
+        return redirect('admin_user_subscriptions')
+    
+    context = {
+        'subscription': subscription,
+    }
+    
+    return render(request, 'admin/subscription/extend_subscription.html', context)
+
+
+@login_required
+@admin_required
+def manual_role_change(request, user_id):
+    """Admin view untuk manual change user role dengan subscription"""
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        form = UserRoleChangeForm(request.POST, instance=user)
+        if form.is_valid():
+            new_role = form.cleaned_data['role']
+            old_role = user.role
+            
+            with transaction.atomic():
+                user.role = new_role
+                user.save()
+                
+                # Jika upgrade ke Student, buat subscription
+                if new_role.role_name == 'Student' and old_role.role_name == 'Visitor':
+                    package = form.cleaned_data.get('subscription_package')
+                    days = form.cleaned_data.get('subscription_days', 30)
+                    
+                    if package:
+                        subscription, created = UserSubscription.objects.get_or_create(
+                            user=user,
+                            defaults={
+                                'package': package,
+                                'end_date': timezone.now() + timezone.timedelta(days=days)
+                            }
+                        )
+                        
+                        if not created:
+                            subscription.extend_subscription(days)
+                            subscription.package = package
+                            subscription.is_active = True
+                            subscription.save()
+                
+                # Jika downgrade ke Visitor, deaktivasi subscription
+                elif new_role.role_name == 'Visitor' and old_role.role_name == 'Student':
+                    try:
+                        subscription = user.subscription
+                        subscription.is_active = False
+                        subscription.save()
+                    except UserSubscription.DoesNotExist:
+                        pass
+            
+            messages.success(request, f'Role user {user.email} berhasil diubah dari {old_role.role_name} ke {new_role.role_name}.')
+            return redirect('user_list')
+    else:
+        form = UserRoleChangeForm(instance=user)
+    
+    context = {
+        'form': form,
+        'user': user,
+    }
+    
+    return render(request, 'admin/manage_user/change_role.html', context)
+
+
+@login_required
+@admin_required
+def toggle_subscription_status(request, subscription_id):
+    """API endpoint untuk toggle status subscription"""
+    if request.method == 'POST':
+        try:
+            subscription = get_object_or_404(UserSubscription, id=subscription_id)
+            
+            # Toggle the is_active status
+            subscription.is_active = not subscription.is_active
+            subscription.save()
+            
+            action = 'activated' if subscription.is_active else 'deactivated'
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Subscription {action} successfully',
+                'new_status': subscription.is_active
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=400)
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid request method'
+    }, status=405)
+
+
+@login_required
+@admin_required
+def subscription_details(request, subscription_id):
+    """Admin view untuk melihat detail subscription"""
+    subscription = get_object_or_404(UserSubscription, id=subscription_id)
+    
+    context = {
+        'subscription': subscription,
+        'user': subscription.user,
+        'package': subscription.package,
+        'payment_proof': subscription.payment_proof,
+    }
+    
+    return render(request, 'admin/subscription/subscription_details.html', context)
+
+
+@login_required
+@admin_required
+def edit_user_subscription(request, subscription_id):
+    """Admin view untuk edit subscription user"""
+    subscription = get_object_or_404(UserSubscription, id=subscription_id)
+    
+    if request.method == 'POST':
+        form = UserSubscriptionEditForm(request.POST, instance=subscription)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Subscription for {subscription.user.email} has been updated successfully!')
+            return redirect('admin_user_subscriptions')
+    else:
+        form = UserSubscriptionEditForm(instance=subscription)
+    
+    context = {
+        'form': form,
+        'subscription': subscription,
+        'title': f'Edit Subscription - {subscription.user.email}'
+    }
+    
+    return render(request, 'admin/subscription/edit_subscription.html', context)
 

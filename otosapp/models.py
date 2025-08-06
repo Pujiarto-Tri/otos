@@ -29,6 +29,80 @@ class User(AbstractUser):
         help_text="Specific permissions for this user.",
         verbose_name="user permissions"
     )
+    
+    def is_visitor(self):
+        """Check if user has visitor role"""
+        return self.role and self.role.role_name == 'Visitor'
+    
+    def is_student(self):
+        """Check if user has student role"""
+        return self.role and self.role.role_name == 'Student'
+    
+    def is_admin(self):
+        """Check if user has admin role"""
+        return self.role and self.role.role_name == 'Admin'
+    
+    def is_teacher(self):
+        """Check if user has teacher role"""
+        return self.role and self.role.role_name == 'Teacher'
+    
+    def has_active_subscription(self):
+        """Check if user has active subscription"""
+        try:
+            subscription = self.subscription
+            # Subscription aktif jika: is_active=True DAN belum expired
+            return subscription.is_active and not subscription.is_expired()
+        except UserSubscription.DoesNotExist:
+            return False
+    
+    def can_access_tryouts(self):
+        """Check if user can access tryout features"""
+        return self.is_student() and self.has_active_subscription()
+    
+    def get_subscription_status(self):
+        """Get detailed subscription status"""
+        try:
+            subscription = self.subscription
+            
+            # Jika subscription di-deactivate oleh admin
+            if not subscription.is_active:
+                return {
+                    'status': 'deactivated',
+                    'message': 'Langganan Anda telah dinonaktifkan oleh admin',
+                    'end_date': subscription.end_date,
+                    'package': subscription.package
+                }
+            # Jika subscription expired berdasarkan tanggal
+            elif subscription.is_expired():
+                return {
+                    'status': 'expired',
+                    'message': 'Langganan Anda telah berakhir',
+                    'end_date': subscription.end_date,
+                    'package': subscription.package
+                }
+            # Jika akan expired dalam 7 hari
+            elif subscription.days_remaining() <= 7:
+                return {
+                    'status': 'expiring_soon',
+                    'message': f'Langganan akan berakhir dalam {subscription.days_remaining()} hari',
+                    'end_date': subscription.end_date,
+                    'package': subscription.package
+                }
+            # Jika masih aktif
+            else:
+                return {
+                    'status': 'active',
+                    'message': f'Langganan aktif hingga {subscription.end_date.strftime("%d %B %Y")}',
+                    'end_date': subscription.end_date,
+                    'package': subscription.package
+                }
+        except UserSubscription.DoesNotExist:
+            return {
+                'status': 'none',
+                'message': 'Tidak ada langganan aktif',
+                'end_date': None,
+                'package': None
+            }
 
 class Role(models.Model):
     role_name = models.CharField(max_length=200, unique=True)
@@ -506,3 +580,138 @@ class Message(models.Model):
 def message_pre_delete(sender, instance, **kwargs):
     """Handle file deletion sebelum message dihapus"""
     instance.delete_attachment()
+
+
+# ======================= SUBSCRIPTION & PAYMENT MODELS =======================
+
+class SubscriptionPackage(models.Model):
+    """Model untuk paket berlangganan"""
+    PACKAGE_TYPES = [
+        ('basic', 'Paket Dasar'),
+        ('premium', 'Paket Premium'),
+        ('pro', 'Paket Pro'),
+        ('ultimate', 'Paket Ultimate'),
+    ]
+    
+    name = models.CharField(max_length=100, verbose_name="Nama Paket")
+    package_type = models.CharField(max_length=20, choices=PACKAGE_TYPES, verbose_name="Tipe Paket")
+    description = models.TextField(verbose_name="Deskripsi Paket")
+    features = models.TextField(help_text="Fitur-fitur yang tersedia (satu per baris)", verbose_name="Fitur")
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Harga")
+    duration_days = models.IntegerField(verbose_name="Durasi (hari)")
+    is_active = models.BooleanField(default=True, verbose_name="Aktif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Featured package highlighting
+    is_featured = models.BooleanField(default=False, verbose_name="Paket Unggulan")
+    
+    class Meta:
+        verbose_name = "Paket Berlangganan"
+        verbose_name_plural = "Paket Berlangganan"
+        ordering = ['price']
+    
+    def __str__(self):
+        return f"{self.name} - Rp {self.price:,.0f}"
+    
+    def get_features_list(self):
+        """Return features as a list"""
+        return [feature.strip() for feature in self.features.split('\n') if feature.strip()]
+    
+    def get_price_formatted(self):
+        """Return formatted price"""
+        return f"Rp {self.price:,.0f}"
+
+
+class PaymentProof(models.Model):
+    """Model untuk bukti pembayaran yang diupload user"""
+    STATUS_CHOICES = [
+        ('pending', 'Menunggu Verifikasi'),
+        ('approved', 'Disetujui'),
+        ('rejected', 'Ditolak'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_proofs')
+    package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE)
+    proof_image = models.ImageField(upload_to='payment_proofs/', verbose_name="Bukti Pembayaran")
+    payment_method = models.CharField(max_length=100, verbose_name="Metode Pembayaran")
+    payment_date = models.DateTimeField(verbose_name="Tanggal Pembayaran")
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Jumlah Bayar")
+    notes = models.TextField(blank=True, null=True, verbose_name="Catatan")
+    
+    # Admin verification
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                  related_name='verified_payments', verbose_name="Diverifikasi oleh")
+    verified_at = models.DateTimeField(null=True, blank=True)
+    admin_notes = models.TextField(blank=True, null=True, verbose_name="Catatan Admin")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Bukti Pembayaran"
+        verbose_name_plural = "Bukti Pembayaran"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.package.name} - {self.get_status_display()}"
+    
+    def delete_proof_image(self):
+        """Delete proof image file"""
+        if self.proof_image:
+            if os.path.isfile(self.proof_image.path):
+                os.remove(self.proof_image.path)
+
+
+class UserSubscription(models.Model):
+    """Model untuk subscription aktif user"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
+    package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE)
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    payment_proof = models.ForeignKey(PaymentProof, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Auto expiry tracking
+    auto_downgrade_processed = models.BooleanField(default=False, help_text="Apakah downgrade otomatis sudah diproses")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Subscription User"
+        verbose_name_plural = "Subscription User"
+        ordering = ['-end_date']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.package.name} (expires: {self.end_date.strftime('%Y-%m-%d')})"
+    
+    def is_expired(self):
+        """Check if subscription is expired"""
+        from django.utils import timezone
+        return timezone.now() > self.end_date
+    
+    def days_remaining(self):
+        """Get days remaining in subscription"""
+        from django.utils import timezone
+        if self.is_expired():
+            return 0
+        delta = self.end_date - timezone.now()
+        return delta.days
+    
+    def extend_subscription(self, days):
+        """Extend subscription by specified days"""
+        from django.utils import timezone
+        if self.is_expired():
+            self.end_date = timezone.now() + timezone.timedelta(days=days)
+        else:
+            self.end_date = self.end_date + timezone.timedelta(days=days)
+        self.auto_downgrade_processed = False
+        self.save()
+
+
+@receiver(pre_delete, sender=PaymentProof)
+def payment_proof_pre_delete(sender, instance, **kwargs):
+    """Handle file deletion sebelum PaymentProof dihapus"""
+    instance.delete_proof_image()
