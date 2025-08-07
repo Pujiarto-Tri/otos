@@ -1538,8 +1538,27 @@ def admin_subscription_packages(request):
     """Admin view untuk mengelola paket berlangganan"""
     packages = SubscriptionPackage.objects.all().order_by('price')
     
+    # Calculate statistics
+    total_packages = packages.count()
+    featured_count = packages.filter(is_featured=True).count()
+    
+    # Calculate average price
+    avg_price = 0
+    max_duration = 0
+    if packages.exists():
+        from django.db.models import Avg, Max
+        avg_result = packages.aggregate(avg_price=Avg('price'))
+        avg_price = avg_result['avg_price'] or 0
+        
+        max_result = packages.aggregate(max_duration=Max('duration_days'))
+        max_duration = max_result['max_duration'] or 0
+    
     context = {
         'packages': packages,
+        'total_packages': total_packages,
+        'featured_count': featured_count,
+        'avg_price': avg_price,
+        'max_duration': max_duration,
     }
     
     return render(request, 'admin/subscription/package_list.html', context)
