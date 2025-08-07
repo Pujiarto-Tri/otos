@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}🏆 Peringkat Mahasiswa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Header Section -->
+    <div class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mr-6 backdrop-blur-sm">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold mb-2">🏆 Peringkat Mahasiswa</h1>
+                    <p class="text-white/90 text-lg">Lihat pencapaian terbaik dan bersaing dengan mahasiswa lainnya</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-8">
+        <form method="GET" class="space-y-6" id="filterForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                
+                <!-- Ranking Type -->
+                <div class="space-y-2">
+                    <label for="ranking_type" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        Jenis Peringkat
+                    </label>
+                    <select name="ranking_type" id="ranking_type" 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200"
+                            onchange="toggleCategoryField()">
+                        <option value="overall_average" {% if ranking_type == 'overall_average' %}selected{% endif %}>
+                            📊 Rata-rata Keseluruhan
+                        </option>
+                        <option value="category_best" {% if ranking_type == 'category_best' %}selected{% endif %}>
+                            🎯 Skor Tertinggi per Kategori
+                        </option>
+                        <option value="category_average" {% if ranking_type == 'category_average' %}selected{% endif %}>
+                            📈 Rata-rata per Kategori
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Category Selection -->
+                <div class="space-y-2" id="category_field">
+                    <label for="category_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                        </svg>
+                        Kategori
+                    </label>
+                    <select name="category_id" id="category_id" 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="">Semua Kategori</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category_id == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.category_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Time Period -->
+                <div class="space-y-2">
+                    <label for="time_period" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Periode Waktu
+                    </label>
+                    <select name="time_period" id="time_period" 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="all" {% if time_period == 'all' %}selected{% endif %}>🌟 Sepanjang Waktu</option>
+                        <option value="week" {% if time_period == 'week' %}selected{% endif %}>📅 Minggu Ini</option>
+                        <option value="month" {% if time_period == 'month' %}selected{% endif %}>📆 Bulan Ini</option>
+                        <option value="year" {% if time_period == 'year' %}selected{% endif %}>🗓️ Tahun Ini</option>
+                    </select>
+                </div>
+
+                <!-- Scoring Method -->
+                <div class="space-y-2">
+                    <label for="scoring_method" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Metode Penilaian
+                    </label>
+                    <select name="scoring_method" id="scoring_method" 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="all" {% if scoring_method == 'all' %}selected{% endif %}>🎲 Semua Metode</option>
+                        <option value="default" {% if scoring_method == 'default' %}selected{% endif %}>📊 Standar</option>
+                        <option value="custom" {% if scoring_method == 'custom' %}selected{% endif %}>⚖️ Berbobot</option>
+                        <option value="utbk" {% if scoring_method == 'utbk' %}selected{% endif %}>🎓 UTBK</option>
+                    </select>
+                </div>
+
+                <!-- Minimum Tests -->
+                <div class="space-y-2">
+                    <label for="min_tests" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                        </svg>
+                        Min. Tes
+                    </label>
+                    <select name="min_tests" id="min_tests" 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="1" {% if min_tests == 1 %}selected{% endif %}>1 Tes</option>
+                        <option value="3" {% if min_tests == 3 %}selected{% endif %}>3 Tes</option>
+                        <option value="5" {% if min_tests == 5 %}selected{% endif %}>5 Tes</option>
+                        <option value="10" {% if min_tests == 10 %}selected{% endif %}>10 Tes</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <button type="submit" 
+                        class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                    </svg>
+                    Terapkan Filter
+                </button>
+                
+                <a href="{% url 'student_rankings' %}" 
+                   class="inline-flex items-center justify-center px-6 py-3 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Reset Filter
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ total_students }}</div>
+                    <div class="text-blue-100">Total Peserta</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ total_tests_taken }}</div>
+                    <div class="text-green-100">Total Tes Dikerjakan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ rankings|length }}</div>
+                    <div class="text-purple-100">Dalam Peringkat</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current User Rank (if not in top rankings) -->
+    {% if current_user_rank %}
+    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 mb-8 text-white shadow-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">Peringkat Anda: #{{ current_user_rank.rank }}</div>
+                    <div class="text-white/90">
+                        Skor: {{ current_user_rank.score }}% • {{ current_user_rank.total_tests }} tes dikerjakan
+                    </div>
+                </div>
+            </div>
+            <div class="text-6xl font-bold opacity-20">#{{ current_user_rank.rank }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ranking Type Description -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-8">
+        <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-4">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {% if ranking_type == 'overall_average' %}
+                    📊 Peringkat Rata-rata Keseluruhan
+                {% elif ranking_type == 'category_best' %}
+                    🎯 Peringkat Skor Tertinggi{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
+                {% elif ranking_type == 'category_average' %}
+                    📈 Peringkat Rata-rata{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
+                {% endif %}
+            </h3>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">
+            {% if ranking_type == 'overall_average' %}
+                Menampilkan peringkat berdasarkan rata-rata skor dari semua kategori yang pernah dikerjakan. Semakin tinggi rata-rata, semakin baik peringkatnya.
+            {% elif ranking_type == 'category_best' %}
+                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai dalam kategori tertentu. Cocok untuk melihat pencapaian maksimal di bidang spesifik.
+            {% elif ranking_type == 'category_average' %}
+                Menampilkan peringkat berdasarkan rata-rata skor dalam kategori tertentu. Menunjukkan konsistensi performa dalam bidang spesifik.
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Rankings Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <svg class="w-6 h-6 mr-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"></path>
+                </svg>
+                🏆 Papan Peringkat
+            </h2>
+        </div>
+
+        {% if rankings %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Peringkat
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Mahasiswa
+                        </th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% if ranking_type == 'category_best' %}
+                                Skor Tertinggi
+                            {% else %}
+                                Rata-rata Skor
+                            {% endif %}
+                        </th>
+                        {% if ranking_type == 'category_best' %}
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Rata-rata
+                        </th>
+                        {% endif %}
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Total Tes
+                        </th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Tes Terakhir
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                    {% for ranking in rankings %}
+                    <tr class="{% if ranking.is_current_user %}bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20{% else %}hover:bg-gray-50 dark:hover:bg-gray-700{% endif %} transition-colors duration-200">
+                        <!-- Rank -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% if ranking.rank <= 3 %}
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold
+                                        {% if ranking.rank == 1 %}bg-gradient-to-br from-yellow-400 to-yellow-500
+                                        {% elif ranking.rank == 2 %}bg-gradient-to-br from-gray-400 to-gray-500  
+                                        {% elif ranking.rank == 3 %}bg-gradient-to-br from-amber-600 to-amber-700{% endif %}">
+                                        {% if ranking.rank == 1 %}🥇
+                                        {% elif ranking.rank == 2 %}🥈
+                                        {% elif ranking.rank == 3 %}🥉{% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="w-10 h-10 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                                        <span class="text-lg font-bold text-gray-700 dark:text-gray-300">#{{ ranking.rank }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if ranking.is_current_user %}
+                                    <span class="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full font-medium">
+                                        Anda
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Student Info -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold text-sm">
+                                        {{ ranking.username|first|upper }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                        {{ ranking.username }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ ranking.email }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Main Score -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="text-2xl font-bold {% if ranking.score >= 90 %}text-green-600 dark:text-green-400{% elif ranking.score >= 80 %}text-blue-600 dark:text-blue-400{% elif ranking.score >= 70 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ ranking.score }}%
+                            </div>
+                        </td>
+
+                        {% if ranking_type == 'category_best' %}
+                        <!-- Average Score (for category_best) -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="text-lg text-gray-600 dark:text-gray-400">
+                                {{ ranking.avg_score }}%
+                            </div>
+                        </td>
+                        {% endif %}
+
+                        <!-- Total Tests -->
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                {{ ranking.total_tests }} tes
+                            </span>
+                        </td>
+
+                        <!-- Latest Test -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ ranking.latest_test|date:"d M Y" }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Belum Ada Data Peringkat</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6">
+                Belum ada mahasiswa yang memenuhi kriteria filter yang dipilih. Coba ubah filter atau mulai mengerjakan tes.
+            </p>
+            <a href="{% url 'tryout_list' %}" 
+               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Mulai Mengerjakan Tes
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tips Section -->
+    <div class="mt-8 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-700">
+        <h4 class="font-semibold text-green-900 dark:text-green-200 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            💡 Tips Meningkatkan Peringkat
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-2">
+                <div class="font-medium text-purple-700 dark:text-purple-300 text-sm">🎯 Konsistensi</div>
+                <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
+                    <li>• Kerjakan tes secara rutin</li>
+                    <li>• Jaga performa di semua kategori</li>
+                    <li>• Fokus pada peningkatan bertahap</li>
+                </ul>
+            </div>
+            <div class="space-y-2">
+                <div class="font-medium text-blue-700 dark:text-blue-300 text-sm">📚 Strategi Belajar</div>
+                <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
+                    <li>• Analisis hasil tes sebelumnya</li>
+                    <li>• Fokus pada kelemahan</li>
+                    <li>• Manfaatkan berbagai metode penilaian</li>
+                </ul>
+            </div>
+            <div class="space-y-2">
+                <div class="font-medium text-orange-700 dark:text-orange-300 text-sm">🏆 Kompetisi Sehat</div>
+                <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
+                    <li>• Bandingkan dengan teman sekelas</li>
+                    <li>• Set target peringkat realistis</li>
+                    <li>• Rayakan pencapaian kecil</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Dynamic Filters -->
+<script>
+function toggleCategoryField() {
+    const rankingType = document.getElementById('ranking_type').value;
+    const categoryField = document.getElementById('category_field');
+    const categorySelect = document.getElementById('category_id');
+    
+    if (rankingType === 'overall_average') {
+        categoryField.style.opacity = '0.5';
+        categorySelect.disabled = true;
+        categorySelect.value = '';
+    } else {
+        categoryField.style.opacity = '1';
+        categorySelect.disabled = false;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCategoryField();
+    
+    // Auto-submit form when filters change
+    const filterElements = document.querySelectorAll('#filterForm select');
+    filterElements.forEach(element => {
+        element.addEventListener('change', function() {
+            // Small delay to show visual feedback
+            setTimeout(() => {
+                document.getElementById('filterForm').submit();
+            }, 100);
+        });
+    });
+});
+
+// Add loading state to filter changes
+document.getElementById('filterForm').addEventListener('submit', function(e) {
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = `
+            <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Memuat Data...
+        `;
+        submitBtn.disabled = true;
+    }
+});
+</script>
+{% endblock %}

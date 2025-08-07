@@ -4,159 +4,530 @@
 {% block title %}Pesan Baru{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 rounded-t-lg">
-                <h1 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Navigation -->
+    <div class="mb-6">
+        <a href="{% url 'message_inbox' %}" class="inline-flex items-center text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors duration-200">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Kembali ke Kotak Pesan
+        </a>
+    </div>
+
+    <!-- Header Section -->
+    <div class="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    Kirim Pesan Baru
-                </h1>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">✉️ Kirim Pesan Baru</h1>
+                    <p class="text-white/90">Sampaikan pertanyaan atau laporan Anda kepada tim pengajar</p>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Form -->
-            <div class="p-6">
-                <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                    {% csrf_token %}
+    <!-- Main Form Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div class="p-8">
+            <form method="POST" enctype="multipart/form-data" class="space-y-8" id="messageForm">
+                {% csrf_token %}
                     
-                    <!-- Title -->
-                    <div>
-                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Judul Pesan <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="title" name="title" required maxlength="200"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                               placeholder="Masukkan judul pesan yang jelas dan deskriptif">
+                <!-- Title Field -->
+                <div class="space-y-2">
+                    <label for="title" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        Judul Pesan <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               required 
+                               maxlength="200"
+                               class="block w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-all duration-200"
+                               placeholder="Contoh: Pertanyaan tentang Materi Kalkulus Bab 3">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <span id="titleCount" class="text-xs text-gray-400">0/200</span>
+                        </div>
                     </div>
+                    <p class="text-sm text-gray-500">Buatlah judul yang jelas dan deskriptif untuk memudahkan proses bantuan</p>
+                </div>
 
-                    <!-- Thread Type -->
-                    <div>
-                        <label for="thread_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tipe Pertanyaan <span class="text-red-500">*</span>
-                        </label>
-                        <select id="thread_type" name="thread_type" required onchange="toggleCategoryField()"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            {% for value, label in thread_type_choices %}
-                                <option value="{{ value }}">{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Pilih jenis pertanyaan untuk membantu mengarahkan pesan ke pihak yang tepat
-                        </p>
-                    </div>
-
-                    <!-- Category (conditional) -->
-                    <div id="category_field" style="display: none;">
-                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Kategori Materi
-                        </label>
-                        <select id="category" name="category"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="">Pilih kategori materi (opsional)</option>
-                            {% for category in categories %}
-                                <option value="{{ category.id }}">{{ category.category_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Priority -->
-                    <div>
-                        <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tingkat Prioritas
-                        </label>
-                        <select id="priority" name="priority"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            {% for value, label in priority_choices %}
-                                <option value="{{ value }}" {% if value == 'normal' %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Content -->
-                    <div>
-                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Isi Pesan <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="content" name="content" required rows="8"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                  placeholder="Tuliskan pertanyaan atau pesan Anda secara detail..."></textarea>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Jelaskan pertanyaan atau masalah Anda sejelas mungkin untuk mendapatkan bantuan yang tepat
-                        </p>
-                    </div>
-
-                    <!-- Attachment -->
-                    <div>
-                        <label for="attachment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Lampiran (Opsional)
-                        </label>
-                        <input type="file" id="attachment" name="attachment"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                               accept="image/*,.pdf,.doc,.docx,.txt">
-                        <p class="mt-1 text-sm text-gray-500">
-                            Maksimal 10MB. Format yang didukung: gambar, PDF, Word, txt
-                        </p>
-                    </div>
-
-                    <!-- Preview Card -->
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border-l-4 border-blue-500">
-                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">💡 Tips untuk pesan yang efektif:</h4>
-                        <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                            <li>• <strong>Pertanyaan Materi:</strong> Sebutkan topik/bab yang ditanyakan dan jelaskan bagian yang tidak dipahami</li>
-                            <li>• <strong>Masalah Teknis:</strong> Jelaskan langkah-langkah yang sudah dicoba dan screenshot error (jika ada)</li>
-                            <li>• <strong>Pelaporan:</strong> Berikan detail waktu, tempat, dan kronologi kejadian</li>
-                            <li>• Gunakan bahasa yang sopan dan jelas</li>
-                        </ul>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
-                        <a href="{% url 'message_inbox' %}" 
-                           class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
-                            ← Kembali
-                        </a>
+                <!-- Thread Type -->
+                <div class="space-y-2">
+                    <label for="thread_type" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        Tipe Pertanyaan <span class="text-red-500">*</span>
+                    </label>
+                    <select id="thread_type" 
+                            name="thread_type" 
+                            required 
+                            onchange="toggleCategoryField()"
+                            class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        {% for value, label in thread_type_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <!-- Type Icons and Descriptions -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                        <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                            <div class="flex items-center text-purple-700 dark:text-purple-300 text-sm font-medium mb-1">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z"></path>
+                                </svg>
+                                Pertanyaan Materi
+                            </div>
+                            <p class="text-xs text-purple-600 dark:text-purple-400">Untuk pertanyaan seputar materi pembelajaran</p>
+                        </div>
                         
-                        <button type="submit" 
-                                class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                            </svg>
-                            Kirim Pesan
-                        </button>
+                        <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+                            <div class="flex items-center text-red-700 dark:text-red-300 text-sm font-medium mb-1">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947z" clip-rule="evenodd"></path>
+                                </svg>
+                                Masalah Teknis
+                            </div>
+                            <p class="text-xs text-red-600 dark:text-red-400">Untuk masalah teknis website atau sistem</p>
+                        </div>
+                        
+                        <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
+                            <div class="flex items-center text-orange-700 dark:text-orange-300 text-sm font-medium mb-1">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                                </svg>
+                                Pelaporan
+                            </div>
+                            <p class="text-xs text-orange-600 dark:text-orange-400">Untuk melaporkan masalah atau kejadian</p>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <!-- Category Field (conditional) -->
+                <div id="category_field" class="space-y-2 hidden">
+                    <label for="category" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                        </svg>
+                        Kategori Materi
+                    </label>
+                    <select id="category" 
+                            name="category"
+                            class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="">Pilih kategori materi (opsional)</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-gray-500">Pilih kategori materi yang sesuai untuk memudahkan pengarahan</p>
+                </div>
+
+                <!-- Priority -->
+                <div class="space-y-2">
+                    <label for="priority" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.348 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Tingkat Prioritas
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {% for value, label in priority_choices %}
+                        <label class="relative">
+                            <input type="radio" name="priority" value="{{ value }}" {% if value == 'normal' %}checked{% endif %} class="sr-only peer">
+                            <div class="p-4 border-2 border-gray-300 rounded-xl cursor-pointer transition-all duration-200 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-400 dark:border-gray-600 dark:hover:border-green-500">
+                                <div class="flex items-center">
+                                    {% if value == 'urgent' %}
+                                        <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-white">Mendesak</div>
+                                            <div class="text-sm text-gray-500">Butuh respons segera</div>
+                                        </div>
+                                    {% elif value == 'high' %}
+                                        <div class="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-white">Tinggi</div>
+                                            <div class="text-sm text-gray-500">Penting untuk segera ditangani</div>
+                                        </div>
+                                    {% elif value == 'normal' %}
+                                        <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-white">Normal</div>
+                                            <div class="text-sm text-gray-500">Prioritas standar</div>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-white">{{ label }}</div>
+                                            <div class="text-sm text-gray-500">Tidak terburu-buru</div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="space-y-2">
+                    <label for="content" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        Isi Pesan <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <textarea id="content" 
+                                  name="content" 
+                                  required 
+                                  rows="6"
+                                  class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 resize-none transition-all duration-200"
+                                  placeholder="Tuliskan pertanyaan atau pesan Anda secara detail...&#10;&#10;Contoh:&#10;- Jelaskan masalah yang Anda hadapi&#10;- Berikan konteks yang diperlukan&#10;- Sebutkan apa yang sudah dicoba (jika ada)"></textarea>
+                        <div class="absolute bottom-3 right-3 text-xs text-gray-400" id="contentCount">0 karakter</div>
+                    </div>
+                    <p class="text-sm text-gray-500">Jelaskan pertanyaan atau masalah Anda sejelas mungkin untuk mendapatkan bantuan yang tepat</p>
+                </div>
+
+                <!-- Attachment -->
+                <div class="space-y-2">
+                    <label for="attachment" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        Lampiran (Opsional)
+                    </label>
+                    <div class="relative">
+                        <input type="file" 
+                               id="attachment" 
+                               name="attachment"
+                               class="hidden"
+                               accept="image/*,.pdf,.doc,.docx,.txt">
+                        <label for="attachment" class="flex items-center justify-center w-full px-6 py-8 border-2 border-gray-300 border-dashed rounded-xl hover:border-green-400 hover:bg-green-50 dark:border-gray-600 dark:hover:border-green-500 dark:hover:bg-green-900/10 transition-all duration-200 cursor-pointer group">
+                            <div class="text-center">
+                                <svg class="w-10 h-10 mx-auto text-gray-400 group-hover:text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <div class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 mb-1">
+                                    <span class="font-semibold">Klik untuk upload file</span> atau drag & drop
+                                </div>
+                                <div class="text-xs text-gray-500">PNG, JPG, PDF, DOC, TXT (max. 10MB)</div>
+                            </div>
+                        </label>
+                        <div id="filePreview" class="hidden mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div id="fileName" class="text-sm font-medium text-gray-700 dark:text-gray-300"></div>
+                                        <div id="fileSize" class="text-xs text-gray-500"></div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="removeFile()" class="text-red-500 hover:text-red-700 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Card -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
+                    <h4 class="font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        💡 Tips untuk pesan yang efektif
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="space-y-2">
+                            <div class="font-medium text-purple-700 dark:text-purple-300 text-sm">📚 Pertanyaan Materi</div>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                <li>• Sebutkan topik/bab yang ditanyakan</li>
+                                <li>• Jelaskan bagian yang tidak dipahami</li>
+                                <li>• Lampirkan gambar soal jika perlu</li>
+                            </ul>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="font-medium text-red-700 dark:text-red-300 text-sm">🔧 Masalah Teknis</div>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                <li>• Jelaskan langkah yang sudah dicoba</li>
+                                <li>• Sertakan screenshot error</li>
+                                <li>• Sebutkan browser/device yang digunakan</li>
+                            </ul>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="font-medium text-orange-700 dark:text-orange-300 text-sm">📋 Pelaporan</div>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                <li>• Berikan detail waktu kejadian</li>
+                                <li>• Jelaskan kronologi lengkap</li>
+                                <li>• Gunakan bahasa yang sopan</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-600">
+                    <a href="{% url 'message_inbox' %}" 
+                       class="inline-flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Kembali
+                    </a>
+                    
+                    <button type="submit" 
+                            id="submitBtn"
+                            class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                        Kirim Pesan
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<!-- Enhanced JavaScript -->
 <script>
+// Toggle category field based on thread type
 function toggleCategoryField() {
     const threadType = document.getElementById('thread_type').value;
     const categoryField = document.getElementById('category_field');
     
     if (threadType === 'academic') {
+        categoryField.classList.remove('hidden');
         categoryField.style.display = 'block';
     } else {
+        categoryField.classList.add('hidden');
         categoryField.style.display = 'none';
         document.getElementById('category').value = '';
     }
 }
 
-// Initialize on page load
+// Enhanced form functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize category field visibility
     toggleCategoryField();
+    
+    // Character counters
+    const titleInput = document.getElementById('title');
+    const titleCount = document.getElementById('titleCount');
+    const contentTextarea = document.getElementById('content');
+    const contentCount = document.getElementById('contentCount');
+    
+    // Title character counter
+    if (titleInput && titleCount) {
+        titleInput.addEventListener('input', function() {
+            const count = this.value.length;
+            titleCount.textContent = count + '/200';
+            
+            if (count > 180) {
+                titleCount.classList.add('text-red-500');
+            } else if (count > 150) {
+                titleCount.classList.add('text-amber-500');
+                titleCount.classList.remove('text-red-500');
+            } else {
+                titleCount.classList.remove('text-red-500', 'text-amber-500');
+            }
+        });
+    }
+    
+    // Content character counter
+    if (contentTextarea && contentCount) {
+        contentTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            contentCount.textContent = count + ' karakter';
+            
+            // Auto-resize textarea
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            
+            if (count > 2000) {
+                contentCount.classList.add('text-red-500');
+            } else {
+                contentCount.classList.remove('text-red-500');
+            }
+        });
+    }
+    
+    // File input handling
+    const fileInput = document.getElementById('attachment');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // File size validation (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('⚠️ Ukuran file terlalu besar. Maksimal 10MB.\n\nSilakan kompres file atau gunakan file yang lebih kecil.');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Show file preview
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                filePreview.classList.remove('hidden');
+                
+                // Change border color to green
+                document.querySelector('label[for="attachment"]').classList.add('border-green-400', 'bg-green-50', 'dark:bg-green-900/10');
+            }
+        });
+    }
+    
+    // Form submission handling
+    const form = document.getElementById('messageForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            // Basic validation
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const threadType = document.getElementById('thread_type').value;
+            
+            if (!title || !content || !threadType) {
+                e.preventDefault();
+                alert('⚠️ Mohon lengkapi semua field yang wajib diisi (*)');
+                return;
+            }
+            
+            if (title.length < 5) {
+                e.preventDefault();
+                alert('⚠️ Judul pesan terlalu pendek. Minimal 5 karakter.');
+                document.getElementById('title').focus();
+                return;
+            }
+            
+            if (content.length < 10) {
+                e.preventDefault();
+                alert('⚠️ Isi pesan terlalu pendek. Minimal 10 karakter.');
+                document.getElementById('content').focus();
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.innerHTML = `
+                <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Mengirim Pesan...
+            `;
+            submitBtn.disabled = true;
+        });
+    }
+    
+    // Dynamic priority selection styling
+    const priorityRadios = document.querySelectorAll('input[name="priority"]');
+    priorityRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remove active state from all
+            priorityRadios.forEach(r => {
+                r.closest('label').querySelector('div').classList.remove('ring-2', 'ring-green-500');
+            });
+            
+            // Add active state to selected
+            if (this.checked) {
+                this.closest('label').querySelector('div').classList.add('ring-2', 'ring-green-500');
+            }
+        });
+    });
+    
+    // Initialize selected priority
+    const selectedPriority = document.querySelector('input[name="priority"]:checked');
+    if (selectedPriority) {
+        selectedPriority.closest('label').querySelector('div').classList.add('ring-2', 'ring-green-500');
+    }
 });
 
-// File size validation
-document.getElementById('attachment').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file && file.size > 10 * 1024 * 1024) { // 10MB
-        alert('Ukuran file terlalu besar. Maksimal 10MB.');
-        e.target.value = '';
+// Remove file function
+function removeFile() {
+    const fileInput = document.getElementById('attachment');
+    const filePreview = document.getElementById('filePreview');
+    const uploadLabel = document.querySelector('label[for="attachment"]');
+    
+    fileInput.value = '';
+    filePreview.classList.add('hidden');
+    
+    // Reset upload area styling
+    uploadLabel.classList.remove('border-green-400', 'bg-green-50', 'dark:bg-green-900/10');
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Auto-save draft functionality (optional)
+function saveDraft() {
+    const formData = {
+        title: document.getElementById('title').value,
+        thread_type: document.getElementById('thread_type').value,
+        category: document.getElementById('category').value,
+        priority: document.querySelector('input[name="priority"]:checked')?.value,
+        content: document.getElementById('content').value
+    };
+    
+    localStorage.setItem('message_draft', JSON.stringify(formData));
+}
+
+// Load draft on page load
+function loadDraft() {
+    const draft = localStorage.getItem('message_draft');
+    if (draft) {
+        const formData = JSON.parse(draft);
+        
+        if (formData.title) document.getElementById('title').value = formData.title;
+        if (formData.thread_type) document.getElementById('thread_type').value = formData.thread_type;
+        if (formData.category) document.getElementById('category').value = formData.category;
+        if (formData.priority) {
+            const priorityRadio = document.querySelector(`input[name="priority"][value="${formData.priority}"]`);
+            if (priorityRadio) priorityRadio.checked = true;
+        }
+        if (formData.content) document.getElementById('content').value = formData.content;
+        
+        toggleCategoryField();
+    }
+}
+
+// Auto-save every 10 seconds
+setInterval(saveDraft, 10000);
+
+// Clear draft on successful submission
+window.addEventListener('beforeunload', function() {
+    const form = document.getElementById('messageForm');
+    if (form && !form.dataset.submitted) {
+        saveDraft();
     }
 });
 </script>

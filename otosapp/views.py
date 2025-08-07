@@ -7,7 +7,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentProof, UserSubscription
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
-from .decorators import admin_required, admin_or_teacher_required, students_required, visitor_required, active_subscription_required
+from .decorators import admin_required, admin_or_teacher_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum
@@ -124,6 +124,12 @@ def home(request):
                     for name, count in sorted(categories_data.items(), key=lambda x: x[1], reverse=True)[:3]
                 ]
             
+            # Check if student has pending payment
+            pending_payment = PaymentProof.objects.filter(
+                user=request.user, 
+                status='pending'
+            ).first()
+            
             context.update({
                 'is_student': True,
                 'user_tests': recent_tests,
@@ -133,6 +139,7 @@ def home(request):
                 'highest_score': round(highest_score, 1),
                 'popular_categories': popular_categories,
                 'ongoing_test': ongoing_test,
+                'pending_payment': pending_payment,
                 'subscription_status': request.user.get_subscription_status(),
                 'can_access_tryouts': request.user.can_access_tryouts()
             })
@@ -225,7 +232,8 @@ def home(request):
                     'recent_payments': recent_payments,
                     'recent_subscriptions': recent_subscriptions,
                     'monthly_data': monthly_data,
-                }
+                },
+                'pending_payments_count': pending_payments  # For sidebar notification
             })
     else:
         # Not logged in - show public home with packages preview
@@ -1481,7 +1489,7 @@ def subscription_packages(request):
 
 
 @login_required
-@visitor_required
+@visitor_or_student_required
 def upload_payment_proof(request, package_id):
     """View untuk visitor upload bukti pembayaran"""
     package = get_object_or_404(SubscriptionPackage, id=package_id, is_active=True)
@@ -2042,4 +2050,189 @@ def edit_user_subscription(request, subscription_id):
     }
     
     return render(request, 'admin/subscription/edit_subscription.html', context)
+
+@login_required
+@active_subscription_required
+def student_rankings(request):
+    """Student rankings page with various filters and sorting options"""
+    from django.db.models import Avg, Max, Count, Q
+    from django.db import models
+    
+    # Get filter parameters
+    ranking_type = request.GET.get('ranking_type', 'overall_average')  # overall_average, category_best, category_average
+    category_id = request.GET.get('category_id', '')
+    time_period = request.GET.get('time_period', 'all')  # all, week, month, year
+    scoring_method = request.GET.get('scoring_method', 'all')  # all, default, custom, utbk
+    min_tests = int(request.GET.get('min_tests', 3))  # Minimum number of tests to qualify
+    
+    # Base queryset for submitted tests
+    base_tests = Test.objects.filter(is_submitted=True).select_related('student')
+    
+    # Apply time period filter
+    if time_period != 'all':
+        from datetime import datetime, timedelta
+        now = timezone.now()
+        
+        if time_period == 'week':
+            start_date = now - timedelta(days=7)
+        elif time_period == 'month':
+            start_date = now - timedelta(days=30)
+        elif time_period == 'year':
+            start_date = now - timedelta(days=365)
+        
+        base_tests = base_tests.filter(date_taken__gte=start_date)
+    
+    # Apply scoring method filter
+    if scoring_method != 'all':
+        base_tests = base_tests.filter(categories__scoring_method=scoring_method)
+    
+    # Apply category filter if specified
+    if category_id and category_id.isdigit():
+        base_tests = base_tests.filter(categories__id=int(category_id))
+    
+    # Build rankings based on type
+    rankings = []
+    
+    if ranking_type == 'overall_average':
+        # Overall average score across all categories
+        student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
+            .annotate(
+                avg_score=Avg('score'),
+                total_tests=Count('id'),
+                max_score=Max('score'),
+                latest_test=Max('date_taken')
+            ) \
+            .filter(total_tests__gte=min_tests) \
+            .order_by('-avg_score', '-total_tests')
+        
+        for i, stat in enumerate(student_stats[:50], 1):  # Top 50
+            rankings.append({
+                'rank': i,
+                'student_id': stat['student__id'],
+                'username': stat['student__username'],
+                'email': stat['student__email'],
+                'score': round(stat['avg_score'], 1),
+                'total_tests': stat['total_tests'],
+                'max_score': round(stat['max_score'], 1),
+                'latest_test': stat['latest_test'],
+                'is_current_user': stat['student__id'] == request.user.id
+            })
+    
+    elif ranking_type == 'category_best':
+        # Best score in a specific category
+        if category_id and category_id.isdigit():
+            student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
+                .annotate(
+                    best_score=Max('score'),
+                    total_tests=Count('id'),
+                    avg_score=Avg('score'),
+                    latest_test=Max('date_taken')
+                ) \
+                .filter(total_tests__gte=min_tests) \
+                .order_by('-best_score', '-avg_score')
+            
+            for i, stat in enumerate(student_stats[:50], 1):
+                rankings.append({
+                    'rank': i,
+                    'student_id': stat['student__id'],
+                    'username': stat['student__username'],
+                    'email': stat['student__email'],
+                    'score': round(stat['best_score'], 1),
+                    'avg_score': round(stat['avg_score'], 1),
+                    'total_tests': stat['total_tests'],
+                    'latest_test': stat['latest_test'],
+                    'is_current_user': stat['student__id'] == request.user.id
+                })
+    
+    elif ranking_type == 'category_average':
+        # Average score in a specific category
+        if category_id and category_id.isdigit():
+            student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
+                .annotate(
+                    avg_score=Avg('score'),
+                    total_tests=Count('id'),
+                    max_score=Max('score'),
+                    latest_test=Max('date_taken')
+                ) \
+                .filter(total_tests__gte=min_tests) \
+                .order_by('-avg_score', '-total_tests')
+            
+            for i, stat in enumerate(student_stats[:50], 1):
+                rankings.append({
+                    'rank': i,
+                    'student_id': stat['student__id'],
+                    'username': stat['student__username'],
+                    'email': stat['student__email'],
+                    'score': round(stat['avg_score'], 1),
+                    'total_tests': stat['total_tests'],
+                    'max_score': round(stat['max_score'], 1),
+                    'latest_test': stat['latest_test'],
+                    'is_current_user': stat['student__id'] == request.user.id
+                })
+    
+    # Get current user's position if not in top 50
+    current_user_rank = None
+    if not any(r['is_current_user'] for r in rankings):
+        # Find current user's rank
+        if ranking_type == 'overall_average':
+            user_stats = base_tests.filter(student=request.user) \
+                .aggregate(
+                    avg_score=Avg('score'),
+                    total_tests=Count('id')
+                )
+            
+            if user_stats['total_tests'] and user_stats['total_tests'] >= min_tests:
+                # Count how many students have better average score
+                better_students = base_tests.values('student__id') \
+                    .annotate(
+                        avg_score=Avg('score'),
+                        total_tests=Count('id')
+                    ) \
+                    .filter(
+                        total_tests__gte=min_tests,
+                        avg_score__gt=user_stats['avg_score']
+                    ).count()
+                
+                current_user_rank = {
+                    'rank': better_students + 1,
+                    'score': round(user_stats['avg_score'], 1),
+                    'total_tests': user_stats['total_tests']
+                }
+    
+    # Get categories for filter dropdown
+    categories = Category.objects.filter(
+        id__in=Test.objects.filter(is_submitted=True).values_list('categories__id', flat=True)
+    ).distinct().order_by('category_name')
+    
+    # Get selected category name
+    selected_category = None
+    if category_id and category_id.isdigit():
+        try:
+            selected_category = Category.objects.get(id=int(category_id))
+        except Category.DoesNotExist:
+            pass
+    
+    # Get some general statistics
+    total_students = User.objects.filter(
+        role__role_name='Student',
+        tests__is_submitted=True
+    ).distinct().count()
+    
+    total_tests_taken = base_tests.count()
+    
+    context = {
+        'rankings': rankings,
+        'current_user_rank': current_user_rank,
+        'categories': categories,
+        'selected_category': selected_category,
+        'ranking_type': ranking_type,
+        'category_id': category_id,
+        'time_period': time_period,
+        'scoring_method': scoring_method,
+        'min_tests': min_tests,
+        'total_students': total_students,
+        'total_tests_taken': total_tests_taken,
+    }
+    
+    return render(request, 'students/rankings/student_rankings.html', context)
 

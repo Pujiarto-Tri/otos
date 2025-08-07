@@ -35,6 +35,14 @@ def visitor_required(function):
         raise PermissionDenied
     return wrap
 
+def visitor_or_student_required(function):
+    @wraps(function)
+    def wrap(request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role.role_name in ['Visitor', 'Student']:
+            return function(request, *args, **kwargs)
+        raise PermissionDenied
+    return wrap
+
 def active_subscription_required(function):
     """Decorator untuk memastikan user memiliki subscription aktif"""
     @wraps(function)

@@ -4,20 +4,28 @@
 {% block title %}Pesan{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    Kotak Pesan
-                </h1>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">📬 Kotak Pesan</h1>
+                        <p class="text-white/90">Kelola komunikasi dan dapatkan bantuan</p>
+                    </div>
+                </div>
                 {% if user.role.role_name == 'Student' %}
-                <a href="{% url 'create_message_thread' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition duration-200">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{% url 'create_message_thread' %}" class="inline-flex items-center px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
                     Pesan Baru
@@ -25,124 +33,226 @@
                 {% endif %}
             </div>
         </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
 
         <!-- Filter Section -->
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <form method="GET" class="flex flex-wrap gap-4 items-center">
-                <!-- Search -->
-                <div class="flex-1 min-w-64">
-                    <input type="text" name="search" value="{{ current_search }}" 
-                           placeholder="Cari pesan..." 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <div class="bg-gray-50 dark:bg-gray-800/50 px-6 py-6 border-b border-gray-100 dark:border-gray-700">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+                <!-- Search Input -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Cari Pesan
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               name="search" 
+                               value="{{ current_search }}" 
+                               placeholder="Ketik kata kunci..." 
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-all duration-200">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Status Filter -->
-                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                    <option value="">Semua Status</option>
-                    {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Status
+                    </label>
+                    <select name="status" class="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="">Semua Status</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 
                 <!-- Type Filter -->
-                <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                    <option value="">Semua Tipe</option>
-                    {% for value, label in thread_type_choices %}
-                        <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        Tipe
+                    </label>
+                    <select name="type" class="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="">Semua Tipe</option>
+                        {% for value, label in thread_type_choices %}
+                            <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    Filter
-                </button>
-                
-                {% if current_search or current_status or current_type %}
-                <a href="{% url 'message_inbox' %}" class="text-gray-500 hover:text-gray-700 px-2 py-2">
-                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Reset
-                </a>
-                {% endif %}
+                <!-- Action Buttons -->
+                <div class="flex space-x-2">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg transform hover:scale-105">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        Filter
+                    </button>
+                    
+                    {% if current_search or current_status or current_type %}
+                    <a href="{% url 'message_inbox' %}" class="inline-flex items-center px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 transition-all duration-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
             </form>
         </div>
 
         <!-- Messages List -->
         <div class="p-6">
             {% if threads %}
-                <div class="space-y-4">
+                <div class="space-y-3">
                     {% for thread in threads %}
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition duration-200">
-                        <a href="{% url 'message_thread' thread.id %}" class="block p-4">
+                    <div class="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 border border-gray-200 dark:border-gray-700 rounded-2xl hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-600 transition-all duration-300 transform hover:scale-[1.01] group">
+                        <a href="{% url 'message_thread' thread.id %}" class="block p-6">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ thread.title }}</h3>
+                                    <!-- Title and Badges Row -->
+                                    <div class="flex items-center flex-wrap gap-2 mb-3">
+                                        <h3 class="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                                            {{ thread.title }}
+                                        </h3>
                                         
                                         <!-- Status Badge -->
                                         {% if thread.status == 'open' %}
-                                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">Terbuka</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                                                <span class="w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>
+                                                Terbuka
+                                            </span>
                                         {% elif thread.status == 'pending' %}
-                                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">Menunggu</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">
+                                                <span class="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
+                                                Menunggu
+                                            </span>
                                         {% elif thread.status == 'resolved' %}
-                                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">Selesai</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                                <span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                                                Selesai
+                                            </span>
                                         {% else %}
-                                            <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded-full">Ditutup</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                                <span class="w-2 h-2 bg-gray-500 rounded-full mr-1"></span>
+                                                Ditutup
+                                            </span>
                                         {% endif %}
                                         
                                         <!-- Priority Badge -->
                                         {% if thread.priority == 'urgent' %}
-                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Mendesak</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Mendesak
+                                            </span>
                                         {% elif thread.priority == 'high' %}
-                                            <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded-full">Tinggi</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Tinggi
+                                            </span>
                                         {% endif %}
                                         
                                         <!-- Type Badge -->
                                         {% if thread.thread_type == 'academic' %}
-                                            <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">Materi</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path>
+                                                </svg>
+                                                Materi
+                                            </span>
                                         {% elif thread.thread_type == 'technical' %}
-                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Teknis</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Teknis
+                                            </span>
                                         {% elif thread.thread_type == 'report' %}
-                                            <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded-full">Laporan</span>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Laporan
+                                            </span>
                                         {% endif %}
                                         
                                         <!-- Unread Count -->
                                         {% if thread.unread_count > 0 %}
-                                            <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ thread.unread_count }}</span>
+                                            <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                                                {{ thread.unread_count }}
+                                            </span>
                                         {% endif %}
                                     </div>
                                     
-                                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    <!-- Info Row -->
+                                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3 space-x-4">
                                         {% if user.role.role_name == 'Student' %}
-                                            {% if thread.teacher_or_admin %}
-                                                Ditangani oleh: {{ thread.teacher_or_admin.username }}
-                                            {% else %}
-                                                Belum ditangani
-                                            {% endif %}
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                {% if thread.teacher_or_admin %}
+                                                    <span class="font-medium">{{ thread.teacher_or_admin.username }}</span>
+                                                {% else %}
+                                                    <span class="text-amber-600 dark:text-amber-400 font-medium">Belum ditangani</span>
+                                                {% endif %}
+                                            </div>
                                         {% else %}
-                                            Dari: {{ thread.student.username }} ({{ thread.student.email }})
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                <span class="font-medium">{{ thread.student.username }}</span>
+                                                <span class="text-gray-500 ml-1">({{ thread.student.email }})</span>
+                                            </div>
                                         {% endif %}
                                         
                                         {% if thread.category %}
-                                            | Kategori: {{ thread.category.category_name }}
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                <span>{{ thread.category.category_name }}</span>
+                                            </div>
                                         {% endif %}
                                     </div>
                                     
+                                    <!-- Message Preview -->
                                     {% with last_message=thread.get_last_message %}
                                     {% if last_message %}
-                                        <p class="text-gray-700 dark:text-gray-300 text-sm">
-                                            {{ last_message.content|truncatechars:150 }}
-                                        </p>
+                                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border-l-4 border-blue-500">
+                                            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                                                {{ last_message.content|truncatechars:200 }}
+                                            </p>
+                                        </div>
                                     {% endif %}
                                     {% endwith %}
                                 </div>
                                 
-                                <div class="text-right text-sm text-gray-500 dark:text-gray-400 ml-4">
-                                    <div>{{ thread.last_activity|date:"d M Y" }}</div>
-                                    <div>{{ thread.last_activity|time:"H:i" }}</div>
+                                <!-- Date and Time -->
+                                <div class="text-right text-sm text-gray-500 dark:text-gray-400 ml-6 flex-shrink-0">
+                                    <div class="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                                        <div class="font-medium">{{ thread.last_activity|date:"d M Y" }}</div>
+                                        <div class="text-xs">{{ thread.last_activity|time:"H:i" }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -152,23 +262,44 @@
 
                 <!-- Pagination -->
                 {% if threads.has_other_pages %}
-                <div class="mt-6 flex justify-center">
-                    <nav class="flex space-x-2">
+                <div class="mt-8 flex justify-center">
+                    <nav class="flex items-center space-x-2">
                         {% if threads.has_previous %}
                             <a href="?page={{ threads.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}" 
-                               class="px-3 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md">
-                                ← Sebelumnya
+                               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-blue-400 transition-all duration-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                                Sebelumnya
                             </a>
                         {% endif %}
                         
-                        <span class="px-3 py-2 text-gray-700 border border-gray-300 rounded-md bg-gray-50">
-                            {{ threads.number }} dari {{ threads.paginator.num_pages }}
+                        <div class="hidden sm:flex space-x-1">
+                            {% for num in threads.paginator.page_range %}
+                                {% if num == threads.number %}
+                                    <span class="inline-flex items-center px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-md">
+                                        {{ num }}
+                                    </span>
+                                {% elif num > threads.number|add:'-3' and num < threads.number|add:'3' %}
+                                    <a href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}" 
+                                       class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-blue-400 transition-all duration-200">
+                                        {{ num }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <span class="sm:hidden inline-flex items-center px-4 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-xl dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                            {{ threads.number }} / {{ threads.paginator.num_pages }}
                         </span>
                         
                         {% if threads.has_next %}
                             <a href="?page={{ threads.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}" 
-                               class="px-3 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md">
-                                Selanjutnya →
+                               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-blue-400 transition-all duration-200">
+                                Selanjutnya
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
                             </a>
                         {% endif %}
                     </nav>
@@ -177,33 +308,66 @@
                 
             {% else %}
                 <!-- Empty State -->
-                <div class="text-center py-12">
-                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Tidak ada pesan</h3>
-                    <p class="text-gray-500 dark:text-gray-400 mb-4">
-                        {% if current_search or current_status or current_type %}
-                            Tidak ada pesan yang sesuai dengan filter Anda.
-                        {% else %}
-                            {% if user.role.role_name == 'Student' %}
-                                Belum ada pesan. Mulai berkomunikasi dengan guru atau admin!
+                <div class="text-center py-16">
+                    <div class="max-w-md mx-auto">
+                        <!-- Icon -->
+                        <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl flex items-center justify-center">
+                            <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                        </div>
+                        
+                        <!-- Text Content -->
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                            {% if current_search or current_status or current_type %}
+                                📭 Tidak Ada Hasil
                             {% else %}
-                                Belum ada pesan dari siswa yang perlu ditangani.
+                                📬 Kotak Pesan Kosong
                             {% endif %}
-                        {% endif %}
-                    </p>
-                    {% if user.role.role_name == 'Student' %}
-                    <a href="{% url 'create_message_thread' %}" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
-                        Kirim Pesan Pertama
-                    </a>
-                    {% endif %}
+                        </h3>
+                        
+                        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                            {% if current_search or current_status or current_type %}
+                                Tidak ditemukan pesan yang sesuai dengan kriteria pencarian Anda. Coba ubah filter atau kata kunci pencarian.
+                            {% else %}
+                                {% if user.role.role_name == 'Student' %}
+                                    Belum ada pesan dalam kotak masuk Anda. Mulai berkomunikasi dengan guru atau admin untuk mendapatkan bantuan!
+                                {% else %}
+                                    Belum ada pesan dari siswa yang perlu ditangani. Semua komunikasi akan muncul di sini.
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            {% if current_search or current_status or current_type %}
+                                <a href="{% url 'message_inbox' %}" 
+                                   class="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium transition-all duration-200 transform hover:scale-105">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    Reset Filter
+                                </a>
+                            {% endif %}
+                            
+                            {% if user.role.role_name == 'Student' %}
+                                <a href="{% url 'create_message_thread' %}" 
+                                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Kirim Pesan Pertama
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
 
+<!-- Enhanced JavaScript for better UX -->
 <script>
 // Auto-refresh unread count every 30 seconds
 setInterval(function() {
@@ -220,8 +384,58 @@ setInterval(function() {
                     badge.style.display = 'none';
                 }
             }
+            
+            // Update individual thread unread counts
+            document.querySelectorAll('[data-thread-id]').forEach(element => {
+                const threadId = element.getAttribute('data-thread-id');
+                // Update logic can be added here for real-time updates
+            });
         })
         .catch(error => console.log('Error fetching unread count:', error));
 }, 30000);
+
+// Enhanced search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    const filterForm = document.querySelector('form');
+    
+    // Auto-submit form on filter change
+    const filterSelects = document.querySelectorAll('select[name="status"], select[name="type"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // Add loading state to buttons
+    const filterButton = document.querySelector('button[type="submit"]');
+    if (filterButton) {
+        filterButton.addEventListener('click', function() {
+            this.innerHTML = '<svg class="animate-spin w-4 h-4 inline mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Memfilter...';
+        });
+    }
+    
+    // Enhanced hover effects
+    document.querySelectorAll('.group').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.01)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.focus();
+        }
+    }
+});
 </script>
 {% endblock %}
