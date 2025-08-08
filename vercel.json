@@ -2,14 +2,20 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
+      "src": "index.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "index.py"
     }
-  ]
+  ],
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "otos.settings",
+    "SECRET_KEY": "vercel-temp-secret-key-change-in-production-12345",
+    "DEBUG": "False",
+    "ALLOWED_HOSTS": ".vercel.app,localhost,127.0.0.1"
+  }
 }
