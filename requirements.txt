@@ -2,3 +2,7 @@ Django==5.1.2
 django-widget-tweaks
 django-compressor
 django-ckeditor-5
+gunicorn
+whitenoise
+psycopg2-binary
+dj-database-url
