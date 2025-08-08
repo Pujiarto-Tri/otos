@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tailwindcss -i ./static/src/input.css -o ./static/src/output.css --minify",
-    "dev": "tailwindcss -i ./static/src/input.css -o ./static/src/output.css --watch"
+    "dev": "tailwindcss -i ./static/src/input.css -o ./static/src/output.css --watch",
+    "vercel-build": "npm run build"
   },
   "keywords": [],
   "author": "",
