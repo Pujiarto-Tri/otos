@@ -28,10 +28,5 @@
     "DJANGO_SETTINGS_MODULE": "otos.settings",
     "PYTHONPATH": "$PYTHONPATH:.",
     "DEBUG": "False"
-  },
-  "functions": {
-    "otos/wsgi.py": {
-      "includeFiles": "**"
-    }
   }
 }
