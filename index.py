@@ -1,5 +1,4 @@
 import os
-import sys
 import django
 from django.core.wsgi import get_wsgi_application
 
@@ -12,5 +11,9 @@ django.setup()
 # Get WSGI application
 application = get_wsgi_application()
 
-# For Vercel
+# Vercel handler function
+def handler(request):
+    return application
+
+# For Vercel compatibility
 app = application

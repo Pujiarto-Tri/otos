@@ -3,10 +3,17 @@
   "builds": [
     {
       "src": "index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     }
   ],
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/staticfiles/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "index.py"
@@ -17,5 +24,10 @@
     "SECRET_KEY": "vercel-temp-secret-key-change-in-production-12345",
     "DEBUG": "False",
     "ALLOWED_HOSTS": ".vercel.app,localhost,127.0.0.1"
+  },
+  "functions": {
+    "index.py": {
+      "includeFiles": "staticfiles/**"
+    }
   }
 }
