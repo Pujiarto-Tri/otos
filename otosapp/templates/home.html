@@ -685,10 +685,10 @@
             <!-- Payment & Subscription Analytics -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <!-- Payment Status Overview -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📊 Status Pembayaran</h3>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-4 min-h-[300px]">
                         <div class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
                             <div class="flex items-center">
                                 <div class="w-3 h-3 bg-yellow-400 rounded-full mr-3"></div>
@@ -712,35 +712,224 @@
                             </div>
                             <span class="text-xl font-bold text-red-600">{{ admin_stats.rejected_payments }}</span>
                         </div>
-                    </div>
-                    
-                    <div class="mt-6">
-                        <a href="{% url 'admin_payment_verifications' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold text-center block transition-all duration-300">
-                            Kelola Verifikasi Pembayaran
-                        </a>
+                        
+                        <div class="mt-6">
+                            <a href="{% url 'admin_payment_verifications' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold text-center block transition-all duration-300">
+                                Kelola Verifikasi Pembayaran
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Monthly Trends Chart -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📈 Trend 6 Bulan Terakhir</h3>
-                    
-                    <div class="space-y-4">
-                        {% for month in admin_stats.monthly_data %}
-                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <div>
-                                <p class="font-medium text-gray-700 dark:text-gray-300">{{ month.month_short }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ month.subscriptions }} subscription</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-gray-900 dark:text-white">Rp {{ month.revenue|floatformat:0 }}</p>
-                                <div class="w-20 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-1">
-                                    <div class="h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full" 
-                                         style="width: {% if month.revenue > 0 %}{{ month.revenue|floatformat:0|length|add:"-1" }}0{% else %}0{% endif %}%"></div>
-                                </div>
-                            </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">📈 Tren Penjualan</h3>
+                    </div>
+                    <div class="w-full overflow-x-auto bg-white rounded-lg shadow-sm dark:bg-gray-800 p-4 md:p-6">
+                      {% with last_month=admin_stats.monthly_data|last %}
+                        {% with prev_month=admin_stats.monthly_data|slice:'-2'|first %}
+                        <div class="flex justify-between">
+                          <div>
+                            <h5 class="leading-none text-3xl font-bold text-gray-900 dark:text-white pb-2">
+                              {{ last_month.sales_count|default:0 }}
+                            </h5>
+                            <p class="text-base font-normal text-gray-500 dark:text-gray-400">Penjualan bulan ini</p>
+                          </div>
+                          <div class="flex items-center px-2.5 py-0.5 text-base font-semibold text-green-500 dark:text-green-500 text-center">
+                            {{ admin_stats.growth_percent|default:0 }}%
+                            {% if admin_stats.growth_percent >= 0 %}
+                              <svg class="w-3 h-3 ms-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13V1m0 0L1 5m4-4 4 4"/>
+                              </svg>
+                            {% else %}
+                              <svg class="w-3 h-3 ms-1 rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13V1m0 0L1 5m4-4 4 4"/>
+                              </svg>
+                            {% endif %}
+                          </div>
+                          </div>
                         </div>
-                        {% endfor %}
+                        {% endwith %}
+                      {% endwith %}
+                      <div id="salesTrendChart" class="w-full h-56 min-w-[320px] max-w-full"></div>
+                      <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+                      <script>
+                        // Data dari backend dengan fallback
+                        const sales7d = {{ admin_stats.sales_7d_chart|default:"[]"|safe }};
+                        const sales30d = {{ admin_stats.sales_30d_chart|default:"[]"|safe }};
+                        const sales90d = {{ admin_stats.sales_90d_chart|default:"[]"|safe }};
+                        const sales180d = {{ admin_stats.sales_180d_chart|default:"[]"|safe }};
+
+                        // Global chart instance
+                        let salesChart = null;
+
+                        function getChartData(filter) {
+                          let data = [];
+                          if (filter === '7') data = sales7d;
+                          else if (filter === '30') data = sales30d;
+                          else if (filter === '90') data = sales90d;
+                          else data = sales180d;
+                          
+                          // Fallback jika data kosong
+                          return Array.isArray(data) && data.length > 0 ? data : [
+                            { label: 'Jan', value: 0 },
+                            { label: 'Feb', value: 0 },
+                            { label: 'Mar', value: 0 }
+                          ];
+                        }
+
+                        function renderSalesChart(filter) {
+                          try {
+                            const data = getChartData(filter);
+                            const categories = data.map(d => d.label || 'N/A');
+                            const values = data.map(d => parseInt(d.value) || 0);
+                            
+                            const options = {
+                              chart: { 
+                                type: 'area', 
+                                height: 220, 
+                                toolbar: { show: false },
+                                animations: {
+                                  enabled: true,
+                                  easing: 'easeinout',
+                                  speed: 800
+                                }
+                              },
+                              series: [{ name: 'Penjualan', data: values }],
+                              xaxis: { 
+                                categories: categories,
+                                labels: {
+                                  style: {
+                                    colors: '#64748b',
+                                    fontSize: '12px'
+                                  }
+                                }
+                              },
+                              colors: ['#2563eb'],
+                              dataLabels: { enabled: false },
+                              stroke: { curve: 'smooth', width: 3 },
+                              fill: { 
+                                type: 'gradient', 
+                                gradient: { 
+                                  shadeIntensity: 1, 
+                                  opacityFrom: 0.4, 
+                                  opacityTo: 0.1 
+                                } 
+                              },
+                              grid: { 
+                                show: true,
+                                strokeDashArray: 3,
+                                borderColor: '#e2e8f0'
+                              },
+                              yaxis: { 
+                                labels: { 
+                                  style: { 
+                                    colors: '#64748b',
+                                    fontSize: '12px'
+                                  },
+                                  formatter: function(val) {
+                                    return Math.round(val);
+                                  }
+                                }
+                              },
+                              tooltip: { 
+                                y: { 
+                                  formatter: function(val) {
+                                    return val + ' Penjualan';
+                                  }
+                                }
+                              }
+                            };
+                            
+                            const chartDiv = document.querySelector('#salesTrendChart');
+                            if (chartDiv) {
+                              // Destroy existing chart
+                              if (salesChart) {
+                                salesChart.destroy();
+                              }
+                              
+                              chartDiv.innerHTML = '';
+                              salesChart = new ApexCharts(chartDiv, options);
+                              salesChart.render();
+                            }
+                          } catch (error) {
+                            console.error('Error rendering chart:', error);
+                            const chartDiv = document.querySelector('#salesTrendChart');
+                            if (chartDiv) {
+                              chartDiv.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Gagal memuat chart</p></div>';
+                            }
+                          }
+                        }
+
+                        document.addEventListener('DOMContentLoaded', function() {
+                          // Render default chart (6 bulan)
+                          setTimeout(() => {
+                            renderSalesChart('180');
+                          }, 100);
+                          
+                          // Setup dropdown functionality
+                          const btn = document.getElementById('salesFilterBtn');
+                          const dropdown = document.getElementById('salesFilterDropdown');
+                          const label = document.getElementById('salesFilterLabel');
+                          
+                          if (btn && dropdown && label) {
+                            btn.onclick = function(e) {
+                              e.preventDefault();
+                              dropdown.classList.toggle('hidden');
+                            };
+                            
+                            dropdown.querySelectorAll('a[data-filter]').forEach(function(a) {
+                              a.onclick = function(e) {
+                                e.preventDefault();
+                                const filter = a.getAttribute('data-filter');
+                                let labelText = '';
+                                if (filter === '7') labelText = '7 Hari Terakhir';
+                                else if (filter === '30') labelText = '30 Hari Terakhir';
+                                else if (filter === '90') labelText = '3 Bulan Terakhir';
+                                else labelText = '6 Bulan Terakhir';
+                                
+                                label.textContent = labelText;
+                                renderSalesChart(filter);
+                                dropdown.classList.add('hidden');
+                              };
+                            });
+                            
+                            // Close dropdown when clicking outside
+                            document.addEventListener('click', function(e) {
+                              if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                                dropdown.classList.add('hidden');
+                              }
+                            });
+                          }
+                        });
+                      </script>
+                      <div class="grid grid-cols-1 items-center border-gray-200 border-t dark:border-gray-700 justify-between">
+                        <div class="flex justify-between items-center pt-5">
+                          <div class="relative">
+                            <button id="salesFilterBtn" type="button" class="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 text-center inline-flex items-center dark:hover:text-white">
+                              <span id="salesFilterLabel">6 Bulan Terakhir</span>
+                              <svg class="w-2.5 m-2.5 ms-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                              </svg>
+                            </button>
+                            <div id="salesFilterDropdown" class="z-10 hidden absolute bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700">
+                              <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
+                                <li><a href="#" data-filter="7" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">7 Hari Terakhir</a></li>
+                                <li><a href="#" data-filter="30" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">30 Hari Terakhir</a></li>
+                                <li><a href="#" data-filter="90" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">3 Bulan Terakhir</a></li>
+                                <li><a href="#" data-filter="180" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">6 Bulan Terakhir</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                          <a href="#" class="uppercase text-sm font-semibold inline-flex items-center rounded-lg text-blue-600 hover:text-blue-700 dark:hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700 px-3 py-2">
+                            Laporan Penjualan
+                            <svg class="w-2.5 h-2.5 ms-1.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
                     </div>
                 </div>
             </div>
@@ -748,10 +937,10 @@
             <!-- Popular Packages & Recent Activities -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <!-- Popular Packages -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🎯 Package Terpopuler</h3>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-3 min-h-[300px]">
                         {% for package in admin_stats.popular_packages %}
                         <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl">
                             <div>
@@ -765,16 +954,18 @@
                             </div>
                         </div>
                         {% empty %}
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">Belum ada data subscription</p>
+                        <div class="flex items-center justify-center h-64">
+                            <p class="text-gray-500 dark:text-gray-400 text-center">Belum ada data subscription</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
 
                 <!-- Recent Activities -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aktivitas Terbaru</h3>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-3 min-h-[300px]">
                         {% for payment in admin_stats.recent_payments %}
                         <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center text-white mr-3">
@@ -792,52 +983,64 @@
                             </div>
                         </div>
                         {% empty %}
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">Belum ada aktivitas pembayaran</p>
+                        <div class="flex items-center justify-center h-64">
+                            <p class="text-gray-500 dark:text-gray-400 text-center">Belum ada aktivitas pembayaran</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
             </div>
 
             <!-- Admin Actions -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Administrasi</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="{% url 'user_list' %}" class="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-center">
-                        <div class="w-8 h-8 mx-auto mb-2">
-                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                            </svg>
-                        </div>
-                        <p class="font-semibold">Kelola Users</p>
-                    </a>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Management Menu -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Administrasi</h3>
                     
-                    <a href="{% url 'admin_subscription_packages' %}" class="p-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-center">
-                        <div class="w-8 h-8 mx-auto mb-2">
-                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                            </svg>
-                        </div>
-                        <p class="font-semibold">Kelola Packages</p>
-                    </a>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
+                        <a href="{% url 'user_list' %}" class="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-center h-fit">
+                            <div class="w-8 h-8 mx-auto mb-2">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="font-semibold">Kelola Users</p>
+                        </a>
+                        
+                        <a href="{% url 'admin_subscription_packages' %}" class="p-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-center h-fit">
+                            <div class="w-8 h-8 mx-auto mb-2">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </div>
+                            <p class="font-semibold">Kelola Packages</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->  
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aksi Cepat</h3>
                     
-                    <a href="{% url 'admin_payment_verifications' %}" class="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 text-center">
-                        <div class="w-8 h-8 mx-auto mb-2">
-                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <p class="font-semibold">Verifikasi Bayar</p>
-                    </a>
-                    
-                    <a href="{% url 'category_list' %}" class="p-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 text-center">
-                        <div class="w-8 h-8 mx-auto mb-2">
-                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                            </svg>
-                        </div>
-                        <p class="font-semibold">Kelola Kategori</p>
-                    </a>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
+                        <a href="{% url 'admin_payment_verifications' %}" class="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 text-center h-fit">
+                            <div class="w-8 h-8 mx-auto mb-2">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="font-semibold">Verifikasi Bayar</p>
+                        </a>
+                        
+                        <a href="{% url 'category_list' %}" class="p-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 text-center h-fit">
+                            <div class="w-8 h-8 mx-auto mb-2">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                            </div>
+                            <p class="font-semibold">Kelola Kategori</p>
+                        </a>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -939,6 +1142,83 @@
 </div>
 
 <!-- Force End Test Modal -->
+
+{% if user.is_authenticated and user.role.role_name == 'Admin' %}
+<!-- ApexCharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data dari backend
+        var salesLabels = [
+            {% for month in admin_stats.monthly_data %}'{{ month.month_short }}'{% if not forloop.last %}, {% endif %}{% endfor %}
+        ];
+        var salesData = [
+            {% for month in admin_stats.monthly_data %}{{ month.sales_count|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        ];
+
+        var options = {
+            chart: {
+                type: 'area',
+                height: 280,
+                toolbar: { show: false },
+                fontFamily: 'inherit',
+            },
+            series: [{
+                name: 'Penjualan Paket',
+                data: salesData
+            }],
+            xaxis: {
+                categories: salesLabels,
+                labels: {
+                    style: { colors: '#64748b' }
+                },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+            },
+            yaxis: {
+                min: 0,
+                labels: {
+                    style: { colors: '#64748b' }
+                }
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.4,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100]
+                }
+            },
+            dataLabels: { enabled: false },
+            stroke: {
+                curve: 'smooth',
+                width: 3,
+                colors: ['#3b82f6']
+            },
+            markers: {
+                size: 5,
+                colors: ['#3b82f6'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+            },
+            grid: {
+                borderColor: '#e5e7eb',
+                strokeDashArray: 4,
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + ' penjualan';
+                    }
+                }
+            },
+        };
+        var chart = new ApexCharts(document.querySelector("#salesTrendChart"), options);
+        chart.render();
+    });
+</script>
+{% endif %}
 {% if ongoing_test %}
 <div id="force-end-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: none;">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/3 shadow-lg rounded-md bg-white dark:bg-gray-800">

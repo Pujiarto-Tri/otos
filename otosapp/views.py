@@ -11,6 +11,8 @@ from .decorators import admin_required, admin_or_teacher_required, students_requ
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum
+from datetime import timedelta, datetime
+from django.db.models.functions import TruncDay, TruncMonth
 import json
 
 
@@ -146,9 +148,9 @@ def home(request):
         
         # Data untuk admin dashboard dengan statistik lengkap
         if request.user.is_superuser or request.user.is_admin():
-            from django.utils import timezone
-            from django.db.models import Count, Sum, Q
-            from datetime import datetime, timedelta
+            # from django.utils import timezone  # Sudah di-import di atas
+            # from django.db.models import Count, Sum, Q  # Sudah di-import di atas
+            # from datetime import datetime, timedelta  # Sudah di-import di atas
             
             # Basic user stats
             total_users = User.objects.count()
@@ -190,7 +192,8 @@ def home(request):
             recent_payments = PaymentProof.objects.order_by('-created_at')[:5]
             recent_subscriptions = UserSubscription.objects.order_by('-created_at')[:5]
             
-            # Monthly trends (last 6 months)
+            # Monthly trends (last 6 months, 3 months, 30 days, 7 days)
+            from collections import OrderedDict
             monthly_data = []
             for i in range(6):
                 month_date = timezone.now() - timedelta(days=30*i)
@@ -199,21 +202,100 @@ def home(request):
                     verified_at__month=month_date.month,
                     verified_at__year=month_date.year
                 ).aggregate(total=Sum('amount_paid'))['total'] or 0
-                
+                month_sales = PaymentProof.objects.filter(
+                    status='approved',
+                    verified_at__month=month_date.month,
+                    verified_at__year=month_date.year
+                ).count()
                 month_subscriptions = UserSubscription.objects.filter(
                     created_at__month=month_date.month,
                     created_at__year=month_date.year
                 ).count()
-                
                 monthly_data.append({
                     'month': month_date.strftime('%B %Y'),
                     'month_short': month_date.strftime('%b'),
                     'revenue': float(month_revenue),
-                    'subscriptions': month_subscriptions
+                    'subscriptions': month_subscriptions,
+                    'sales_count': month_sales
                 })
-            
             monthly_data.reverse()  # Oldest to newest
+
+            # Growth percent (last vs previous month)
+            growth_percent = 0
+            if len(monthly_data) >= 2:
+                last = monthly_data[-1]['sales_count']
+                prev = monthly_data[-2]['sales_count']
+                if prev:
+                    growth_percent = round((last - prev) / prev * 100, 1)
+                else:
+                    growth_percent = 0
+
+            # Filtered data for 7, 30, 90, 180 days
+            now = timezone.now()
+            def filter_by_days(days):
+                start = now - timedelta(days=days)
+                sales = PaymentProof.objects.filter(status='approved', verified_at__gte=start)
+                return sales.count()
+            sales_7d = filter_by_days(7)
+            sales_30d = filter_by_days(30)
+            sales_90d = filter_by_days(90)
+            sales_180d = filter_by_days(180)
+
+            # Data harian/bulanan untuk chart filter
+            from django.db.models.functions import TruncDay, TruncMonth
             
+            # 7 days chart data
+            sales_7d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=7))
+            sales_7d_chart = sales_7d_qs.annotate(day=TruncDay('verified_at')).values('day').annotate(count=Count('id')).order_by('day')
+            sales_7d_chart_data = [{'label': d['day'].strftime('%d %b'), 'value': d['count']} for d in sales_7d_chart]
+            
+            # Fallback untuk 7 hari jika kosong
+            if not sales_7d_chart_data:
+                today = timezone.now().date()
+                sales_7d_chart_data = [
+                    {'label': (today - timedelta(days=i)).strftime('%d %b'), 'value': 0} 
+                    for i in range(6, -1, -1)
+                ]
+
+            # 30 days chart data
+            sales_30d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=30))
+            sales_30d_chart = sales_30d_qs.annotate(day=TruncDay('verified_at')).values('day').annotate(count=Count('id')).order_by('day')
+            sales_30d_chart_data = [{'label': d['day'].strftime('%d %b'), 'value': d['count']} for d in sales_30d_chart]
+            
+            # Fallback untuk 30 hari jika kosong
+            if not sales_30d_chart_data:
+                today = timezone.now().date()
+                sales_30d_chart_data = [
+                    {'label': (today - timedelta(days=i)).strftime('%d %b'), 'value': 0} 
+                    for i in range(29, -1, -7)  # Sample setiap 7 hari
+                ]
+
+            # 90 days chart data
+            sales_90d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=90))
+            sales_90d_chart = sales_90d_qs.annotate(month=TruncMonth('verified_at')).values('month').annotate(count=Count('id')).order_by('month')
+            sales_90d_chart_data = [{'label': d['month'].strftime('%b %Y'), 'value': d['count']} for d in sales_90d_chart]
+            
+            # Fallback untuk 90 hari jika kosong
+            if not sales_90d_chart_data:
+                today = timezone.now().date()
+                sales_90d_chart_data = [
+                    {'label': (today.replace(day=1) - timedelta(days=i*30)).strftime('%b %Y'), 'value': 0} 
+                    for i in range(2, -1, -1)  # 3 bulan terakhir
+                ]
+
+            # 180 days chart data
+            sales_180d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=180))
+            sales_180d_chart = sales_180d_qs.annotate(month=TruncMonth('verified_at')).values('month').annotate(count=Count('id')).order_by('month')
+            sales_180d_chart_data = [{'label': d['month'].strftime('%b %Y'), 'value': d['count']} for d in sales_180d_chart]
+            
+            # Fallback untuk 180 hari jika kosong
+            if not sales_180d_chart_data:
+                today = timezone.now().date()
+                sales_180d_chart_data = [
+                    {'label': (today.replace(day=1) - timedelta(days=i*30)).strftime('%b %Y'), 'value': 0} 
+                    for i in range(5, -1, -1)  # 6 bulan terakhir
+                ]
+
             context.update({
                 'admin_stats': {
                     'total_users': total_users,
@@ -232,6 +314,15 @@ def home(request):
                     'recent_payments': recent_payments,
                     'recent_subscriptions': recent_subscriptions,
                     'monthly_data': monthly_data,
+                    'growth_percent': growth_percent,
+                    'sales_7d': sales_7d,
+                    'sales_30d': sales_30d,
+                    'sales_90d': sales_90d,
+                    'sales_180d': sales_180d,
+                    'sales_7d_chart': sales_7d_chart_data,
+                    'sales_30d_chart': sales_30d_chart_data,
+                    'sales_90d_chart': sales_90d_chart_data,
+                    'sales_180d_chart': sales_180d_chart_data,
                 },
                 'pending_payments_count': pending_payments  # For sidebar notification
             })
