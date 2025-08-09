@@ -12,6 +12,6 @@ echo "Building CSS..."
 npm run build
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+python3.9 manage.py collectstatic --noinput --clear
 
 echo "Build completed successfully!"
