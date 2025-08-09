@@ -1,16 +1,11 @@
 import os
-import django
 from django.core.wsgi import get_wsgi_application
 
 # Configure Django settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'otos.settings')
 
-# Initialize Django
-django.setup()
+# Create WSGI application (this calls django.setup() internally)
+app = get_wsgi_application()
 
-# Create WSGI application
-application = get_wsgi_application()
-
-# Vercel compatibility
-app = application
-handler = application
+# Backwards-compat name used by some platforms
+application = app

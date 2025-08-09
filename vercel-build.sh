@@ -2,16 +2,18 @@
 
 # Build script for Vercel
 
+set -euo pipefail
+
 echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
 echo "Installing Node.js dependencies..."
-npm install
+npm ci || npm install
 
 echo "Building CSS..."
 npm run build
 
 echo "Collecting static files..."
-python3.9 manage.py collectstatic --noinput --clear
+python manage.py collectstatic --noinput --clear
 
 echo "Build completed successfully!"
