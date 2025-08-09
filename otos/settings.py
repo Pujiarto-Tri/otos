@@ -131,25 +131,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# For Vercel deployment - always use staticfiles
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
+if DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'static'),
+    ] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
+else:
+    # In serverless (Vercel) we read directly from the repo's 'static' dir
+    # so no collectstatic is required, and WhiteNoise can serve from there.
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+    STATICFILES_DIRS = []
 
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# WhiteNoise configuration for Vercel
+# WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-
-# Create staticfiles directory if it doesn't exist
-try:
-    os.makedirs(STATIC_ROOT, exist_ok=True)
-except:
-    pass  # Ignore errors in serverless environment
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -166,7 +165,8 @@ LOGOUT_REDIRECT_URL = 'login'
 
 COMPRESS_ROOT = BASE_DIR / 'static'
 
-COMPRESS_ENABLED = True
+# Disable compressor in production (read-only filesystem on Vercel)
+COMPRESS_ENABLED = DEBUG
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
