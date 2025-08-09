@@ -1,24 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.11"
-      }
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxLambdaSize": "15mb"
     }
-  ],
+  },
   "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/staticfiles/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.py"
-    }
+    { "src": "/static/(.*)", "dest": "/staticfiles/$1" },
+    { "src": "/(.*)", "dest": "/api/index.py" }
   ],
   "env": {
     "DJANGO_SETTINGS_MODULE": "otos.settings",
