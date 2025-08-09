@@ -1,37 +1,24 @@
 import os
 import sys
-import traceback
+import django
+from pathlib import Path
+
+# Add the parent directory to Python path to access the Django project
+project_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_dir))
 
 # Set Django settings module  
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'otos.settings')
 
-def app(environ, start_response):
-    try:
-        # Import Django
-        from django.core.wsgi import get_wsgi_application
-        
-        # Get the application
-        application = get_wsgi_application()
-        
-        # Call the application
-        return application(environ, start_response)
-        
-    except Exception as e:
-        # Return detailed error information
-        error_msg = f"""
-        Django Error: {str(e)}
-        
-        Traceback:
-        {traceback.format_exc()}
-        
-        Python Path:
-        {sys.path}
-        
-        Environment:
-        {dict(os.environ)}
-        """
-        
-        status = '500 Internal Server Error'
-        headers = [('Content-Type', 'text/plain')]
-        start_response(status, headers)
-        return [error_msg.encode('utf-8')]
+# Initialize Django
+django.setup()
+
+# Import Django WSGI application
+from django.core.wsgi import get_wsgi_application
+
+# Create the Django WSGI application
+application = get_wsgi_application()
+
+# For Vercel - expose as both 'app' and 'handler'
+app = application
+handler = application

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "15mb"
@@ -16,7 +16,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "index.py"
+      "dest": "api/index.py"
     }
   ],
   "env": {
@@ -26,8 +26,9 @@
     "ALLOWED_HOSTS": ".vercel.app,localhost,127.0.0.1"
   },
   "functions": {
-    "index.py": {
-      "includeFiles": "staticfiles/**"
+    "api/index.py": {
+      "includeFiles": "**"
     }
-  }
+  },
+  "buildCommand": "bash vercel-build.sh"
 }

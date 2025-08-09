@@ -146,7 +146,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Create staticfiles directory if it doesn't exist
-os.makedirs(STATIC_ROOT, exist_ok=True)
+try:
+    os.makedirs(STATIC_ROOT, exist_ok=True)
+except:
+    pass  # Ignore errors in serverless environment
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
