@@ -26,9 +26,7 @@ generate_*.py
 quick_start_*.py
 run_all_tests.py
 template_fix_verification.py
-*.txt
-*.html
-*.md
-media/
-static/admin/
-static/debug_toolbar/
+# Important: don't ignore dependencies or templates
+# (Previously had *.txt and *.html which hid requirements.txt, runtime.txt, and templates)
+!requirements.txt
+!runtime.txt
