@@ -124,6 +124,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# On Vercel, the filesystem under /var/task is read-only.
+# Use /tmp for STATIC_ROOT so collectstatic at cold-start can write files.
+if os.environ.get('VERCEL') and not DEBUG:
+    STATIC_ROOT = '/tmp/staticfiles'
+
 # Additional static dirs (source files)
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),

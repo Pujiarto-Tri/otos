@@ -4,6 +4,7 @@ from pathlib import Path
 import django
 from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
+from django.db import connections, DEFAULT_DB_ALIAS
 
 # Configure Django settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'otos.settings')
@@ -12,20 +13,48 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'otos.settings')
 LOCK_FILE = Path('/tmp/.django_migrated')
 try:
     if not LOCK_FILE.exists():
+        print('[startup] initializing Django, running migrate & collectstatic')
         django.setup()
-        # Run migrations quietly; run_syncdb ensures initial tables if no migrations
-        call_command('migrate', interactive=False, run_syncdb=True, verbosity=0)
+
+        # Acquire a DB advisory lock on Postgres to avoid concurrent migrations
+        conn = connections[DEFAULT_DB_ALIAS]
+        locked = False
+        try:
+            if conn.vendor == 'postgresql':
+                with conn.cursor() as cur:
+                    cur.execute('SELECT pg_advisory_lock(916031492)')
+                    locked = True
+                    print('[startup] acquired pg_advisory_lock')
+        except Exception as e:
+            print(f'[startup] could not acquire advisory lock: {e}')
+
+        try:
+            # Use --fake-initial to gracefully handle pre-existing tables
+            call_command('migrate', interactive=False, fake_initial=True, verbosity=0)
+        finally:
+            # Release advisory lock if acquired
+            try:
+                if locked and conn.vendor == 'postgresql':
+                    with conn.cursor() as cur:
+                        cur.execute('SELECT pg_advisory_unlock(916031492)')
+                        print('[startup] released pg_advisory_lock')
+            except Exception:
+                pass
+
+        # Also collect static into a writable location when on Vercel
+        try:
+            call_command('collectstatic', interactive=False, verbosity=0)
+        except Exception as e:
+            print(f'[startup] collectstatic skipped/failed: {e}')
 
         # Seed roles and ensure a superuser exists (from env)
         try:
             from django.contrib.auth import get_user_model
             from otosapp.models import Role
 
-            # Ensure basic roles exist
             for role_name in ('Admin', 'Teacher', 'Student', 'Visitor'):
                 Role.objects.get_or_create(role_name=role_name)
 
-            # Create/update superuser from env vars if provided
             admin_email = os.environ.get('ADMIN_EMAIL')
             admin_password = os.environ.get('ADMIN_PASSWORD')
             admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
@@ -58,17 +87,17 @@ try:
                 if getattr(user, 'role_id', None) != role_admin.id:
                     user.role = role_admin
                     user.save()
-        except Exception:
+        except Exception as e:
             # Ignore seeding errors to not block startup
-            pass
+            print(f'[startup] seeding skipped/failed: {e}')
 
         try:
             LOCK_FILE.write_text('ok')
         except Exception:
             pass
-except Exception:
+except Exception as e:
     # Don't block app startup if migrations fail; errors will surface in logs
-    pass
+    print(f'[startup] migrate/collectstatic wrapper failed: {e}')
 
 # Create WSGI application (calls django.setup() if not already called)
 app = get_wsgi_application()
