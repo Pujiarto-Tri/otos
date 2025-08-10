@@ -71,6 +71,29 @@
                                 </span>
                             </label>
                             {{ form.price }}
+                            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                <span id="price-preview"></span>
+                            </div>
+                            <script>
+                            // Preview harga dengan format ribuan (tidak mengubah value input number)
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const priceInput = document.getElementById('{{ form.price.id_for_label }}');
+                                const pricePreview = document.getElementById('price-preview');
+                                function formatRupiah(num) {
+                                    if (!num) return '';
+                                    return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                }
+                                function updatePreview() {
+                                    let value = priceInput.value.replace(/[^\d]/g, '');
+                                    pricePreview.textContent = value ? formatRupiah(value) : '';
+                                }
+                                if (priceInput && pricePreview) {
+                                    priceInput.addEventListener('input', updatePreview);
+                                    // Inisialisasi saat load
+                                    updatePreview();
+                                }
+                            });
+                            </script>
                             {% if form.price.errors %}
                                 <div class="mt-1 text-sm text-red-600 dark:text-red-400">
                                     {{ form.price.errors.0 }}

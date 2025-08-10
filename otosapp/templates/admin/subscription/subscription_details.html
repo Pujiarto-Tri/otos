@@ -1,3 +1,4 @@
+{% load humanize %}
 {% extends 'base.html' %}
 
 {% block title %}Subscription Details - Admin{% endblock %}
@@ -106,11 +107,11 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Type:</span>
-                        <span class="text-sm text-gray-900 dark:text-white">{{ package.get_package_type_display }}</span>
+                        <!-- package_type removed: no display needed -->
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Price:</span>
-                        <span class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ package.price|floatformat:0 }}</span>
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ package.price|floatformat:0|intcomma }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Duration:</span>

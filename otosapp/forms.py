@@ -360,14 +360,12 @@ class SubscriptionPackageForm(forms.ModelForm):
     """Form untuk admin mengelola paket berlangganan"""
     class Meta:
         model = SubscriptionPackage
-        fields = ['name', 'package_type', 'description', 'features', 'price', 'duration_days', 'is_active', 'is_featured']
+        # Remove 'package_type' from fields
+        fields = ['name', 'description', 'features', 'price', 'duration_days', 'is_active', 'is_featured']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
                 'placeholder': 'Nama paket berlangganan'
-            }),
-            'package_type': forms.Select(attrs={
-                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
             }),
             'description': forms.Textarea(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
@@ -379,11 +377,11 @@ class SubscriptionPackageForm(forms.ModelForm):
                 'rows': 6,
                 'placeholder': 'Fitur 1\nFitur 2\nFitur 3\n...'
             }),
-            'price': forms.NumberInput(attrs={
+            'price': forms.TextInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
                 'placeholder': 'Harga dalam rupiah',
-                'min': '0',
-                'step': '1000'
+                'inputmode': 'numeric',
+                'autocomplete': 'off',
             }),
             'duration_days': forms.NumberInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',

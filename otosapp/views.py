@@ -1713,16 +1713,19 @@ def update_subscription_package(request, package_id):
 def delete_subscription_package(request, package_id):
     """Admin view untuk delete paket berlangganan"""
     package = get_object_or_404(SubscriptionPackage, id=package_id)
-    
+    active_subscribers = package.subscription_set.filter(is_active=True, end_date__gt=timezone.now()).count()
+    warning = None
+    if active_subscribers > 0:
+        warning = f"Paket ini masih memiliki {active_subscribers} subscriber aktif. Menonaktifkan paket tidak akan memutus langganan yang sedang berjalan, namun tidak bisa dipilih user baru." 
     if request.method == 'POST':
-        package.delete()
-        messages.success(request, 'Paket berlangganan berhasil dihapus!')
+        package.is_active = False
+        package.save()
+        messages.success(request, 'Paket berhasil dinonaktifkan!')
         return redirect('admin_subscription_packages')
-    
     context = {
         'package': package,
+        'warning': warning,
     }
-    
     return render(request, 'admin/subscription/package_confirm_delete.html', context)
 
 

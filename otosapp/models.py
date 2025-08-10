@@ -586,15 +586,8 @@ def message_pre_delete(sender, instance, **kwargs):
 
 class SubscriptionPackage(models.Model):
     """Model untuk paket berlangganan"""
-    PACKAGE_TYPES = [
-        ('basic', 'Paket Dasar'),
-        ('premium', 'Paket Premium'),
-        ('pro', 'Paket Pro'),
-        ('ultimate', 'Paket Ultimate'),
-    ]
-    
     name = models.CharField(max_length=100, verbose_name="Nama Paket")
-    package_type = models.CharField(max_length=20, choices=PACKAGE_TYPES, verbose_name="Tipe Paket")
+    # package_type removed (redundant)
     description = models.TextField(verbose_name="Deskripsi Paket")
     features = models.TextField(help_text="Fitur-fitur yang tersedia (satu per baris)", verbose_name="Fitur")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Harga")

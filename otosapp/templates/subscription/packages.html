@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load humanize %}
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
@@ -111,8 +111,7 @@
                     <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ package.name }}</h3>
                     <div class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                         <span class="text-lg text-gray-500 dark:text-gray-400">Rp</span>
-                        {{ package.price|floatformat:0 }}
-                        <span class="text-base text-gray-500 dark:text-gray-400 font-normal">K</span>
+                        {{ package.price|floatformat:0|intcomma }}
                     </div>
                     <p class="text-gray-600 dark:text-gray-400">{{ package.duration_days }} hari akses</p>
                 </div>

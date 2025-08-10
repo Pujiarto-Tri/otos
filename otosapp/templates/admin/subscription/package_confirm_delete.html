@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Konfirmasi Nonaktifkan Paket{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Nonaktifkan Paket Subscription</h2>
+    <p class="mb-4 text-gray-700 dark:text-gray-300">
+        Apakah Anda yakin ingin menonaktifkan paket <span class="font-semibold">"{{ package.name }}"</span>?
+        <br>
+        <span class="text-red-600 dark:text-red-400">Paket yang dinonaktifkan tidak dapat dipilih oleh user baru, namun subscriber aktif tetap dapat menggunakan hingga masa langganan habis.</span>
+    </p>
+    {% if warning %}
+    <div class="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 rounded">
+        ⚠️ {{ warning }}
+    </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-end gap-3 mt-6">
+            <a href="{% url 'admin_subscription_packages' %}" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Batal</a>
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Ya, Nonaktifkan</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
