@@ -179,6 +179,12 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
+# Ensure session and CSRF cookies are sent in cross-site contexts and secure on HTTPS
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
 COMPRESS_ROOT = BASE_DIR / 'static'
 
 # Disable compressor in production (read-only filesystem on Vercel)
