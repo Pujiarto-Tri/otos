@@ -7,7 +7,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentProof, UserSubscription
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
-from .decorators import admin_required, admin_or_teacher_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
+from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum
@@ -326,6 +326,156 @@ def home(request):
                 },
                 'pending_payments_count': pending_payments  # For sidebar notification
             })
+        
+        # Data untuk operator dashboard (tanpa data finansial sensitif)
+        elif request.user.is_operator():
+            # Basic user stats
+            total_users = User.objects.count()
+            new_users_today = User.objects.filter(date_joined__date=timezone.now().date()).count()
+            new_users_this_month = User.objects.filter(date_joined__month=timezone.now().month, 
+                                                     date_joined__year=timezone.now().year).count()
+            
+            # Payment statistics (counts only, no revenue)
+            total_payments = PaymentProof.objects.count()
+            pending_payments = PaymentProof.objects.filter(status='pending').count()
+            approved_payments = PaymentProof.objects.filter(status='approved').count()
+            rejected_payments = PaymentProof.objects.filter(status='rejected').count()
+            
+            # Subscription statistics
+            total_subscriptions = UserSubscription.objects.count()
+            active_subscriptions = UserSubscription.objects.filter(is_active=True, end_date__gt=timezone.now()).count()
+            expired_subscriptions = UserSubscription.objects.filter(
+                Q(is_active=False) | Q(end_date__lt=timezone.now())
+            ).count()
+            
+            # Recent activities (tanpa amounts)
+            recent_payments = PaymentProof.objects.order_by('-created_at')[:5]
+            recent_subscriptions = UserSubscription.objects.order_by('-created_at')[:5]
+            
+            # Monthly trends (subscriber counts only, no revenue)
+            monthly_data = []
+            for i in range(6):
+                month_date = timezone.now() - timedelta(days=30*i)
+                month_sales = PaymentProof.objects.filter(
+                    status='approved',
+                    verified_at__month=month_date.month,
+                    verified_at__year=month_date.year
+                ).count()
+                month_subscriptions = UserSubscription.objects.filter(
+                    created_at__month=month_date.month,
+                    created_at__year=month_date.year
+                ).count()
+                monthly_data.append({
+                    'month': month_date.strftime('%B %Y'),
+                    'month_short': month_date.strftime('%b'),
+                    'subscriptions': month_subscriptions,
+                    'sales_count': month_sales
+                })
+            monthly_data.reverse()  # Oldest to newest
+
+            # Growth percent (last vs previous month)
+            growth_percent = 0
+            if len(monthly_data) >= 2:
+                last = monthly_data[-1]['sales_count']
+                prev = monthly_data[-2]['sales_count']
+                if prev:
+                    growth_percent = round((last - prev) / prev * 100, 1)
+                else:
+                    growth_percent = 0
+
+            # Filtered data for 7, 30, 90, 180 days (counts only)
+            now = timezone.now()
+            def filter_by_days(days):
+                start = now - timedelta(days=days)
+                sales = PaymentProof.objects.filter(status='approved', verified_at__gte=start)
+                return sales.count()
+            sales_7d = filter_by_days(7)
+            sales_30d = filter_by_days(30)
+            sales_90d = filter_by_days(90)
+            sales_180d = filter_by_days(180)
+
+            # Data harian/bulanan untuk chart filter
+            from django.db.models.functions import TruncDay, TruncMonth
+            
+            # 7 days chart data
+            sales_7d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=7))
+            sales_7d_chart = sales_7d_qs.annotate(day=TruncDay('verified_at')).values('day').annotate(count=Count('id')).order_by('day')
+            sales_7d_chart_data = [{'label': d['day'].strftime('%d %b'), 'value': d['count']} for d in sales_7d_chart]
+            
+            # Fallback untuk 7 hari jika kosong
+            if not sales_7d_chart_data:
+                today = timezone.now().date()
+                sales_7d_chart_data = [
+                    {'label': (today - timedelta(days=i)).strftime('%d %b'), 'value': 0} 
+                    for i in range(6, -1, -1)
+                ]
+
+            # 30 days chart data
+            sales_30d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=30))
+            sales_30d_chart = sales_30d_qs.annotate(day=TruncDay('verified_at')).values('day').annotate(count=Count('id')).order_by('day')
+            sales_30d_chart_data = [{'label': d['day'].strftime('%d %b'), 'value': d['count']} for d in sales_30d_chart]
+            
+            # Fallback untuk 30 hari jika kosong
+            if not sales_30d_chart_data:
+                today = timezone.now().date()
+                sales_30d_chart_data = [
+                    {'label': (today - timedelta(days=i)).strftime('%d %b'), 'value': 0} 
+                    for i in range(29, -1, -7)  # Sample setiap 7 hari
+                ]
+
+            # 90 days chart data
+            sales_90d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=90))
+            sales_90d_chart = sales_90d_qs.annotate(month=TruncMonth('verified_at')).values('month').annotate(count=Count('id')).order_by('month')
+            sales_90d_chart_data = [{'label': d['month'].strftime('%b %Y'), 'value': d['count']} for d in sales_90d_chart]
+            
+            # Fallback untuk 90 hari jika kosong
+            if not sales_90d_chart_data:
+                today = timezone.now().date()
+                sales_90d_chart_data = [
+                    {'label': (today.replace(day=1) - timedelta(days=i*30)).strftime('%b %Y'), 'value': 0} 
+                    for i in range(2, -1, -1)  # 3 bulan terakhir
+                ]
+
+            # 180 days chart data
+            sales_180d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=180))
+            sales_180d_chart = sales_180d_qs.annotate(month=TruncMonth('verified_at')).values('month').annotate(count=Count('id')).order_by('month')
+            sales_180d_chart_data = [{'label': d['month'].strftime('%b %Y'), 'value': d['count']} for d in sales_180d_chart]
+            
+            # Fallback untuk 180 hari jika kosong
+            if not sales_180d_chart_data:
+                today = timezone.now().date()
+                sales_180d_chart_data = [
+                    {'label': (today.replace(day=1) - timedelta(days=i*30)).strftime('%b %Y'), 'value': 0} 
+                    for i in range(5, -1, -1)  # 6 bulan terakhir
+                ]
+
+            context.update({
+                'operator_stats': {
+                    'total_users': total_users,
+                    'new_users_today': new_users_today,
+                    'new_users_this_month': new_users_this_month,
+                    'total_payments': total_payments,
+                    'pending_payments': pending_payments,
+                    'approved_payments': approved_payments,
+                    'rejected_payments': rejected_payments,
+                    'total_subscriptions': total_subscriptions,
+                    'active_subscriptions': active_subscriptions,
+                    'expired_subscriptions': expired_subscriptions,
+                    'recent_payments': recent_payments,
+                    'recent_subscriptions': recent_subscriptions,
+                    'monthly_data': monthly_data,
+                    'growth_percent': growth_percent,
+                    'sales_7d': sales_7d,
+                    'sales_30d': sales_30d,
+                    'sales_90d': sales_90d,
+                    'sales_180d': sales_180d,
+                    'sales_7d_chart': sales_7d_chart_data,
+                    'sales_30d_chart': sales_30d_chart_data,
+                    'sales_90d_chart': sales_90d_chart_data,
+                    'sales_180d_chart': sales_180d_chart_data,
+                },
+                'pending_payments_count': pending_payments  # For sidebar notification
+            })
     else:
         # Not logged in - show public home with packages preview
         featured_packages = SubscriptionPackage.objects.filter(
@@ -354,7 +504,7 @@ def register(request):
 ##User View##
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def user_list(request):
     users_list = User.objects.all().order_by('-date_joined')
     paginator = Paginator(users_list, 10)  # Show 10 users per page
@@ -376,7 +526,7 @@ def user_list(request):
     
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def user_create(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -388,7 +538,7 @@ def user_create(request):
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Add New User'})
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def user_update(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -401,7 +551,7 @@ def user_update(request, user_id):
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Edit User'})
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -413,7 +563,7 @@ def user_delete(request, user_id):
 ##Category View##
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def category_create(request):
     if request.method == 'POST':
         form = CategoryCreationForm(request.POST)
@@ -425,7 +575,7 @@ def category_create(request):
     return render(request, {'form': form, 'title': 'Add New Category'})
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def category_list(request):
     categories_list = Category.objects.all()
     paginator = Paginator(categories_list, 10)  # Show 10 categories per page
@@ -459,7 +609,7 @@ def category_list(request):
     })
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def category_update(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
@@ -501,7 +651,7 @@ def category_update(request, category_id):
     return render(request, 'admin/manage_categories/category_form.html', context)
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def category_delete(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
@@ -528,7 +678,7 @@ def update_utbk_coefficients(request, category_id):
 ##Question View##
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def question_list(request):
     """Display category selection page for questions"""
     categories = Category.objects.all().order_by('category_name')
@@ -550,7 +700,7 @@ def question_list(request):
     })
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def question_list_by_category(request, category_id):
     """Display questions filtered by category"""
     category = get_object_or_404(Category, id=category_id)
@@ -583,7 +733,7 @@ def question_list_by_category(request, category_id):
     })
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def question_create(request):
     # Pre-select category from URL parameter
     category_id = request.GET.get('category')
@@ -632,7 +782,7 @@ def question_create(request):
     })
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     
@@ -672,7 +822,7 @@ def question_update(request, question_id):
     })
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def question_delete(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     category_id = question.category.id  # Store category ID before deletion
@@ -1317,7 +1467,7 @@ def message_inbox(request):
         # Siswa: lihat thread yang mereka buat
         threads = MessageThread.objects.filter(student=user)
     else:
-        # Guru/Admin: lihat thread yang ditugaskan ke mereka atau belum ditugaskan
+        # Guru/Admin/Operator: lihat thread yang ditugaskan ke mereka atau belum ditugaskan
         threads = MessageThread.objects.filter(
             Q(teacher_or_admin=user) | Q(teacher_or_admin=None)
         )
@@ -1442,14 +1592,14 @@ def message_thread(request, thread_id):
         # Siswa hanya bisa akses thread mereka sendiri
         has_access = (thread.student == user)
     else:
-        # Guru/Admin bisa akses thread yang ditugaskan atau tidak ada yang menangani
+        # Guru/Admin/Operator bisa akses thread yang ditugaskan atau tidak ada yang menangani
         has_access = (thread.teacher_or_admin == user or thread.teacher_or_admin is None)
     
     if not has_access:
         messages.error(request, 'Anda tidak memiliki akses ke thread ini.')
         return redirect('message_inbox')
     
-    # Assign guru/admin jika belum ada yang menangani
+    # Assign guru/admin/operator jika belum ada yang menangani
     if not thread.teacher_or_admin and user.role and user.role.role_name != 'Student':
         thread.teacher_or_admin = user
         thread.save()
@@ -1498,14 +1648,14 @@ def message_thread(request, thread_id):
         'thread': thread,
         'messages_list': messages_list,
         'status_choices': MessageThread.STATUS_CHOICES,
-        'can_manage': user.role and user.role.role_name != 'Student',
+        'can_manage': user.role and user.role.role_name in ['Admin', 'Teacher', 'Operator'],
     }
     
     return render(request, 'messages/thread_detail.html', context)
 
 
 @login_required
-@admin_or_teacher_required
+@admin_or_teacher_or_operator_required
 def assign_thread(request, thread_id):
     """View untuk assign thread ke guru/admin tertentu"""
     thread = get_object_or_404(MessageThread, id=thread_id)
@@ -1539,13 +1689,13 @@ def message_api_unread_count(request):
     user = request.user
     
     if user.role and user.role.role_name == 'Student':
-        # Siswa: hitung pesan belum dibaca dari guru/admin
+        # Siswa: hitung pesan belum dibaca dari guru/admin/operator
         unread_count = Message.objects.filter(
             thread__student=user,
             is_read=False
         ).exclude(sender=user).count()
     else:
-        # Guru/Admin: hitung pesan belum dibaca dari siswa
+        # Guru/Admin/Operator: hitung pesan belum dibaca dari siswa
         unread_count = Message.objects.filter(
             Q(thread__teacher_or_admin=user) | Q(thread__teacher_or_admin=None),
             is_read=False
@@ -1730,7 +1880,7 @@ def delete_subscription_package(request, package_id):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def admin_payment_verifications(request):
     """Admin view untuk verifikasi pembayaran"""
     status_filter = request.GET.get('status', '')
@@ -1780,7 +1930,7 @@ def admin_payment_verifications(request):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def verify_payment(request, payment_id):
     """Admin view untuk verifikasi individual payment"""
     payment = get_object_or_404(PaymentProof, id=payment_id)
@@ -1914,7 +2064,7 @@ def deactivate_user_subscription(user, payment_proof):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def admin_user_subscriptions(request):
     """Admin view untuk melihat semua subscription users"""
     search_query = request.GET.get('search', '')
@@ -1990,7 +2140,7 @@ def admin_user_subscriptions(request):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def extend_user_subscription(request, subscription_id):
     """Admin view untuk extend subscription user"""
     subscription = get_object_or_404(UserSubscription, id=subscription_id)
@@ -2017,7 +2167,7 @@ def extend_user_subscription(request, subscription_id):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def manual_role_change(request, user_id):
     """Admin view untuk manual change user role dengan subscription"""
     user = get_object_or_404(User, id=user_id)
@@ -2075,7 +2225,7 @@ def manual_role_change(request, user_id):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def toggle_subscription_status(request, subscription_id):
     """API endpoint untuk toggle status subscription"""
     if request.method == 'POST':
@@ -2107,7 +2257,7 @@ def toggle_subscription_status(request, subscription_id):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def subscription_details(request, subscription_id):
     """Admin view untuk melihat detail subscription"""
     subscription = get_object_or_404(UserSubscription, id=subscription_id)
@@ -2123,7 +2273,7 @@ def subscription_details(request, subscription_id):
 
 
 @login_required
-@admin_required
+@admin_or_operator_required
 def edit_user_subscription(request, subscription_id):
     """Admin view untuk edit subscription user"""
     subscription = get_object_or_404(UserSubscription, id=subscription_id)

@@ -42,6 +42,10 @@ class User(AbstractUser):
         """Check if user has admin role"""
         return self.role and self.role.role_name == 'Admin'
     
+    def is_operator(self):
+        """Check if user has operator role"""
+        return self.role and self.role.role_name == 'Operator'
+    
     def is_teacher(self):
         """Check if user has teacher role"""
         return self.role and self.role.role_name == 'Teacher'
