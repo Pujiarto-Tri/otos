@@ -52,7 +52,7 @@ try:
             from django.contrib.auth import get_user_model
             from otosapp.models import Role
 
-            for role_name in ('Admin', 'Teacher', 'Student', 'Visitor'):
+            for role_name in ('Admin', 'Teacher', 'Student', 'Visitor', 'Operator'):
                 Role.objects.get_or_create(role_name=role_name)
 
             admin_email = os.environ.get('ADMIN_EMAIL')
