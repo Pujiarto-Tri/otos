@@ -141,16 +141,29 @@ Media files
 """
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# AWS S3 storage if bucket is configured
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+if AWS_STORAGE_BUCKET_NAME:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', None)
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
+    # Use ephemeral storage on Vercel
+    MEDIA_ROOT = '/tmp/media'
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# Use S3 for media storage in production (DEBUG=False)
-if not DEBUG:
+# Configure S3 file storage if AWS bucket is set
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+if AWS_STORAGE_BUCKET_NAME:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', None)
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
