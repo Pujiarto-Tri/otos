@@ -2,6 +2,8 @@ Django==5.1.2
 django-widget-tweaks
 django-compressor
 django-ckeditor-5
+django-storages[boto3]
+boto3
 whitenoise
 dj-database-url
 psycopg2-binary
