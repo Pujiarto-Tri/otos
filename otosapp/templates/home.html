@@ -249,7 +249,7 @@
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -266,51 +266,13 @@
 
             <!-- Quick Actions -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
-                    <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mulai Tryout</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Pilih kategori dan mulai ujian</p>
-                        </div>
-                    </div>
-                    {% if can_access_tryouts %}
-                    <a href="{% url 'tryout_list' %}" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 font-semibold text-center block transition-all duration-300 shadow-md hover:shadow-lg">
-                        Mulai Sekarang
-                    </a>
-                    {% else %}
-                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">
-                        Akses Dibatasi
-                    </button>
-                    {% endif %}
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
-                    <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Lihat Statistik</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Riwayat dan progress ujian</p>
-                        </div>
-                    </div>
-                    {% if can_access_tryouts %}
-                    <a href="{% url 'test_history' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 font-semibold text-center block transition-all duration-300 shadow-md hover:shadow-lg">
-                        Lihat Detail
-                    </a>
-                    {% else %}
-                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">
-                        Akses Dibatasi
-                    </button>
-                    {% endif %}
-                </div>
+                {% if can_access_tryouts %}
+                    {% include 'components/quick_action.html' with url_name='tryout_list' gradient='from-green-500 to-green-600' hover_from='green-600' hover_to='green-700' icon='▶️' label='Mulai Sekarang' %}
+                    {% include 'components/quick_action.html' with url_name='test_history' gradient='from-blue-500 to-blue-600' hover_from='blue-600' hover_to='blue-700' icon='📜' label='Lihat Detail' %}
+                {% else %}
+                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
+                    <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
+                {% endif %}
             </div>
                 
                 <!-- Ongoing Test Alert -->
@@ -475,7 +437,7 @@
                                    title="Lihat detail hasil test">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                     </svg>
                                     Detail
                                 </a>
@@ -523,9 +485,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center mb-4">
                         <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+                            <span class="text-3xl">✏️</span>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">📝 Kelola Soal</h3>
@@ -541,9 +501,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center mb-4">
                         <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                            <span class="text-3xl">👥</span>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">👥 Lihat Siswa</h3>
@@ -559,9 +517,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center mb-4">
                         <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+                            <span class="text-3xl">⏱️</span>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">⏱️ Waktu Ujian</h3>
@@ -579,65 +535,10 @@
             
             <!-- Overview Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Total Users -->
-                <div class="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-purple-100 text-sm">Total Pengguna</p>
-                            <p class="text-3xl font-bold">{{ operator_stats.total_users|default:0 }}</p>
-                        </div>
-                        <div class="p-3 bg-white/20 rounded-full">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Subscriptions -->
-                <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-orange-100 text-sm">Langganan Aktif</p>
-                            <p class="text-3xl font-bold">{{ operator_stats.active_subscriptions|default:0 }}</p>
-                        </div>
-                        <div class="p-3 bg-white/20 rounded-full">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pending Payments -->
-                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-blue-100 text-sm">Pembayaran Pending</p>
-                            <p class="text-3xl font-bold">{{ operator_stats.pending_payments|default:0 }}</p>
-                        </div>
-                        <div class="p-3 bg-white/20 rounded-full">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Total Subscriptions -->
-                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-green-100 text-sm">Total Langganan</p>
-                            <p class="text-3xl font-bold">{{ operator_stats.total_subscriptions|default:0 }}</p>
-                        </div>
-                        <div class="p-3 bg-white/20 rounded-full">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+                {% include 'components/stat_card.html' with title='Total Pengguna' value='Rp ' ~ operator_stats.total_users|floatformat:0|intcomma gradient='from-purple-400 to-purple-600' icon='👥' %}
+                {% include 'components/stat_card.html' with title='Langganan Aktif' value='Rp ' ~ operator_stats.active_subscriptions|floatformat:0|intcomma gradient='from-orange-400 to-orange-600' icon='📚' %}
+                {% include 'components/stat_card.html' with title='Pembayaran Pending' value='Rp ' ~ operator_stats.pending_payments|floatformat:0|intcomma gradient='from-blue-400 to-blue-600' icon='⏳' %}
+                {% include 'components/stat_card.html' with title='Total Langganan' value='Rp ' ~ operator_stats.total_subscriptions|floatformat:0|intcomma gradient='from-green-400 to-green-600' icon='📦' %}
             </div>
 
             <!-- Payment & Subscription Analytics -->
@@ -722,7 +623,7 @@
                             <div class="flex items-center">
                                 <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-3">
                                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                     </svg>
                                 </div>
                                 <div>
@@ -738,7 +639,7 @@
                         {% empty %}
                         <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                             <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 002-2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h7.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                             </svg>
                             Tidak ada langganan terbaru
                         </div>
@@ -795,147 +696,22 @@
                 </div>
             </div>
 
-            <!-- Admin Actions -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <!-- Management Menu -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Operasi</h3>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
-                        <a href="{% url 'user_list' %}" class="flex flex-col items-center justify-center p-6 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl transition-colors border border-blue-200 dark:border-blue-800">
-                            <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-blue-700 dark:text-blue-400 text-center">Kelola Pengguna</span>
-                        </a>
-                        
-                        <a href="{% url 'category_list' %}" class="flex flex-col items-center justify-center p-6 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-xl transition-colors border border-green-200 dark:border-green-800">
-                            <svg class="w-8 h-8 text-green-600 dark:text-green-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-green-700 dark:text-green-400 text-center">Kelola Kategori</span>
-                        </a>
-                        
-                        <a href="{% url 'question_list' %}" class="flex flex-col items-center justify-center p-6 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors border border-purple-200 dark:border-purple-800">
-                            <svg class="w-8 h-8 text-purple-600 dark:text-purple-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-purple-700 dark:text-purple-400 text-center">Kelola Soal</span>
-                        </a>
-                        
-                        <a href="{% url 'admin_user_subscriptions' %}" class="flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-xl transition-colors border border-orange-200 dark:border-orange-800">
-                            <svg class="w-8 h-8 text-orange-600 dark:text-orange-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-orange-700 dark:text-orange-400 text-center">Kelola Langganan</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->  
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aksi Cepat</h3>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
-                        <a href="{% url 'admin_payment_verifications' %}" class="flex flex-col items-center justify-center p-6 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-xl transition-colors border border-yellow-200 dark:border-yellow-800 relative">
-                            {% if operator_stats.pending_payments > 0 %}
-                            <span class="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">{{ operator_stats.pending_payments }}</span>
-                            {% endif %}
-                            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-yellow-700 dark:text-yellow-400 text-center">Verifikasi Pembayaran</span>
-                        </a>
-                        
-                        <a href="{% url 'user_create' %}" class="flex flex-col items-center justify-center p-6 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-xl transition-colors border border-indigo-200 dark:border-indigo-800">
-                            <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-indigo-700 dark:text-indigo-400 text-center">Tambah Pengguna</span>
-                        </a>
-                        
-                        <a href="{% url 'category_list' %}" class="flex flex-col items-center justify-center p-6 bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/30 rounded-xl transition-colors border border-pink-200 dark:border-pink-800">
-                            <svg class="w-8 h-8 text-pink-600 dark:text-pink-400 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-pink-700 dark:text-pink-400 text-center">Tambah Kategori</span>
-                        </a>
-                        
-                        <a href="{% url 'message_inbox' %}" class="flex flex-col items-center justify-center p-6 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/30 rounded-xl transition-colors border border-teal-200 dark:border-teal-800">
-                            <svg class="w-8 h-8 text-teal-600 dark:text-teal-400 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-teal-700 dark:text-teal-400 text-center">Pesan Masuk</span>
-                        </a>
-                    </div>
-                </div>
+            <!-- Admin Quick Actions -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
+                {% include 'components/quick_action.html' with url_name='admin_payment_verifications' gradient='from-yellow-500 to-orange-600' hover_from='yellow-600' hover_to='orange-700' icon='✅' label='Verifikasi Bayar' %}
+                {% include 'components/quick_action.html' with url_name='user_create' gradient='from-indigo-500 to-indigo-600' hover_from='indigo-600' hover_to='indigo-700' icon='👤' label='Tambah Pengguna' %}
+                {% include 'components/quick_action.html' with url_name='category_list' gradient='from-pink-500 to-pink-600' hover_from='pink-600' hover_to='pink-700' icon='🗂️' label='Tambah Kategori' %}
+                {% include 'components/quick_action.html' with url_name='message_inbox' gradient='from-teal-400 to-teal-600' hover_from='teal-500' hover_to='teal-700' icon='📥' label='Pesan Masuk' %}
             </div>
         {% elif user.role.role_name == 'Admin' %}
             <!-- Admin Dashboard with Comprehensive Analytics -->
             
             <!-- Overview Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Total Revenue -->
-                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-green-100 text-sm font-medium">Total Pendapatan</p>
-                            <p class="text-2xl font-bold">Rp {{ admin_stats.total_revenue|floatformat:0 }}</p>
-                        </div>
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monthly Revenue -->
-                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-blue-100 text-sm font-medium">Pendapatan Bulan Ini</p>
-                            <p class="text-2xl font-bold">Rp {{ admin_stats.current_month_revenue|floatformat:0 }}</p>
-                        </div>
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Total Users -->
-                <div class="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-purple-100 text-sm font-medium">Total Users</p>
-                            <p class="text-2xl font-bold">{{ admin_stats.total_users }}</p>
-                            <p class="text-purple-200 text-xs">+{{ admin_stats.new_users_today }} hari ini</p>
-                        </div>
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Subscriptions -->
-                <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-orange-100 text-sm font-medium">Subscription Aktif</p>
-                            <p class="text-2xl font-bold">{{ admin_stats.active_subscriptions }}</p>
-                            <p class="text-orange-200 text-xs">dari {{ admin_stats.total_subscriptions }} total</p>
-                        </div>
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+                {% include 'components/stat_card.html' with title='Total Pendapatan' value='Rp ' ~ admin_stats.total_revenue|floatformat:0|intcomma gradient='from-green-400 to-green-600' icon='💰' %}
+                {% include 'components/stat_card.html' with title='Pendapatan Bulan Ini' value='Rp ' ~ admin_stats.current_month_revenue|floatformat:0|intcomma gradient='from-blue-400 to-blue-600' icon='📅' %}
+                {% include 'components/stat_card.html' with title='Total Users' value=admin_stats.total_users gradient='from-purple-400 to-purple-600' icon='👥' %}
+                {% include 'components/stat_card.html' with title='Langganan Aktif' value=admin_stats.active_subscriptions gradient='from-orange-400 to-orange-600' icon='📜' %}
             </div>
 
             <!-- Payment & Subscription Analytics -->
@@ -969,10 +745,12 @@
                             <span class="text-xl font-bold text-red-600">{{ admin_stats.rejected_payments }}</span>
                         </div>
                         
-                        <div class="mt-6">
-                            <a href="{% url 'admin_payment_verifications' %}" class="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold text-center block transition-all duration-300">
-                                Kelola Verifikasi Pembayaran
-                            </a>
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/20 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Total</span>
+                            </div>
+                            <span class="text-xl font-bold text-gray-900 dark:text-white">{{ admin_stats.total_payments }}</span>
                         </div>
                     </div>
                 </div>
@@ -1085,18 +863,16 @@
                                     fontSize: '12px'
                                   },
                                   formatter: function(val) {
-                                    return Math.round(val);
+                                                                       return Math.round(val);
                                   }
-                                }
-                              },
-                              tooltip: { 
-                                y: { 
-                                  formatter: function(val) {
+                                },
+                                tooltip: { 
+                                  y: { 
+                                    formatter: function(val) {
                                     return val + ' Penjualan';
                                   }
                                 }
-                              }
-                            };
+                              };
                             
                             const chartDiv = document.querySelector('#salesTrendChart');
                             if (chartDiv) {
@@ -1247,30 +1023,17 @@
                 </div>
             </div>
 
-            <!-- Admin Actions -->
+            <!-- Admin Actions Quick Actions -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <!-- Management Menu -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Administrasi</h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
-                        <a href="{% url 'user_list' %}" class="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-center h-fit">
-                            <div class="w-8 h-8 mx-auto mb-2">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                            </div>
-                            <p class="font-semibold">Kelola Users</p>
-                        </a>
-                        
-                        <a href="{% url 'admin_subscription_packages' %}" class="p-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-center h-fit">
-                            <div class="w-8 h-8 mx-auto mb-2">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                </svg>
-                            </div>
-                            <p class="font-semibold">Kelola Packages</p>
-                        </a>
+                        {% include 'components/quick_action.html' with url_name='user_list' gradient='from-blue-500 to-purple-600' hover_from='blue-600' hover_to='purple-700' icon='👥' label='Daftar User' %}
+                        {% include 'components/quick_action.html' with url_name='admin_subscription_packages' gradient='from-green-500 to-teal-600' hover_from='green-600' hover_to='teal-700' icon='📦' label='Paket Langganan' %}
+                        {% include 'components/quick_action.html' with url_name='question_list' gradient='from-purple-400 to-purple-600' hover_from='purple-500' hover_to='purple-700' icon='✏️' label='Kelola Soal' %}
+                        {% include 'components/quick_action.html' with url_name='admin_user_subscriptions' gradient='from-orange-400 to-orange-600' hover_from='orange-500' hover_to='orange-700' icon='🔄' label='Kelola Langganan' %}
                     </div>
                 </div>
 
@@ -1279,30 +1042,17 @@
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aksi Cepat</h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
-                        <a href="{% url 'admin_payment_verifications' %}" class="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 text-center h-fit">
-                            <div class="w-8 h-8 mx-auto mb-2">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <p class="font-semibold">Verifikasi Bayar</p>
-                        </a>
-                        
-                        <a href="{% url 'category_list' %}" class="p-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-300 text-center h-fit">
-                            <div class="w-8 h-8 mx-auto mb-2">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                            </div>
-                            <p class="font-semibold">Kelola Kategori</p>
-                        </a>
+                        {% include 'components/quick_action.html' with url_name='admin_payment_verifications' gradient='from-yellow-500 to-orange-600' hover_from='yellow-600' hover_to='orange-700' icon='✅' label='Verifikasi Bayar' %}
+                        {% include 'components/quick_action.html' with url_name='user_create' gradient='from-indigo-500 to-indigo-600' hover_from='indigo-600' hover_to='indigo-700' icon='👤' label='Tambah Pengguna' %}
+                        {% include 'components/quick_action.html' with url_name='category_list' gradient='from-pink-500 to-pink-600' hover_from='pink-600' hover_to='pink-700' icon='🗂️' label='Tambah Kategori' %}
+                        {% include 'components/quick_action.html' with url_name='message_inbox' gradient='from-teal-400 to-teal-600' hover_from='teal-500' hover_to='teal-700' icon='📥' label='Pesan Masuk' %}
                     </div>
                 </div>
             </div>
         {% endif %}
     {% else %}
         <!-- Not logged in - show public home with packages preview -->
-        <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+        <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
             <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
             
@@ -1326,7 +1076,7 @@
                     <a href="{% url 'register' %}" class="px-8 py-4 bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/30 transition-all duration-300 font-bold text-lg">
                         <div class="flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                             </svg>
                             Daftar
                         </div>
