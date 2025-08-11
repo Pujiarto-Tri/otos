@@ -1626,20 +1626,7 @@
         });
     });
 </script>
-                strokeDashArray: 4,
-            },
-            tooltip: {
-                y: {
-                    formatter: function(val) {
-                        return val + ' penjualan';
-                    }
-                }
-            },
-        };
-        var chart = new ApexCharts(document.querySelector("#salesTrendChart"), options);
-        chart.render();
-    });
-</script>
+                
 {% endif %}
 {% if ongoing_test %}
 <div id="force-end-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: none;">
