@@ -9,10 +9,23 @@
             <div class="flex-1">
                 <!-- Test category and date -->
                 {% comment %}Display test category and date_taken instead of non-existent fields{% endcomment %}
-                {% with category=test.categories.first %}
-                    <h4 class="font-semibold text-gray-900 dark:text-white">{{ category.category_name|default:"Ujian" }}</h4>
-                {% endwith %}
-                <p class="text-sm text-gray-600 dark:text-gray-400">📅 {{ test.date_taken|date:"d M Y" }}</p>
+                {% if test.tryout_package %}
+                    <h4 class="font-semibold text-gray-900 dark:text-white">{{ test.tryout_package.package_name|default:"Paket" }}</h4>
+                {% elif test.categories.exists %}
+                    {% with category=test.categories.first %}
+                        <h4 class="font-semibold text-gray-900 dark:text-white">{{ category.category_name|default:"Ujian" }}</h4>
+                    {% endwith %}
+                {% else %}
+                    <h4 class="font-semibold text-gray-900 dark:text-white">Ujian</h4>
+                {% endif %}
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-0">📅 {{ test.date_taken|date:"d M Y" }}</p>
+                    {% if test.tryout_package %}
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 ml-2">Paket Simulasi UTBK</span>
+                    {% elif test.categories.exists %}
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 ml-2">Kategori</span>
+                    {% endif %}
+                </div>
                 {% if test.score %}
                     <p class="text-sm text-gray-600 dark:text-gray-400">🎯 Skor: {{ test.score|floatformat:1 }}</p>
                 {% endif %}

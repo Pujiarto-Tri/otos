@@ -227,25 +227,35 @@
                         <!-- Test Details -->
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center space-x-3 mb-2">
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate">
-                                    {% with test.categories.first as category %}
-                                        {{ category.category_name|default:"Test" }}
-                                    {% endwith %}
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate flex items-center gap-2">
+                                    {% if test.tryout_package %}
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">Paket Simulasi UTBK</span>
+                                        {{ test.tryout_package.package_name|default:"Paket" }}
+                                    {% elif test.categories.exists %}
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">Kategori</span>
+                                        {% with test.categories.first as category %}
+                                            {{ category.category_name|default:"Test" }}
+                                        {% endwith %}
+                                    {% else %}
+                                        Test
+                                    {% endif %}
                                 </h3>
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                                    {% with test.categories.first as category %}
-                                        {% if category.scoring_method == 'default' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                        {% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                                        {% elif category.scoring_method == 'utbk' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
-                                        {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}
-                                    {% endwith %}">
-                                    {% with test.categories.first as category %}
-                                        {% if category.scoring_method == 'default' %}Default
-                                        {% elif category.scoring_method == 'custom' %}Custom
-                                        {% elif category.scoring_method == 'utbk' %}UTBK
-                                        {% else %}Unknown{% endif %}
-                                    {% endwith %}
-                                </span>
+                                {% if test.categories.exists %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                        {% with test.categories.first as category %}
+                                            {% if category.scoring_method == 'default' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                            {% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
+                                            {% elif category.scoring_method == 'utbk' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}
+                                        {% endwith %}">
+                                        {% with test.categories.first as category %}
+                                            {% if category.scoring_method == 'default' %}Default
+                                            {% elif category.scoring_method == 'custom' %}Custom
+                                            {% elif category.scoring_method == 'utbk' %}UTBK
+                                            {% else %}Unknown{% endif %}
+                                        {% endwith %}
+                                    </span>
+                                {% endif %}
                             </div>
                             
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
