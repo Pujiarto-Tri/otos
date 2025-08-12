@@ -1,0 +1,26 @@
+<!-- Motivational Message Component -->
+<div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white mb-8">
+    <div class="text-center">
+        {% if total_tests == 0 %}
+            <div class="text-4xl mb-3">🚀</div>
+            <h3 class="text-xl font-bold mb-2">Selamat Datang!</h3>
+            <p class="text-purple-100">Mari mulai perjalanan belajar Anda dengan mengikuti ujian pertama!</p>
+        {% elif completed_tests == 0 %}
+            <div class="text-4xl mb-3">💪</div>
+            <h3 class="text-xl font-bold mb-2">Ayo Mulai!</h3>
+            <p class="text-purple-100">Anda sudah terdaftar untuk {{ total_tests }} ujian. Saatnya menyelesaikan yang pertama!</p>
+        {% elif completed_tests < 5 %}
+            <div class="text-4xl mb-3">🌟</div>
+            <h3 class="text-xl font-bold mb-2">Tetap Semangat!</h3>
+            <p class="text-purple-100">Anda telah menyelesaikan {{ completed_tests }} ujian. Lanjutkan perjuangan untuk hasil yang lebih baik!</p>
+        {% elif completed_tests < 10 %}
+            <div class="text-4xl mb-3">🎯</div>
+            <h3 class="text-xl font-bold mb-2">Hebat Sekali!</h3>
+            <p class="text-purple-100">{{ completed_tests }} ujian telah diselesaikan! Anda semakin dekat dengan target kelulusan.</p>
+        {% else %}
+            <div class="text-4xl mb-3">🏆</div>
+            <h3 class="text-xl font-bold mb-2">Luar Biasa!</h3>
+            <p class="text-purple-100">Dengan {{ completed_tests }} ujian yang telah diselesaikan, Anda adalah contoh kedisiplinan!</p>
+        {% endif %}
+    </div>
+</div>

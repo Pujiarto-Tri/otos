@@ -1,0 +1,44 @@
+<!-- Recent Tests Component -->
+{% if user_tests %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 mb-8">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📚 Ujian Terbaru</h3>
+    
+    <div class="space-y-4">
+        {% for test in user_tests|slice:":5" %}
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div class="flex-1">
+                <!-- Test category and date -->
+                {% comment %}Display test category and date_taken instead of non-existent fields{% endcomment %}
+                {% with category=test.categories.first %}
+                    <h4 class="font-semibold text-gray-900 dark:text-white">{{ category.category_name|default:"Ujian" }}</h4>
+                {% endwith %}
+                <p class="text-sm text-gray-600 dark:text-gray-400">📅 {{ test.date_taken|date:"d M Y" }}</p>
+                {% if test.score %}
+                    <p class="text-sm text-gray-600 dark:text-gray-400">🎯 Skor: {{ test.score|floatformat:1 }}</p>
+                {% endif %}
+            </div>
+            <div class="ml-4">
+                {% if test.is_submitted and not test.is_time_up %}
+                    <a href="{% url 'test_results' test.id %}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        Lihat Hasil
+                    </a>
+                {% elif not test.is_submitted %}
+                    <!-- Continue or start test -->
+                    <a href="{% url 'take_test' test.categories.first.id|default:1 test.get_remaining_time|default:1 %}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        {% if test.start_time %}Lanjutkan{% else %}Mulai{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if user_tests|length > 5 %}
+    <div class="mt-6 text-center">
+        <a href="{% url 'test_history' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+            Lihat Semua Ujian
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

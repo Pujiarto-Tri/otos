@@ -1,0 +1,25 @@
+{% load humanize %}
+<!-- Popular Packages Component -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🎯 Package Terpopuler</h3>
+    
+    <div class="space-y-3 min-h-[300px]">
+        {% for package in admin_stats.popular_packages %}
+        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl">
+            <div>
+                <p class="font-semibold text-gray-800 dark:text-gray-200">{{ package.name }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Rp {{ package.price|floatformat:0|intcomma }}</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+                    {{ package.subscription_count }} subscriber
+                </span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="flex items-center justify-center h-64">
+            <p class="text-gray-500 dark:text-gray-400 text-center">Belum ada data subscription</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>

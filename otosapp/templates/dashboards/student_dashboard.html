@@ -1,0 +1,53 @@
+{% load humanize %}
+
+<!-- Student Dashboard -->
+
+<!-- Subscription Status Alerts -->
+{% include 'components/subscription_status_alert.html' with subscription_status=subscription_status %}
+
+<!-- Pending Payment Alert -->
+{% if pending_payment %}
+{% include 'components/pending_payment_alert.html' with pending_payment=pending_payment %}
+{% endif %}
+
+<!-- Access Restriction Notice -->
+{% if not can_access_tryouts %}
+{% include 'components/access_restriction_notice.html' %}
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    {% if can_access_tryouts %}
+        {% include 'components/quick_action.html' with url_name='tryout_list' gradient='from-green-500 to-green-600' hover_from='green-600' hover_to='green-700' icon='▶️' label='Mulai Sekarang' %}
+        {% include 'components/quick_action.html' with url_name='test_history' gradient='from-blue-500 to-blue-600' hover_from='blue-600' hover_to='blue-700' icon='📜' label='Lihat Detail' %}
+    {% else %}
+        <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
+        <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
+    {% endif %}
+</div>
+
+<!-- Ongoing Test Alert -->
+{% if ongoing_test %}
+{% include 'components/ongoing_test_alert.html' with ongoing_test=ongoing_test %}
+{% endif %}
+
+<!-- Student Statistics Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {% include 'components/stat_card.html' with title='Total Ujian' value=total_tests|default:0 gradient='from-blue-400 to-blue-600' icon='📝' %}
+  {% include 'components/stat_card.html' with title='Rata-rata' value=avg_score|default:0|floatformat:1|stringformat:"s"|add:"%" gradient='from-green-400 to-green-600' icon='📈' %}
+  {% include 'components/stat_card.html' with title='Tertinggi' value=highest_score|default:0|floatformat:1|stringformat:"s"|add:"%" gradient='from-purple-400 to-purple-600' icon='🏆' %}
+  {% include 'components/stat_card.html' with title='Selesai' value=completed_tests|default:0 gradient='from-orange-400 to-orange-600' icon='✅' %}
+</div>
+
+<!-- Motivational Messages -->
+{% include 'components/motivational_message.html' with total_tests=total_tests completed_tests=completed_tests %}
+
+<!-- Recent Tests -->
+{% if user_tests %}
+{% include 'components/recent_tests.html' with user_tests=user_tests %}
+{% endif %}
+
+<!-- Popular Categories -->
+{% if popular_categories %}
+{% include 'components/popular_categories.html' with popular_categories=popular_categories %}
+{% endif %}

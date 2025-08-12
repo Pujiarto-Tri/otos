@@ -1,0 +1,11 @@
+<!-- Management Menu Component -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🛠️ Menu Administrasi</h3>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
+        {% include 'components/quick_action.html' with url_name='user_list' gradient='from-blue-500 to-purple-600' hover_from='blue-600' hover_to='purple-700' icon='👥' label='Daftar User' %}
+        {% include 'components/quick_action.html' with url_name='admin_subscription_packages' gradient='from-green-500 to-teal-600' hover_from='green-600' hover_to='teal-700' icon='📦' label='Paket Langganan' %}
+        {% include 'components/quick_action.html' with url_name='question_list' gradient='from-purple-400 to-purple-600' hover_from='purple-500' hover_to='purple-700' icon='✏️' label='Kelola Soal' %}
+        {% include 'components/quick_action.html' with url_name='admin_user_subscriptions' gradient='from-orange-400 to-orange-600' hover_from='orange-500' hover_to='orange-700' icon='🔄' label='Kelola Langganan' %}
+    </div>
+</div>

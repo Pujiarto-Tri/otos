@@ -1,0 +1,11 @@
+<!-- Quick Actions Component -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 h-fit">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Aksi Cepat</h3>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[200px]">
+        {% include 'components/quick_action.html' with url_name='admin_payment_verifications' gradient='from-yellow-500 to-orange-600' hover_from='yellow-600' hover_to='orange-700' icon='✅' label='Verifikasi Bayar' %}
+        {% include 'components/quick_action.html' with url_name='user_create' gradient='from-indigo-500 to-indigo-600' hover_from='indigo-600' hover_to='indigo-700' icon='👤' label='Tambah Pengguna' %}
+        {% include 'components/quick_action.html' with url_name='category_list' gradient='from-pink-500 to-pink-600' hover_from='pink-600' hover_to='pink-700' icon='🗂️' label='Tambah Kategori' %}
+        {% include 'components/quick_action.html' with url_name='message_inbox' gradient='from-teal-400 to-teal-600' hover_from='teal-500' hover_to='teal-700' icon='📥' label='Pesan Masuk' %}
+    </div>
+</div>

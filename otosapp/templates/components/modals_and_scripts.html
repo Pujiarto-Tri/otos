@@ -1,0 +1,205 @@
+<!-- Modals and Scripts -->
+{% if ongoing_test %}
+<div id="force-end-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: none;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+                <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Akhiri Tryout Paksa</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 dark:text-gray-300">
+                    Apakah Anda yakin ingin mengakhiri tryout <strong>{{ ongoing_test.categories.first.category_name|default:"Test" }}</strong>?
+                </p>
+                <p class="text-sm text-red-600 dark:text-red-400 mt-2">
+                    ⚠️ Skor akan dihitung berdasarkan jawaban yang sudah dikerjakan saja.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <div class="flex justify-center gap-4">
+                    <button onclick="hideForceEndModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Batal
+                    </button>
+                    <form method="post" action="{% url 'force_end_test' ongoing_test.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-32 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                            Ya, Akhiri
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Scripts -->
+{% if user.is_authenticated and user.role.role_name == 'Operator' %}
+<!-- ApexCharts CDN untuk Operator -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data dari backend operator
+        var operatorSalesLabels = [
+            {% for month in operator_stats.monthly_data %}'{{ month.month_short }}'{% if not forloop.last %}, {% endif %}{% endfor %}
+        ];
+        var operatorSalesData = [
+            {% for month in operator_stats.monthly_data %}{{ month.sales_count|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        ];
+
+        // Chart data untuk berbagai periode
+        var chartData = {
+            '7': {
+                labels: [{% for item in operator_stats.sales_7d_chart %}'{{ item.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                data: [{% for item in operator_stats.sales_7d_chart %}{{ item.value }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+            },
+            '30': {
+                labels: [{% for item in operator_stats.sales_30d_chart %}'{{ item.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                data: [{% for item in operator_stats.sales_30d_chart %}{{ item.value }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+            },
+            '90': {
+                labels: [{% for item in operator_stats.sales_90d_chart %}'{{ item.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                data: [{% for item in operator_stats.sales_90d_chart %}{{ item.value }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+            },
+            '180': {
+                labels: [{% for item in operator_stats.sales_180d_chart %}'{{ item.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                data: [{% for item in operator_stats.sales_180d_chart %}{{ item.value }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+            }
+        };
+
+        var operatorChart;
+
+        function createOperatorChart(period = '30') {
+            var currentData = chartData[period] || chartData['30'];
+            
+            var options = {
+                chart: {
+                    type: 'area',
+                    height: 280,
+                    toolbar: { show: false },
+                    fontFamily: 'inherit',
+                },
+                series: [{
+                    name: 'Langganan',
+                    data: currentData.data
+                }],
+                xaxis: {
+                    categories: currentData.labels,
+                    labels: {
+                        style: { colors: '#64748b' }
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                },
+                yaxis: {
+                    min: 0,
+                    labels: {
+                        style: { colors: '#64748b' }
+                    }
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.4,
+                        opacityTo: 0.1,
+                        stops: [0, 90, 100]
+                    }
+                },
+                dataLabels: { enabled: false },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3,
+                    colors: ['#10b981']
+                },
+                markers: {
+                    size: 5,
+                    colors: ['#10b981'],
+                    strokeColors: '#fff',
+                    strokeWidth: 2,
+                },
+                grid: {
+                    borderColor: '#e5e7eb',
+                    strokeDashArray: 4,
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + " langganan"
+                        }
+                    }
+                },
+            };
+            
+            if (operatorChart) {
+                operatorChart.destroy();
+            }
+            
+            operatorChart = new ApexCharts(document.querySelector("#operatorTrendChart"), options);
+            operatorChart.render();
+        }
+
+        // Inisialisasi chart dengan data 30 hari
+        createOperatorChart('30');
+
+        // Event listener untuk filter chart
+        document.getElementById('operatorChartFilter').addEventListener('change', function(e) {
+            createOperatorChart(e.target.value);
+        });
+    });
+</script>
+{% endif %}
+
+{% if ongoing_test %}
+<script>
+// Calculate remaining time for ongoing test
+let startTime = new Date('{{ ongoing_test.start_time|date:"c" }}');
+let timeLimit = {{ ongoing_test.time_limit }} * 60 * 1000; // Convert minutes to milliseconds
+let remainingTimeElement = document.getElementById('remaining-time');
+
+function updateRemainingTime() {
+    let now = new Date();
+    let elapsed = now - startTime;
+    let remaining = timeLimit - elapsed;
+    
+    if (remaining <= 0) {
+        remainingTimeElement.textContent = 'Waktu habis!';
+        remainingTimeElement.classList.add('text-red-600');
+        return;
+    }
+    
+    let hours = Math.floor(remaining / (1000 * 60 * 60));
+    let minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    let seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+    
+    let display = 
+        String(hours).padStart(2, '0') + ':' + 
+        String(minutes).padStart(2, '0') + ':' + 
+        String(seconds).padStart(2, '0');
+    
+    remainingTimeElement.textContent = display;
+    
+    // Change color when time is low
+    if (remaining <= 300000) { // 5 minutes
+        remainingTimeElement.classList.add('text-red-600');
+    }
+}
+
+// Update remaining time every second
+if (remainingTimeElement) {
+    updateRemainingTime();
+    setInterval(updateRemainingTime, 1000);
+}
+
+// Modal functions
+function showForceEndModal() {
+    document.getElementById('force-end-modal').style.display = 'block';
+}
+
+function hideForceEndModal() {
+    document.getElementById('force-end-modal').style.display = 'none';
+}
+</script>
+{% endif %}

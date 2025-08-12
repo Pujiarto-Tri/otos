@@ -1,0 +1,17 @@
+{# General alert box component #}
+<div class="{{ bg_class }} border {{ border_class }} rounded-lg p-6 mb-8 {{ dark_bg_class }} {{ dark_border_class }}">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <span class="{{ icon_class }}">{{ icon }}</span>
+      </div>
+      <div class="ml-3">
+        <h3 class="{{ title_class }}">{{ title }}</h3>
+        <p class="{{ message_class }}">{{ message }}</p>
+      </div>
+    </div>
+    {% if button_url and button_label %}
+    <a href="{{ button_url }}" class="{{ button_class }}">{{ button_label }}</a>
+    {% endif %}
+  </div>
+</div>

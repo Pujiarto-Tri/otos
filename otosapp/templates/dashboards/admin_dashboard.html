@@ -1,0 +1,38 @@
+{% load humanize %}
+
+<!-- Admin Dashboard with Comprehensive Analytics -->
+
+<!-- Overview Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    {% include 'components/stat_card.html' with title='Total Pendapatan' prefix='Rp ' value=admin_stats.total_revenue|floatformat:"0"|intcomma gradient='from-green-400 to-green-600' icon='💰' %}
+    {% include 'components/stat_card.html' with title='Pendapatan Bulan Ini' prefix='Rp ' value=admin_stats.current_month_revenue|floatformat:"0"|intcomma gradient='from-blue-400 to-blue-600' icon='📅' %}
+    {% include 'components/stat_card.html' with title='Total Users' value=admin_stats.total_users gradient='from-purple-400 to-purple-600' icon='👥' %}
+    {% include 'components/stat_card.html' with title='Langganan Aktif' value=admin_stats.active_subscriptions gradient='from-orange-400 to-orange-600' icon='📜' %}
+</div>
+
+<!-- Payment & Subscription Analytics -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Payment Status Overview -->
+    {% include 'components/admin/payment_status_overview.html' with admin_stats=admin_stats %}
+    
+    <!-- Sales Trend Chart -->
+    {% include 'components/admin/sales_trend_chart.html' with admin_stats=admin_stats %}
+</div>
+
+<!-- Popular Packages & Recent Activities -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Popular Packages -->
+    {% include 'components/admin/popular_packages.html' with admin_stats=admin_stats %}
+    
+    <!-- Recent Activities -->
+    {% include 'components/admin/recent_activities.html' with admin_stats=admin_stats %}
+</div>
+
+<!-- Admin Actions Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Management Menu -->
+    {% include 'components/admin/management_menu.html' %}
+    
+    <!-- Quick Actions -->  
+    {% include 'components/admin/quick_actions.html' %}
+</div>
