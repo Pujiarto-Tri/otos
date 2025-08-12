@@ -5,8 +5,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentProof, UserSubscription
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -507,18 +507,26 @@ def register(request):
 @admin_or_operator_required
 def user_list(request):
     users_list = User.objects.all().order_by('-date_joined')
+    q = request.GET.get('q', '').strip()
+    role = request.GET.get('role', '').strip()
+    if q:
+        users_list = users_list.filter(
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q)
+        )
+    if role:
+        users_list = users_list.filter(role__role_name=role)
+
     paginator = Paginator(users_list, 10)  # Show 10 users per page
-    
     page = request.GET.get('page')
     try:
         users = paginator.page(page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page
         users = paginator.page(1)
     except EmptyPage:
-        # If page is out of range, deliver last page of results
         users = paginator.page(paginator.num_pages)
-        
+
     return render(request, 'admin/manage_user/user_list.html', {
         'users': users,
         'paginator': paginator
@@ -578,18 +586,22 @@ def category_create(request):
 @admin_or_operator_required
 def category_list(request):
     categories_list = Category.objects.all()
+    q = request.GET.get('q', '').strip()
+    scoring_method = request.GET.get('scoring_method', '').strip()
+    if q:
+        categories_list = categories_list.filter(category_name__icontains=q)
+    if scoring_method:
+        categories_list = categories_list.filter(scoring_method=scoring_method)
+
     paginator = Paginator(categories_list, 10)  # Show 10 categories per page
-    
     page = request.GET.get('page')
     try:
         categories = paginator.page(page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page
         categories = paginator.page(1)
     except EmptyPage:
-        # If page is out of range, deliver last page of results
         categories = paginator.page(paginator.num_pages)
-    
+
     # Add scoring status info for each category
     for category in categories:
         if category.scoring_method == 'custom':
@@ -600,7 +612,7 @@ def category_list(request):
             }
         else:
             category.scoring_status = {'complete': True, 'total_points': 100}
-        
+
     form = CategoryCreationForm()
     return render(request, 'admin/manage_categories/category_list.html', {
         'categories': categories,
@@ -1710,6 +1722,9 @@ def subscription_packages(request):
     """View untuk menampilkan paket berlangganan"""
     packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
     
+    # Get active payment methods
+    payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('payment_type', 'name')
+    
     # Check if user has pending payment
     pending_payment = None
     if request.user.is_authenticated:
@@ -1720,6 +1735,7 @@ def subscription_packages(request):
     
     context = {
         'packages': packages,
+        'payment_methods': payment_methods,
         'pending_payment': pending_payment,
     }
     
@@ -1758,9 +1774,13 @@ def upload_payment_proof(request, package_id):
     else:
         form = PaymentProofForm(initial={'package': package, 'amount_paid': package.price})
     
+    # Get active payment methods for reference
+    payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('payment_type', 'name')
+    
     context = {
         'form': form,
         'package': package,
+        'payment_methods': payment_methods,
     }
     
     return render(request, 'subscription/upload_payment.html', context)
@@ -1780,6 +1800,91 @@ def payment_status(request):
 
 
 # ======================= ADMIN SUBSCRIPTION MANAGEMENT =======================
+
+@login_required
+@admin_required
+def admin_payment_methods(request):
+    """Admin view untuk mengelola metode pembayaran"""
+    payment_methods = PaymentMethod.objects.all().order_by('payment_type', 'name')
+    
+    # Calculate statistics
+    total_methods = payment_methods.count()
+    active_methods = payment_methods.filter(is_active=True).count()
+    bank_methods = payment_methods.filter(payment_type='bank').count()
+    ewallet_methods = payment_methods.filter(payment_type='ewallet').count()
+    
+    context = {
+        'payment_methods': payment_methods,
+        'total_methods': total_methods,
+        'active_methods': active_methods,
+        'bank_methods': bank_methods,
+        'ewallet_methods': ewallet_methods,
+    }
+    
+    return render(request, 'admin/subscription/payment_method_list.html', context)
+
+
+@login_required
+@admin_required
+def create_payment_method(request):
+    """Admin view untuk membuat metode pembayaran baru"""
+    if request.method == 'POST':
+        form = PaymentMethodForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Metode pembayaran berhasil ditambahkan!')
+            return redirect('admin_payment_methods')
+        else:
+            messages.error(request, 'Terjadi kesalahan. Periksa kembali data yang dimasukkan.')
+    else:
+        form = PaymentMethodForm()
+    
+    return render(request, 'admin/subscription/payment_method_form.html', {
+        'form': form,
+        'title': 'Tambah Metode Pembayaran'
+    })
+
+
+@login_required
+@admin_required
+def update_payment_method(request, method_id):
+    """Admin view untuk mengupdate metode pembayaran"""
+    method = get_object_or_404(PaymentMethod, id=method_id)
+    
+    if request.method == 'POST':
+        form = PaymentMethodForm(request.POST, instance=method)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Metode pembayaran berhasil diupdate!')
+            return redirect('admin_payment_methods')
+        else:
+            messages.error(request, 'Terjadi kesalahan. Periksa kembali data yang dimasukkan.')
+    else:
+        form = PaymentMethodForm(instance=method)
+    
+    return render(request, 'admin/subscription/payment_method_form.html', {
+        'form': form,
+        'method': method,
+        'title': 'Edit Metode Pembayaran'
+    })
+
+
+@login_required
+@admin_required
+def delete_payment_method(request, method_id):
+    """Admin view untuk menghapus metode pembayaran"""
+    method = get_object_or_404(PaymentMethod, id=method_id)
+    
+    if request.method == 'POST':
+        method_name = method.name
+        method.delete()
+        messages.success(request, f'Metode pembayaran "{method_name}" berhasil dihapus!')
+        return redirect('admin_payment_methods')
+    
+    return render(request, 'admin/subscription/payment_method_confirm_delete.html', {
+        'method': method
+    })
+
 
 @login_required
 @admin_required

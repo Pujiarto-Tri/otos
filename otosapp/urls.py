@@ -54,6 +54,13 @@ urlpatterns = [
     path('admin/subscription/packages/create/', views.create_subscription_package, name='create_subscription_package'),
     path('admin/subscription/packages/<int:package_id>/edit/', views.update_subscription_package, name='update_subscription_package'),
     path('admin/subscription/packages/<int:package_id>/delete/', views.delete_subscription_package, name='delete_subscription_package'),
+    
+    # Payment Method Management URLs
+    path('admin/payment/methods/', views.admin_payment_methods, name='admin_payment_methods'),
+    path('admin/payment/methods/create/', views.create_payment_method, name='create_payment_method'),
+    path('admin/payment/methods/<int:method_id>/edit/', views.update_payment_method, name='update_payment_method'),
+    path('admin/payment/methods/<int:method_id>/delete/', views.delete_payment_method, name='delete_payment_method'),
+    
     path('admin/payment/verifications/', views.admin_payment_verifications, name='admin_payment_verifications'),
     path('admin/payment/verify/<int:payment_id>/', views.verify_payment, name='verify_payment'),
     path('admin/subscription/users/', views.admin_user_subscriptions, name='admin_user_subscriptions'),

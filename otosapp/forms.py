@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentProof, UserSubscription
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
@@ -356,6 +356,39 @@ class AnswerForm(forms.Form):
 
 # ======================= SUBSCRIPTION & PAYMENT FORMS =======================
 
+class PaymentMethodForm(forms.ModelForm):
+    """Form untuk admin mengelola metode pembayaran"""
+    class Meta:
+        model = PaymentMethod
+        fields = ['name', 'payment_type', 'account_number', 'account_name', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Contoh: Bank BCA, OVO, GoPay'
+            }),
+            'payment_type': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'account_number': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Nomor rekening atau akun'
+            }),
+            'account_name': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Nama pemilik rekening'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].help_text = "Nama metode pembayaran (contoh: Bank BCA, OVO)"
+        self.fields['account_number'].help_text = "Nomor rekening atau nomor akun"
+        self.fields['account_name'].help_text = "Nama pemilik rekening atau akun"
+
+
 class SubscriptionPackageForm(forms.ModelForm):
     """Form untuk admin mengelola paket berlangganan"""
     class Meta:
@@ -405,6 +438,31 @@ class SubscriptionPackageForm(forms.ModelForm):
 
 class PaymentProofForm(forms.ModelForm):
     """Form untuk visitor upload bukti pembayaran"""
+    # Override payment_method as ChoiceField to make it a dropdown
+    payment_method = forms.ChoiceField(
+        label="Metode Pembayaran",
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hanya tampilkan paket yang aktif
+        self.fields['package'].queryset = SubscriptionPackage.objects.filter(is_active=True)
+        
+        # Dynamic choices untuk payment method berdasarkan PaymentMethod model
+        payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('payment_type', 'name')
+        choices = [('', 'Pilih metode pembayaran')]
+        for method in payment_methods:
+            choices.append((method.get_display_text(), method.get_display_text()))
+        
+        # Set choices on the payment_method field
+        self.fields['payment_method'].choices = choices
+        
+        self.fields['proof_image'].help_text = "Upload screenshot atau foto bukti pembayaran (format: JPG, PNG, max 5MB)"
+        self.fields['payment_date'].help_text = "Tanggal dan waktu melakukan pembayaran"
+    
     class Meta:
         model = PaymentProof
         fields = ['package', 'proof_image', 'payment_method', 'payment_date', 'amount_paid', 'notes']
@@ -415,10 +473,6 @@ class PaymentProofForm(forms.ModelForm):
             'proof_image': forms.FileInput(attrs={
                 'class': 'block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400',
                 'accept': 'image/*'
-            }),
-            'payment_method': forms.TextInput(attrs={
-                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
-                'placeholder': 'Contoh: Transfer Bank BCA, OVO, GoPay, dll'
             }),
             'payment_date': forms.DateTimeInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
@@ -436,13 +490,6 @@ class PaymentProofForm(forms.ModelForm):
                 'placeholder': 'Catatan tambahan (opsional)'
             }),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Hanya tampilkan paket yang aktif
-        self.fields['package'].queryset = SubscriptionPackage.objects.filter(is_active=True)
-        self.fields['proof_image'].help_text = "Upload screenshot atau foto bukti pembayaran (format: JPG, PNG, max 5MB)"
-        self.fields['payment_date'].help_text = "Tanggal dan waktu melakukan pembayaran"
         
     def clean_proof_image(self):
         image = self.cleaned_data.get('proof_image')

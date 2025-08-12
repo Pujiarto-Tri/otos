@@ -33,6 +33,43 @@
         </div>
     </div>
 
+     <!-- Payment Methods Reference -->
+    {% if payment_methods %}
+    <div class="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 mt-8">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Rekening Pembayaran</h3>
+        {% regroup payment_methods by payment_type as payment_groups %}
+        <div class="grid grid-cols-1 md:grid-cols-{{ payment_groups|length }} gap-4">
+            {% for group in payment_groups %}
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-900 dark:text-white flex items-center mb-3">
+                    {% if group.grouper == 'bank' %}
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Transfer Bank
+                    {% elif group.grouper == 'ewallet' %}
+                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    E-Wallet
+                    {% else %}
+                    <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    {{ group.list.0.get_payment_type_display }}
+                    {% endif %}
+                </h4>
+                {% for method in group.list %}
+                <div class="{% if not forloop.last %}mb-2{% endif %}">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ method.name }}: {{ method.account_number }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">a.n. {{ method.account_name }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     <!-- Payment Form -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
         <form method="post" enctype="multipart/form-data">
@@ -145,25 +182,6 @@
                     <li>• Verifikasi biasanya memakan waktu 1x24 jam</li>
                     <li>• Anda akan mendapat notifikasi setelah verifikasi selesai</li>
                 </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payment Methods Reference -->
-    <div class="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 mt-8">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Rekening Pembayaran</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <h4 class="font-semibold text-gray-900 dark:text-white">Transfer Bank</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">BCA: 1234567890</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Mandiri: 0987654321</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">a.n. Otos Education</p>
-            </div>
-            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <h4 class="font-semibold text-gray-900 dark:text-white">E-Wallet</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">OVO: 081234567890</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">GoPay: 081234567890</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">a.n. Otos Education</p>
             </div>
         </div>
     </div>

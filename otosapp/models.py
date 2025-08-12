@@ -588,6 +588,35 @@ def message_pre_delete(sender, instance, **kwargs):
 
 # ======================= SUBSCRIPTION & PAYMENT MODELS =======================
 
+class PaymentMethod(models.Model):
+    """Model untuk metode pembayaran"""
+    PAYMENT_TYPES = [
+        ('bank', 'Transfer Bank'),
+        ('ewallet', 'E-Wallet'),
+        ('other', 'Lainnya'),
+    ]
+    
+    name = models.CharField(max_length=100, verbose_name="Nama Metode Pembayaran")
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPES, default='bank', verbose_name="Jenis Pembayaran")
+    account_number = models.CharField(max_length=50, verbose_name="Nomor Rekening/Akun")
+    account_name = models.CharField(max_length=100, verbose_name="Nama Pemilik Rekening")
+    is_active = models.BooleanField(default=True, verbose_name="Aktif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Metode Pembayaran"
+        verbose_name_plural = "Metode Pembayaran"
+        ordering = ['payment_type', 'name']
+    
+    def __str__(self):
+        return f"{self.name} - {self.account_number} (a.n. {self.account_name})"
+    
+    def get_display_text(self):
+        """Format display untuk dropdown"""
+        return f"{self.name} - {self.account_number} (a.n. {self.account_name})"
+
+
 class SubscriptionPackage(models.Model):
     """Model untuk paket berlangganan"""
     name = models.CharField(max_length=100, verbose_name="Nama Paket")
