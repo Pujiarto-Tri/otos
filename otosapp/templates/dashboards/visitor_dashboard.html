@@ -16,28 +16,42 @@
     </div>
 </div>
 
-<!-- Subscription Status -->
-{% if subscription_status.status == 'none' %}
-{% include 'components/alert_box.html' with
-  bg_class='bg-yellow-50' border_class='border border-yellow-200'
-  dark_bg_class='dark:bg-yellow-900/20' dark_border_class='dark:border-yellow-800'
-  icon='ℹ️' icon_class='text-yellow-600 text-2xl'
-  title='💡 Akses Tryout Terbatas' title_class='text-lg font-semibold text-yellow-800 dark:text-yellow-200'
-  message='Berlangganan untuk mendapatkan akses penuh ke semua fitur tryout online' message_class='text-yellow-700 dark:text-yellow-300'
-  button_url='{% url "subscription_packages" %}' button_label='Lihat Paket'
-  button_class='inline-flex items-center px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800 transition-colors'%}
-{% endif %}
+<!-- Subscription Status Alert for Visitors -->
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8 dark:bg-yellow-900/20 dark:border-yellow-800">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <span class="text-yellow-600 text-2xl">ℹ️</span>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">💡 Akses Tryout Terbatas</h3>
+                <p class="text-yellow-700 dark:text-yellow-300">Berlangganan untuk mendapatkan akses penuh ke semua fitur tryout online</p>
+            </div>
+        </div>
+        <a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-lg dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800 transition-colors">
+            Lihat Paket
+        </a>
+    </div>
+</div>
 
 <!-- Pending Payment Alert -->
 {% if pending_payment %}
-{% include 'components/alert_box.html' with
-  bg_class='bg-blue-50' border_class='border border-blue-200'
-  dark_bg_class='dark:bg-blue-900/20' dark_border_class='dark:border-blue-800'
-  icon='⏳' icon_class='text-blue-600 text-2xl'
-  title='⏳ Pembayaran Sedang Diverifikasi' title_class='text-lg font-semibold text-blue-800 dark:text-blue-200'
-  message='Bukti pembayaran untuk {{ pending_payment.package.name }} sedang diverifikasi oleh admin.' message_class='text-blue-700 dark:text-blue-300'
-  button_url='{% url "payment_status" %}' button_label='Lihat Status'
-  button_class='inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-lg dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors'%}
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 dark:bg-blue-900/20 dark:border-blue-800">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <span class="text-blue-600 text-2xl">⏳</span>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">⏳ Pembayaran Sedang Diverifikasi</h3>
+                <p class="text-blue-700 dark:text-blue-300">Bukti pembayaran untuk {{ pending_payment.package.name }} sedang diverifikasi oleh admin.</p>
+            </div>
+        </div>
+        <a href="{% url 'payment_status' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-lg dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors">
+            Lihat Status
+        </a>
+    </div>
+</div>
 {% endif %}
 
 <!-- Featured Packages -->

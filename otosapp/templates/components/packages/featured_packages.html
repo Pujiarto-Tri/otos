@@ -1,0 +1,95 @@
+{% load humanize %}
+<!-- Featured Packages Component -->
+<div class="mb-12">
+    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">💎 Paket Berlangganan Unggulan</h3>
+    
+    {% if packages %}
+    <!-- Packages Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{% if packages|length == 4 %}4{% elif packages|length == 3 %}3{% else %}2{% endif %} gap-8">
+        {% for package in packages %}
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 {% if package.is_featured %}ring-2 ring-blue-500 dark:ring-blue-400{% endif %}">
+            {% if package.is_featured %}
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    ⭐ Terpopuler
+                </span>
+            </div>
+            {% endif %}
+            
+            <div class="p-8">
+                <!-- Package Header -->
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ package.name }}</h3>
+                    <div class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                        <span class="text-lg text-gray-500 dark:text-gray-400">Rp</span>
+                        {{ package.price|floatformat:0|intcomma }}
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400">{{ package.duration_days }} hari akses</p>
+                </div>
+
+                <!-- Package Description -->
+                <div class="mb-6">
+                    <p class="text-gray-600 dark:text-gray-400 text-center">{{ package.description|default:"Paket berlangganan terbaik untuk kebutuhan belajar Anda" }}</p>
+                </div>
+
+                <!-- Features List -->
+                <div class="mb-8">
+                    <ul class="space-y-3">
+                        {% if package.get_features_list %}
+                            {% for feature in package.get_features_list|slice:":5" %}
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">Akses semua tryout</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">Laporan hasil detail</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">Support 24/7</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Action Button -->
+                <div class="text-center">
+                    <a href="{% url 'upload_payment_proof' package.id %}" 
+                       class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-gradient-to-r {% if package.is_featured %}from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700{% else %}from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800{% endif %} rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        Berlangganan Sekarang
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+        <div class="text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Belum ada paket unggulan</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Paket berlangganan akan segera tersedia.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
