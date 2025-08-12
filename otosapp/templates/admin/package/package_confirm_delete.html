@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hapus Paket Tryout{% endblock %}
+
+{% block content %}
+<div class="p-4 sm:ml-64">
+    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Konfirmasi Hapus Paket</h1>
+                <p class="text-gray-600 dark:text-gray-400">Tindakan ini tidak dapat dibatalkan</p>
+            </div>
+            <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Kembali
+            </a>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            
+            <!-- Warning Section -->
+            <div class="mb-6 p-4 bg-red-50 dark:bg-red-900 rounded-lg border border-red-200 dark:border-red-700">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <div>
+                        <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Peringatan!</h3>
+                        <div class="mt-2 text-sm text-red-700 dark:text-red-400">
+                            {% if tests_count > 0 %}
+                            <p>Paket ini tidak dapat dihapus karena sudah digunakan oleh <strong>{{ tests_count }}</strong> siswa untuk tryout.</p>
+                            <p class="mt-2">Jika ingin menonaktifkan paket, gunakan fitur edit untuk mengubah status menjadi "Nonaktif".</p>
+                            {% else %}
+                            <p>Anda akan menghapus paket tryout ini secara permanen. Tindakan ini tidak dapat dibatalkan.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Package Information -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Detail Paket yang Akan Dihapus</h3>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Nama Paket</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ package.package_name }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
+                            <dd class="mt-1">
+                                {% if package.is_active %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                    Aktif
+                                </span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                                    Nonaktif
+                                </span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Soal</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ package.get_total_questions }} soal</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Skor</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ package.get_total_max_score }} poin</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Waktu Pengerjaan</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ package.total_time }} menit</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Jumlah Tryout Diambil</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ tests_count }} kali</dd>
+                        </div>
+                        
+                        {% if package.description %}
+                        <div class="md:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Deskripsi</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ package.description }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+                
+                <!-- Category Composition -->
+                <div class="mt-4">
+                    <h4 class="text-md font-medium text-gray-900 dark:text-white mb-3">Komposisi Kategori</h4>
+                    <div class="space-y-2">
+                        {% for pc in package.tryoutpackagecategory_set.all %}
+                        <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ pc.category.category_name }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">Urutan: {{ pc.order }}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-900 dark:text-white">{{ pc.question_count }} soal</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ pc.max_score }} poin</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'admin_package_list' %}" class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                    Batal
+                </a>
+                
+                {% if tests_count == 0 %}
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700">
+                        Ya, Hapus Paket
+                    </button>
+                </form>
+                {% else %}
+                <a href="{% url 'admin_package_update' package.id %}" class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300">
+                    Edit Paket
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

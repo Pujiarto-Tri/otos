@@ -30,6 +30,9 @@ urlpatterns = [
 
     path('students/tryouts/', views.tryout_list, name='tryout_list'),
     path('students/tryouts/<int:category_id>/take/<int:question>/', views.take_test, name='take_test'),
+    path('students/tryouts/package/<int:package_id>/take/', views.take_package_test, name='take_package_test'),
+    path('students/tryouts/package/<int:package_id>/question/<int:question>/', views.take_package_test_question, name='take_package_test_question'),
+    path('students/tryouts/package/<int:package_id>/submit/', views.submit_package_test, name='submit_package_test'),
     path('students/tests/<int:test_id>/submit/', views.submit_test, name='submit_test'),
     path('students/tests/<int:test_id>/force-end/', views.force_end_test, name='force_end_test'),
     path('students/tests/<int:test_id>/results/', views.test_results, name='test_results'),
@@ -75,6 +78,13 @@ urlpatterns = [
     path('admin/university/create/', views.admin_university_create, name='admin_university_create'),
     path('admin/university/<int:university_id>/edit/', views.admin_university_update, name='admin_university_update'),
     path('admin/university/<int:university_id>/delete/', views.admin_university_delete, name='admin_university_delete'),
+    
+    # Tryout Package Management URLs
+    path('admin/packages/', views.admin_package_list, name='admin_package_list'),
+    path('admin/packages/create/', views.admin_package_create, name='admin_package_create'),
+    path('admin/packages/<int:package_id>/edit/', views.admin_package_update, name='admin_package_update'),
+    path('admin/packages/<int:package_id>/delete/', views.admin_package_delete, name='admin_package_delete'),
+    path('admin/packages/<int:package_id>/detail/', views.admin_package_detail, name='admin_package_detail'),
     
     # Student University Target URLs
     path('students/university/target/', views.student_university_target, name='student_university_target'),

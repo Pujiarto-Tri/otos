@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="p-4 sm:ml-64">
+    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
+                <p class="text-gray-600 dark:text-gray-400">Konfigurasi paket tryout dengan komposisi kategori untuk simulasi UTBK</p>
+            </div>
+            <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Kembali
+            </a>
+        </div>
+
+        {% if package %}
+        <!-- Package Status Info -->
+        <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Status Paket</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold {% if total_questions > 0 %}text-green-600{% else %}text-red-600{% endif %}">{{ total_questions }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Total Soal</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold {% if is_scoring_complete %}text-green-600{% else %}text-red-600{% endif %}">{{ total_score }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Total Skor</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">{{ package.total_time }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Menit</div>
+                </div>
+                <div class="text-center">
+                    {% if package.can_be_taken %}
+                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        Siap Digunakan
+                    </span>
+                    {% else %}
+                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                        Perlu Perbaikan
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if not is_scoring_complete %}
+            <div class="mt-3 p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <div class="text-sm text-yellow-800 dark:text-yellow-300">
+                        <strong>Peringatan:</strong> Total skor harus 1000 poin untuk simulasi UTBK yang akurat. Saat ini: {{ total_score }} poin.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Package Information -->
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Informasi Dasar Paket</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.package_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.package_name.label }}
+                        </label>
+                        {{ form.package_name }}
+                        {% if form.package_name.help_text %}
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.package_name.help_text }}</p>
+                        {% endif %}
+                        {% if form.package_name.errors %}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.package_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.total_time.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.total_time.label }}
+                        </label>
+                        {{ form.total_time }}
+                        {% if form.total_time.help_text %}
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.total_time.help_text }}</p>
+                        {% endif %}
+                        {% if form.total_time.errors %}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.total_time.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ form.description.label }}
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.help_text %}
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.description.help_text }}</p>
+                    {% endif %}
+                    {% if form.description.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-4">
+                    <label class="flex items-center">
+                        {{ form.is_active }}
+                        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.is_active.label }}</span>
+                    </label>
+                    {% if form.is_active.help_text %}
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.is_active.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Category Configuration -->
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Konfigurasi Kategori</h3>
+                    <button type="button" id="add-category" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Tambah Kategori
+                    </button>
+                </div>
+                
+                <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                    <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Petunjuk Konfigurasi:</h4>
+                    <ul class="text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                        <li>• Total skor dari semua kategori harus = 1000 poin</li>
+                        <li>• Pastikan setiap kategori memiliki cukup soal sesuai jumlah yang diminta</li>
+                        <li>• Urutan kategori menentukan urutan tampil saat tryout</li>
+                    </ul>
+                </div>
+
+                {{ formset.management_form }}
+                <div id="category-forms" class="space-y-4">
+                    {% for category_form in formset %}
+                    <div class="category-form p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        {{ category_form.id }}
+                        {% if category_form.DELETE %}
+                        <div class="hidden">{{ category_form.DELETE }}</div>
+                        {% endif %}
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-white">Kategori #{{ forloop.counter }}</h4>
+                            {% if not forloop.first %}
+                            <button type="button" class="delete-category text-red-600 hover:text-red-800 dark:text-red-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ category_form.category.label }}
+                                </label>
+                                {{ category_form.category }}
+                                {% if category_form.category.errors %}
+                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ category_form.category.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ category_form.question_count.label }}
+                                </label>
+                                {{ category_form.question_count }}
+                                {% if category_form.question_count.errors %}
+                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ category_form.question_count.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ category_form.max_score.label }}
+                                </label>
+                                {{ category_form.max_score }}
+                                {% if category_form.max_score.errors %}
+                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ category_form.max_score.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ category_form.order.label }}
+                                </label>
+                                {{ category_form.order }}
+                                {% if category_form.order.errors %}
+                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ category_form.order.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if category_form.non_field_errors %}
+                        <div class="mt-2 text-sm text-red-600 dark:text-red-400">{{ category_form.non_field_errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Score Summary -->
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total Skor:</span>
+                        <span id="total-score" class="text-lg font-bold text-gray-900 dark:text-white">0</span>
+                    </div>
+                    <div class="mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
+                            <div id="score-progress" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">Target: 1000 poin</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'admin_package_list' %}" class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                    Batal
+                </a>
+                <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
+                    {% if package %}Perbarui Paket{% else %}Buat Paket{% endif %}
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateScoreTotal() {
+        let total = 0;
+        document.querySelectorAll('input[name$="-max_score"]').forEach(function(input) {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        
+        const totalElement = document.getElementById('total-score');
+        const progressElement = document.getElementById('score-progress');
+        
+        totalElement.textContent = total;
+        
+        // Update progress bar
+        const percentage = Math.min((total / 1000) * 100, 100);
+        progressElement.style.width = percentage + '%';
+        
+        // Color coding
+        if (Math.abs(total - 1000) < 0.01) {
+            totalElement.className = 'text-lg font-bold text-green-600 dark:text-green-400';
+            progressElement.className = 'bg-green-600 h-2.5 rounded-full transition-all duration-300';
+        } else if (total > 1000) {
+            totalElement.className = 'text-lg font-bold text-red-600 dark:text-red-400';
+            progressElement.className = 'bg-red-600 h-2.5 rounded-full transition-all duration-300';
+        } else {
+            totalElement.className = 'text-lg font-bold text-yellow-600 dark:text-yellow-400';
+            progressElement.className = 'bg-yellow-600 h-2.5 rounded-full transition-all duration-300';
+        }
+    }
+    
+    // Update score on input change
+    document.addEventListener('input', function(e) {
+        if (e.target.name && e.target.name.endsWith('-max_score')) {
+            updateScoreTotal();
+        }
+    });
+    
+    // Delete category functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-category')) {
+            const categoryForm = e.target.closest('.category-form');
+            const deleteCheckbox = categoryForm.querySelector('input[name$="-DELETE"]');
+            if (deleteCheckbox) {
+                deleteCheckbox.checked = true;
+                categoryForm.style.display = 'none';
+                updateScoreTotal();
+            }
+        }
+    });
+    
+    // Add category functionality (simplified - you might need to implement proper formset handling)
+    document.getElementById('add-category').addEventListener('click', function() {
+        // This would need proper Django formset handling
+        alert('Silakan refresh halaman dan tambah kategori baru');
+    });
+    
+    // Initial score calculation
+    updateScoreTotal();
+});
+</script>
+{% endblock %}

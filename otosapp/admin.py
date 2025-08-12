@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message, University, UniversityTarget
+from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
 
 class CustomUserAdmin(UserAdmin):
     model = User
@@ -164,3 +164,78 @@ class UniversityTargetAdmin(admin.ModelAdmin):
 
 admin.site.register(University, UniversityAdmin)
 admin.site.register(UniversityTarget, UniversityTargetAdmin)
+
+
+# ======================= TRYOUT PACKAGE ADMIN =======================
+
+class TryoutPackageCategoryInline(admin.TabularInline):
+    model = TryoutPackageCategory
+    extra = 1
+    fields = ('category', 'question_count', 'max_score', 'order')
+    ordering = ('order',)
+
+class TryoutPackageAdmin(admin.ModelAdmin):
+    list_display = ('package_name', 'total_questions', 'total_score', 'total_time', 'is_active', 'can_be_taken_status', 'created_at')
+    list_filter = ('is_active', 'created_at', 'created_by')
+    search_fields = ('package_name', 'description')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'created_by')
+    inlines = [TryoutPackageCategoryInline]
+    
+    fieldsets = (
+        ('Informasi Dasar', {
+            'fields': ('package_name', 'description', 'total_time', 'is_active')
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def total_questions(self, obj):
+        count = obj.get_total_questions()
+        return f"{count} soal"
+    total_questions.short_description = 'Total Soal'
+    
+    def total_score(self, obj):
+        score = obj.get_total_max_score()
+        if abs(score - 1000) < 0.01:
+            return format_html('<span style="color: green;">✓ {} poin</span>', score)
+        else:
+            return format_html('<span style="color: red;">⚠ {} poin</span>', score)
+    total_score.short_description = 'Total Skor'
+    
+    def can_be_taken_status(self, obj):
+        if obj.can_be_taken():
+            return format_html('<span style="color: green;">✓ Siap</span>')
+        else:
+            return format_html('<span style="color: red;">⚠ Perlu Perbaikan</span>')
+    can_be_taken_status.short_description = 'Status'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+class TryoutPackageCategoryAdmin(admin.ModelAdmin):
+    list_display = ('package', 'category', 'question_count', 'max_score', 'score_per_question', 'order', 'validation_status')
+    list_filter = ('package', 'category')
+    search_fields = ('package__package_name', 'category__category_name')
+    ordering = ('package', 'order')
+    
+    def score_per_question(self, obj):
+        return f"{obj.get_score_per_question():.1f} poin"
+    score_per_question.short_description = 'Poin per Soal'
+    
+    def validation_status(self, obj):
+        if obj.validate_question_count():
+            return format_html('<span style="color: green;">✓ Valid</span>')
+        else:
+            available = obj.category.get_question_count()
+            return format_html('<span style="color: red;">⚠ Hanya {} soal tersedia</span>', available)
+    validation_status.short_description = 'Validasi'
+
+
+admin.site.register(TryoutPackage, TryoutPackageAdmin)
+admin.site.register(TryoutPackageCategory, TryoutPackageCategoryAdmin)

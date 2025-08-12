@@ -1,605 +1,337 @@
 {% extends 'base.html' %}
 
-{% block title %}Select Question Category{% endblock %}
+{% block title %}Tryout - Pilih Kategori atau Paket{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     <!-- Header Section -->
     <div class="text-center mb-10">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">🎯 Pilih Kategori Tryout</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">🎯 Pilih Tryout</h1>
         <p class="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-sm md:text-base">
-            Uji kemampuan Anda dengan berbagai kategori soal. Pilih dan raih skor terbaik!
+            Uji kemampuan Anda dengan paket simulasi UTBK atau kategori individual
         </p>
     </div>
 
-    <!-- Tryout Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {% for tryout_list in tryout %}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group hover:-translate-y-1">
-            <!-- Header Card -->
-            <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 p-6 text-white relative">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full transform translate-x-16 -translate-y-16"></div>
-                <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full transform -translate-x-10 translate-y-10"></div>
-                
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
-                        <span class="bg-white/20 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">TRYOUT</span>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-1 leading-tight">{{ tryout_list.category_name }}</h3>
-                    <p class="text-white/80 text-sm">{{ tryout_list.get_question_count }} soal • {{ tryout_list.time_limit }} menit</p>
-                </div>
-            </div>
+    <!-- Tab Navigation -->
+    <div class="flex justify-center mb-8">
+        <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <button id="packages-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-white bg-blue-600" onclick="showTab('packages')">
+                📦 Paket Simulasi UTBK
+            </button>
+            <button id="categories-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" onclick="showTab('categories')">
+                📚 Kategori Individual
+            </button>
+        </div>
+    </div>
 
-            <!-- Content Card -->
-            <div class="p-6">
-                <!-- Quick Stats -->
-                <div class="flex items-center justify-between mb-6">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ tryout_list.get_passing_score }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Nilai Lulus</div>
-                    </div>
+    <!-- Packages Section -->
+    <div id="packages-section" class="tab-content">
+        {% if packages %}
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Paket Simulasi UTBK</h2>
+            <p class="text-gray-600 dark:text-gray-400">Simulasi lengkap dengan komposisi kategori seperti ujian UTBK sesungguhnya</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+            {% for package in packages %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group hover:-translate-y-1">
+                <!-- Header Card -->
+                <div class="bg-gradient-to-br from-green-500 via-teal-500 to-cyan-600 p-6 text-white relative">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full transform translate-x-16 -translate-y-16"></div>
+                    <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full transform -translate-x-10 translate-y-10"></div>
                     
-                    {% with stats=tryout_list.get_test_statistics %}
-                    {% if stats.total_tests > 0 %}
-                    <div class="text-center">
-                        <div class="text-2xl font-bold {% if stats.pass_rate >= 60 %}text-green-600 dark:text-green-400{% elif stats.pass_rate >= 40 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ stats.pass_rate }}%</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Tingkat Lulus</div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"></path>
+                                </svg>
+                            </div>
+                            <span class="bg-white/20 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">PAKET UTBK</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-1 leading-tight">{{ package.package_name }}</h3>
+                        <p class="text-white/80 text-sm">{{ package.get_total_questions }} soal • {{ package.total_time }} menit</p>
                     </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.total_students }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Peserta</div>
-                    </div>
-                    {% else %}
-                    <div class="text-center opacity-50">
-                        <div class="text-2xl font-bold text-gray-400">-</div>
-                        <div class="text-xs text-gray-400">Belum Ada Data</div>
-                    </div>
-                    <div class="text-center opacity-50">
-                        <div class="text-2xl font-bold text-gray-400">0</div>
-                        <div class="text-xs text-gray-400">Peserta</div>
-                    </div>
-                    {% endif %}
-                    {% endwith %}
                 </div>
 
-                <!-- Difficulty Badge -->
-                <div class="flex items-center justify-center mb-6">
-                    {% with stats=tryout_list.get_test_statistics %}
-                    <div class="relative group">
-                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold {{ tryout_list.get_difficulty_color }} cursor-help shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                            </svg>
-                            {{ tryout_list.get_difficulty_level }}
-                        </span>
-                        
-                        <!-- Tooltip -->
-                        {% if stats.total_tests > 0 %}
-                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-10 shadow-lg">
-                            <div class="text-center">
-                                <div class="font-semibold mb-1">Berdasarkan {{ stats.total_students }} peserta</div>
-                                <div class="{% if stats.pass_rate >= 60 %}text-green-300{% elif stats.pass_rate >= 40 %}text-yellow-300{% else %}text-red-300{% endif %}">
-                                    {{ stats.pass_rate }}% tingkat kelulusan
-                                </div>
+                <!-- Content Card -->
+                <div class="p-6">
+                    <!-- Package Description -->
+                    {% if package.description %}
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">{{ package.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <!-- Categories Composition -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-900 dark:text-white text-sm mb-2">Komposisi Kategori:</h4>
+                        <div class="space-y-1">
+                            {% for package_category in package.tryoutpackagecategory_set.all %}
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">{{ package_category.category.category_name }}</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ package_category.max_score }} poin</span>
                             </div>
-                            <!-- Tooltip Arrow -->
-                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Package Stats -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-center">
+                            <div class="text-lg font-bold {% if package.is_scoring_complete %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ package.get_total_max_score|floatformat:0 }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Total Poin</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ package.tryoutpackagecategory_set.count }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Kategori</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold {% if package.can_be_taken %}text-green-600 dark:text-green-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %}">
+                                {% if package.can_be_taken %}✓{% else %}⚠{% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Status</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="mt-6">
+                        {% if package.can_be_taken %}
+                        <a href="{% url 'take_package_test' package.id %}" class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
+                            <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Mulai Paket Tryout
+                        </a>
+                        {% else %}
+                        <div class="w-full text-center py-3 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 font-medium rounded-xl">
+                            ⚠ Paket Belum Siap
                         </div>
                         {% endif %}
                     </div>
-                    {% endwith %}
                 </div>
-
-                <!-- Features -->
-                <div class="grid grid-cols-2 gap-3 mb-6 text-xs">
-                    <div class="flex items-center text-gray-600 dark:text-gray-400">
-                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        <span>Auto-Save</span>
-                    </div>
-                    <div class="flex items-center text-gray-600 dark:text-gray-400">
-                        <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                        <span>Hasil Instan</span>
-                    </div>
-                    <div class="flex items-center text-gray-600 dark:text-gray-400">
-                        <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                        <span>Pilihan Ganda</span>
-                    </div>
-                    <div class="flex items-center text-gray-600 dark:text-gray-400">
-                        <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                        <span>Timer Aktif</span>
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                {% if tryout_list.get_question_count > 0 %}
-                <button onclick="showStartWarning('{{ tryout_list.category_name }}', '{{ tryout_list.id }}', '{{ tryout_list.time_limit }}', '{{ tryout_list.get_question_count }}')" class="w-full px-6 py-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50 transition-all duration-300 font-bold text-base shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]">
-                    <div class="flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Mulai Tryout
-                    </div>
-                </button>
-                {% else %}
-                <div class="w-full px-6 py-4 text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 rounded-xl font-bold text-base cursor-not-allowed opacity-75">
-                    <div class="flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                        Belum Ada Soal
-                    </div>
-                </div>
-                {% endif %}
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="text-center py-12">
+            <div class="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Belum Ada Paket Tryout</h3>
+            <p class="text-gray-500 dark:text-gray-400">Paket simulasi UTBK sedang dalam persiapan</p>
+        </div>
+        {% endif %}
     </div>
 
-    <!-- Quick Info Section -->
-    <div class="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-blue-200 dark:border-gray-600">
-        <div class="text-center mb-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">💡 Tips Sukses Tryout</h3>
-            <p class="text-gray-600 dark:text-gray-400 text-sm">Panduan singkat untuk hasil terbaik</p>
+    <!-- Categories Section -->
+    <div id="categories-section" class="tab-content hidden">
+        {% if categories %}
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Kategori Individual</h2>
+            <p class="text-gray-600 dark:text-gray-400">Latihan per kategori untuk memperdalam kemampuan spesifik</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
-                <div class="text-2xl mb-2">⏰</div>
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Kelola Waktu</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-xs">Bagi waktu dengan baik</p>
-            </div>
-            
-            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
-                <div class="text-2xl mb-2">📖</div>
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Baca Teliti</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-xs">Pahami soal dengan baik</p>
-            </div>
-            
-            <div class="text-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl">
-                <div class="text-2xl mb-2">💾</div>
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Auto-Save</h4>
-                <p class="text-gray-600 dark:text-gray-400 text-xs">Jawaban tersimpan otomatis</p>
-            </div>
-        </div>
-        
-        <!-- Difficulty Legend -->
-        <div class="mt-6 pt-4 border-t border-blue-200 dark:border-gray-600">
-            <div class="text-center mb-3">
-                <h4 class="font-semibold text-gray-900 dark:text-white text-sm">🏆 Tingkat Kesulitan</h4>
-            </div>
-            
-            <div class="flex justify-center gap-4 text-xs">
-                <div class="flex items-center">
-                    <div class="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-                    <span class="text-gray-600 dark:text-gray-400">Mudah (≥60%)</span>
-                </div>
-                <div class="flex items-center">
-                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
-                    <span class="text-gray-600 dark:text-gray-400">Sedang (40-59%)</span>
-                </div>
-                <div class="flex items-center">
-                    <div class="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
-                    <span class="text-gray-600 dark:text-gray-400">Sulit (<40%)</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Start Tryout Warning Modal -->
-<div id="start-warning-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm overlay-hidden overflow-y-auto h-full w-full z-50">
-    <div class="relative top-10 mx-auto p-5 w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mr-4">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">Konfirmasi Memulai Tryout</h3>
-                            <p class="text-amber-100 text-sm">Pastikan Anda sudah siap</p>
-                        </div>
-                    </div>
-                    <button onclick="hideStartWarning()" class="text-white/70 hover:text-white transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Modal Content -->
-            <div class="p-8">
-                <!-- Tryout Info -->
-                <div class="text-center mb-8">
-                    <h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                        <span id="modal-category-name"></span>
-                    </h4>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Anda akan memulai tryout kategori ini
-                    </p>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4 text-center border border-blue-200 dark:border-blue-700">
-                        <div class="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-lg mx-auto mb-2">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <p class="text-2xl font-bold text-blue-700 dark:text-blue-300"><span id="modal-question-count"></span></p>
-                        <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Soal</p>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {% for category in categories %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group hover:-translate-y-1">
+                <!-- Header Card -->
+                <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 p-6 text-white relative">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full transform translate-x-16 -translate-y-16"></div>
+                    <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full transform -translate-x-10 translate-y-10"></div>
                     
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-4 text-center border border-green-200 dark:border-green-700">
-                        <div class="flex items-center justify-center w-10 h-10 bg-green-500 rounded-lg mx-auto mb-2">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
+                                </svg>
+                            </div>
+                            <span class="bg-white/20 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">KATEGORI</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-1 leading-tight">{{ category.category_name }}</h3>
+                        <div class="flex items-center justify-between">
+                            <p class="text-white/80 text-sm">{{ category.question_set.count }} soal tersedia</p>
+                            <span class="bg-white/20 text-xs font-medium px-2 py-1 rounded-full backdrop-blur-sm">
+                                {{ category.get_difficulty_level }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Card -->
+                <div class="p-6">
+                    <!-- Category Details -->
+                    <div class="mb-4">
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                                <div class="flex items-center mb-1">
+                                    <svg class="w-3 h-3 text-gray-500 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-gray-600 dark:text-gray-400">Waktu</span>
+                                </div>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ category.time_limit }} menit</span>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                                <div class="flex items-center mb-1">
+                                    <svg class="w-3 h-3 text-gray-500 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-gray-600 dark:text-gray-400">Lulus</span>
+                                </div>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ category.passing_score|floatformat:0 }}%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Statistics -->
+                        {% with stats=category.get_test_statistics %}
+                        {% if stats.total_tests > 0 %}
+                        <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                                <div class="flex items-center mb-1">
+                                    <svg class="w-3 h-3 text-green-600 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                    <span class="text-green-700 dark:text-green-400">Attempts</span>
+                                </div>
+                                <span class="font-medium text-green-800 dark:text-green-300">{{ stats.total_tests }} kali</span>
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                                <div class="flex items-center mb-1">
+                                    <svg class="w-3 h-3 text-blue-600 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                    </svg>
+                                    <span class="text-blue-700 dark:text-blue-400">Rata-rata</span>
+                                </div>
+                                <span class="font-medium text-blue-800 dark:text-blue-300">{{ stats.average_score|floatformat:1 }}%</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <!-- Personal Best Score -->
+                        {% if category.user_best_score %}
+                        <div class="mt-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                    </svg>
+                                    <span class="text-xs text-purple-800 dark:text-purple-300">Personal Best:</span>
+                                </div>
+                                <span class="text-xs font-bold text-purple-900 dark:text-purple-200">
+                                    {{ category.user_best_score|floatformat:1 }}%
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Scoring Method Info -->
+                        <div class="mt-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="text-xs text-blue-800 dark:text-blue-300">
+                                        {% if category.scoring_method == 'default' %}
+                                            📊 Scoring: Default
+                                        {% elif category.scoring_method == 'custom' %}
+                                            🎯 Scoring: Custom
+                                        {% elif category.scoring_method == 'utbk' %}
+                                            🏆 Scoring: UTBK
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <span class="text-xs font-medium {{ category.get_difficulty_color }} px-2 py-1 rounded-full">
+                                    {{ category.get_difficulty_level }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Stats -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ category.question_set.count }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Total Soal</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold {% if category.question_set.count > 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {% if category.question_set.count > 0 %}✓{% else %}✗{% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Status</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                {% if category.scoring_method == 'utbk' %}🏆{% elif category.scoring_method == 'custom' %}🎯{% else %}📊{% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Metode</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="mt-6">
+                        {% if category.question_set.count > 0 %}
+                        <a href="{% url 'question_list_by_category' category.id %}" class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
+                            <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0013.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h4.5m0-6.25C8.25 8.268 8.61 8 9 8h2.25C11.64 8 12 8.268 12 8.5 0 8.732 11.64 9 11.25 9H9c-.39 0-.75-.268-.75-.5 0-.233.36-.5.75-.5zm0 0v6h4.5m-4.5-6v6m0 0v.375c0 .621.504 1.125 1.125 1.125H9c.621 0 1.125-.504 1.125-1.125V18.5m-2.25 0H5.625c-.621 0-1.125-.504-1.125-1.125V13.5c0-.621.504-1.125 1.125-1.125h1.5"></path>
                             </svg>
+                            Mulai Latihan
+                        </a>
+                        {% else %}
+                        <div class="w-full text-center py-3 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 font-medium rounded-xl">
+                            ✗ Belum Ada Soal
                         </div>
-                        <p class="text-2xl font-bold text-green-700 dark:text-green-300"><span id="modal-time-limit"></span></p>
-                        <p class="text-sm text-green-600 dark:text-green-400 font-medium">Menit</p>
+                        {% endif %}
                     </div>
-                </div>
-
-                <!-- Warning Box -->
-                <div class="bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-400 dark:border-amber-500 p-6 mb-8 rounded-r-xl">
-                    <div class="flex items-start">
-                        <svg class="w-6 h-6 text-amber-500 mt-0.5 mr-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div>
-                            <h5 class="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-3">
-                                Perhatian Penting!
-                            </h5>
-                            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-300">
-                                <li class="flex items-start">
-                                    <svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                    Timer akan mulai berjalan segera setelah Anda mengklik "Mulai Sekarang"
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                    Anda dapat keluar dan masuk kembali, namun timer tetap berjalan
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                    Ujian akan otomatis berakhir ketika waktu habis
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                    Pastikan koneksi internet Anda stabil
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ready Check -->
-                <div class="text-center mb-8">
-                    <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                        Apakah Anda sudah siap untuk memulai tryout ini?
-                    </p>
-                    <div class="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span class="text-sm font-medium text-green-700 dark:text-green-300">Semua informasi telah dibaca</span>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="hideStartWarning()" class="px-8 py-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-base font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all duration-300 flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Batal
-                    </button>
-                    <button onclick="startTryout()" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-base font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                        Mulai Sekarang
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
                 </div>
             </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-12">
+            <div class="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Belum Ada Kategori</h3>
+            <p class="text-gray-500 dark:text-gray-400">Kategori latihan belum tersedia</p>
+        </div>
+        {% endif %}
     </div>
 </div>
-
-<style>
-.overlay-hidden {
-    display: none;
-}
-
-.overlay-visible {
-    display: block;
-}
-
-@keyframes modal-appear {
-    from { 
-        opacity: 0; 
-        transform: scale(0.95) translateY(-10px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: scale(1) translateY(0); 
-    }
-}
-
-@keyframes modal-backdrop {
-    from { 
-        opacity: 0; 
-    }
-    to { 
-        opacity: 1; 
-    }
-}
-
-.modal-content {
-    animation: modal-appear 0.3s ease-out;
-}
-
-.modal-backdrop {
-    animation: modal-backdrop 0.3s ease-out;
-}
-
-/* Card hover effects */
-.tryout-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tryout-card:hover {
-    transform: translateY(-8px);
-}
-
-/* Button animations */
-.btn-gradient {
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-gradient::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    transition: left 0.5s;
-}
-
-.btn-gradient:hover::before {
-    left: 100%;
-}
-
-/* Responsive improvements */
-@media (max-width: 640px) {
-    .grid-stats {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-    
-    .modal-content-mobile {
-        margin: 1rem;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-}
-
-/* Dark mode improvements */
-@media (prefers-color-scheme: dark) {
-    .card-shadow {
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-    }
-}
-
-/* Smooth scroll behavior */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Loading state for buttons */
-.btn-loading {
-    position: relative;
-    color: transparent;
-}
-
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    top: 50%;
-    left: 50%;
-    margin-left: -8px;
-    margin-top: -8px;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-</style>
 
 <script>
-let selectedTryoutId = null;
-
-function showStartWarning(categoryName, tryoutId, timeLimit, questionCount) {
-    selectedTryoutId = tryoutId;
+function showTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.add('hidden'));
     
-    // Update modal content
-    document.getElementById('modal-category-name').textContent = categoryName;
-    document.getElementById('modal-time-limit').textContent = timeLimit;
-    document.getElementById('modal-question-count').textContent = questionCount;
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('#packages-tab, #categories-tab');
+    tabs.forEach(tab => {
+        tab.classList.remove('text-white', 'bg-blue-600');
+        tab.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+    });
     
-    // Show modal with animation
-    const modal = document.getElementById('start-warning-modal');
-    modal.classList.remove('overlay-hidden');
-    modal.classList.add('overlay-visible', 'modal-backdrop');
+    // Show selected tab content
+    document.getElementById(tabName + '-section').classList.remove('hidden');
     
-    // Add animation class to content
-    const modalContent = modal.querySelector('.relative > div');
-    modalContent.classList.add('modal-content');
-    
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-    
-    // Focus management for accessibility
-    const firstButton = modal.querySelector('button');
-    if (firstButton) {
-        setTimeout(() => firstButton.focus(), 100);
-    }
+    // Add active class to selected tab
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+    activeTab.classList.add('text-white', 'bg-blue-600');
 }
 
-function hideStartWarning() {
-    const modal = document.getElementById('start-warning-modal');
-    const modalContent = modal.querySelector('.relative > div');
-    
-    // Add fade out animation
-    modalContent.style.animation = 'modal-appear 0.2s ease-in reverse';
-    
-    setTimeout(() => {
-        modal.classList.add('overlay-hidden');
-        modal.classList.remove('overlay-visible', 'modal-backdrop');
-        modalContent.style.animation = '';
-        modalContent.classList.remove('modal-content');
-        
-        // Restore body scroll
-        document.body.style.overflow = 'auto';
-        
-        selectedTryoutId = null;
-    }, 200);
-}
-
-function startTryout() {
-    if (selectedTryoutId) {
-        // Add loading state to button
-        const button = event.target.closest('button');
-        const originalContent = button.innerHTML;
-        button.classList.add('btn-loading');
-        button.disabled = true;
-        
-        // Show loading for user feedback
-        setTimeout(() => {
-            // Redirect to tryout
-            window.location.href = "{% url 'take_test' '0' 0 %}".replace('0', selectedTryoutId);
-        }, 500);
-    }
-}
-
-// Enhanced modal interactions
+// Initialize with packages tab active on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('start-warning-modal');
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideStartWarning();
-        }
-    });
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.classList.contains('overlay-visible')) {
-            hideStartWarning();
-        }
-    });
-    
-    // Trap focus within modal when open
-    modal.addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-            const focusableElements = modal.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-            
-            if (e.shiftKey) {
-                if (document.activeElement === firstElement) {
-                    lastElement.focus();
-                    e.preventDefault();
-                }
-            } else {
-                if (document.activeElement === lastElement) {
-                    firstElement.focus();
-                    e.preventDefault();
-                }
-            }
-        }
-    });
+    showTab('packages');
 });
-
-// Add intersection observer for card animations
-document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.tryout-card');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    });
-    
-    cards.forEach((card) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-    });
-});
-
-// Add smooth scrolling for better UX
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-}
-
-// Performance optimization: Lazy load images if any
-if ('loading' in HTMLImageElement.prototype) {
-    const images = document.querySelectorAll('img[loading="lazy"]');
-    images.forEach(img => {
-        img.src = img.dataset.src;
-    });
-} else {
-    // Fallback for browsers that don't support lazy loading
-    const script = document.createElement('script');
-    script.src = 'https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver';
-    document.head.appendChild(script);
-}
 </script>
+
 {% endblock %}

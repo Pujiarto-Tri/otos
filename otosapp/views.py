@@ -5,8 +5,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -693,10 +693,31 @@ def update_utbk_coefficients(request, category_id):
 @admin_or_teacher_or_operator_required
 def question_list(request):
     """Display category selection page for questions"""
-    categories = Category.objects.all().order_by('category_name')
+    categories_list = Category.objects.all().order_by('category_name')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        categories_list = categories_list.filter(
+            Q(category_name__icontains=search_query)
+        )
+    
+    # Filter by scoring method
+    scoring_method_filter = request.GET.get('scoring_method', '')
+    if scoring_method_filter:
+        categories_list = categories_list.filter(scoring_method=scoring_method_filter)
+    
+    # Filter by completion status (for custom scoring)
+    completion_filter = request.GET.get('completion', '')
+    
+    # Sort options
+    sort_by = request.GET.get('sort', 'category_name')
+    valid_sorts = ['category_name', '-category_name', 'time_limit', '-time_limit', 'passing_score', '-passing_score']
+    if sort_by in valid_sorts:
+        categories_list = categories_list.order_by(sort_by)
     
     # Add question count and scoring status for each category
-    for category in categories:
+    for category in categories_list:
         category.question_count = category.question_set.count()
         if category.scoring_method == 'custom':
             total_points = category.get_total_custom_points()
@@ -707,9 +728,43 @@ def question_list(request):
         else:
             category.scoring_status = {'complete': True, 'total_points': 100}
     
-    return render(request, 'admin/manage_questions/category_selection.html', {
-        'categories': categories
-    })
+    # Filter by completion status after calculating scoring status
+    if completion_filter:
+        if completion_filter == 'complete':
+            categories_list = [cat for cat in categories_list if cat.scoring_status['complete']]
+        elif completion_filter == 'incomplete':
+            categories_list = [cat for cat in categories_list if not cat.scoring_status['complete']]
+    
+    # Pagination
+    paginator = Paginator(categories_list, 10)  # Show 10 categories per page
+    page = request.GET.get('page')
+    
+    try:
+        categories = paginator.page(page)
+    except PageNotAnInteger:
+        categories = paginator.page(1)
+    except EmptyPage:
+        categories = paginator.page(paginator.num_pages)
+    
+    # Stats for dashboard
+    total_categories = Category.objects.count()
+    custom_scoring_count = Category.objects.filter(scoring_method='custom').count()
+    utbk_scoring_count = Category.objects.filter(scoring_method='utbk').count()
+    
+    context = {
+        'categories': categories,
+        'paginator': paginator,
+        'search_query': search_query,
+        'scoring_method_filter': scoring_method_filter,
+        'completion_filter': completion_filter,
+        'sort_by': sort_by,
+        'total_categories': total_categories,
+        'custom_scoring_count': custom_scoring_count,
+        'utbk_scoring_count': utbk_scoring_count,
+        'total_questions': sum(cat.question_count for cat in categories_list if hasattr(cat, 'question_count')),
+    }
+    
+    return render(request, 'admin/manage_questions/category_selection.html', context)
 
 @login_required
 @admin_or_teacher_or_operator_required
@@ -717,6 +772,51 @@ def question_list_by_category(request, category_id):
     """Display questions filtered by category"""
     category = get_object_or_404(Category, id=category_id)
     questions_list = Question.objects.filter(category=category).order_by('-pub_date')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        questions_list = questions_list.filter(
+            Q(question_text__icontains=search_query) |
+            Q(choices__choice_text__icontains=search_query)
+        ).distinct()
+    
+    # Filter by scoring status (for custom scoring)
+    scoring_filter = request.GET.get('scoring_filter', '')
+    if scoring_filter and category.scoring_method == 'custom':
+        if scoring_filter == 'with_weight':
+            questions_list = questions_list.filter(custom_weight__gt=0)
+        elif scoring_filter == 'no_weight':
+            questions_list = questions_list.filter(custom_weight=0)
+    
+    # Filter by date range
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        try:
+            from datetime import datetime
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            questions_list = questions_list.filter(pub_date__date__gte=date_from_obj)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            from datetime import datetime
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            questions_list = questions_list.filter(pub_date__date__lte=date_to_obj)
+        except ValueError:
+            pass
+    
+    # Sort options
+    sort_by = request.GET.get('sort', '-pub_date')
+    valid_sorts = ['-pub_date', 'pub_date', 'question_text', '-question_text']
+    if category.scoring_method == 'custom':
+        valid_sorts.extend(['-custom_weight', 'custom_weight'])
+    elif category.scoring_method == 'utbk':
+        valid_sorts.extend(['-difficulty_coefficient', 'difficulty_coefficient'])
+    
+    if sort_by in valid_sorts:
+        questions_list = questions_list.order_by(sort_by)
     
     # Add scoring status for category
     if category.scoring_method == 'custom':
@@ -738,11 +838,19 @@ def question_list_by_category(request, category_id):
     except EmptyPage:
         questions = paginator.page(paginator.num_pages)
         
-    return render(request, 'admin/manage_questions/question_list.html', {
+    context = {
         'questions': questions,
         'category': category,
-        'paginator': paginator
-    })
+        'paginator': paginator,
+        'search_query': search_query,
+        'scoring_filter': scoring_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'sort_by': sort_by,
+        'total_questions': questions_list.count(),
+    }
+    
+    return render(request, 'admin/manage_questions/question_list.html', context)
 
 @login_required
 @admin_or_teacher_or_operator_required
@@ -903,28 +1011,36 @@ def tryout_list(request):
             ongoing_test.calculate_score()
             ongoing_test.save()
         else:
-            # Redirect to ongoing test
-            category = ongoing_test.categories.first()
-            if category:
-                # Get current question index from session or start from 0
-                session_key = f'test_session_{category.id}_{request.user.id}'
-                current_question_index = 0
-                
-                if session_key in request.session:
-                    # Get last answered question index
-                    answered_questions = request.session[session_key].get('answered_questions', {})
-                    if answered_questions:
-                        # Find the next unanswered question
-                        questions = Question.objects.filter(category=category)
-                        for i, question in enumerate(questions):
-                            if question.id not in answered_questions:
-                                current_question_index = i
-                                break
-                        else:
-                            # All questions answered, go to last question
-                            current_question_index = len(questions) - 1 if questions else 0
-                
-                return redirect('take_test', category_id=category.id, question=current_question_index)
+            # Redirect to ongoing test based on type
+            if ongoing_test.tryout_package:
+                # This is a package test
+                current_question_index = ongoing_test.get_current_question_index()
+                return redirect('take_package_test_question', 
+                              package_id=ongoing_test.tryout_package.id, 
+                              question=current_question_index)
+            else:
+                # This is a category test
+                category = ongoing_test.categories.first()
+                if category:
+                    # Get current question index from session or start from 0
+                    session_key = f'test_session_{category.id}_{request.user.id}'
+                    current_question_index = 0
+                    
+                    if session_key in request.session:
+                        # Get last answered question index
+                        answered_questions = request.session[session_key].get('answered_questions', {})
+                        if answered_questions:
+                            # Find the next unanswered question
+                            questions = Question.objects.filter(category=category)
+                            for i, question in enumerate(questions):
+                                if question.id not in answered_questions:
+                                    current_question_index = i
+                                    break
+                            else:
+                                # All questions answered, go to last question
+                                current_question_index = len(questions) - 1 if questions else 0
+                    
+                    return redirect('take_test', category_id=category.id, question=current_question_index)
     
     # Clean up any unsubmitted test sessions for this user
     # This prevents issues when student starts a new test
@@ -947,9 +1063,27 @@ def tryout_list(request):
     for key in session_keys_to_remove:
         if key in request.session:
             del request.session[key]
+
+    # Get categories and packages separately
+    categories = Category.objects.all()
+    packages = TryoutPackage.objects.filter(is_active=True)
     
-    tryout_list = Category.objects.all() 
-    return render(request, 'students/tryouts/tryout_list.html', {'tryout': tryout_list})
+    # Add personal best scores for categories
+    if request.user.is_authenticated:
+        for category in categories:
+            user_best = Test.objects.filter(
+                student=request.user,
+                categories=category,
+                is_submitted=True
+            ).aggregate(best_score=Max('score'))['best_score']
+            category.user_best_score = user_best
+    
+    context = {
+        'categories': categories,
+        'packages': packages,
+    }
+    
+    return render(request, 'students/tryouts/tryout_list.html', context)
 
 @login_required
 @active_subscription_required
@@ -1030,6 +1164,10 @@ def take_test(request, category_id, question):
     # Update session with existing answers
     test_session['answered_questions'] = answered_questions_dict
     request.session[session_key] = test_session
+    
+    # Update current question position in the test model
+    test.current_question = current_question_index + 1  # Convert to 1-based index
+    test.save(update_fields=['current_question'])
 
     if request.method == 'POST':
         # Process the answer for the current question
@@ -1163,6 +1301,13 @@ def test_results(request, test_id):
     if category and category.scoring_method == 'utbk':
         university_recommendations = test.get_university_recommendations()
         score_analysis = test.get_score_analysis()
+        
+        # Calculate achievement percentages for each recommendation
+        for rec in university_recommendations:
+            min_score = rec['university'].minimum_utbk_score
+            achievement_percentage = (test.score / min_score) * 100 if min_score > 0 else 0
+            rec['achievement_percentage'] = round(achievement_percentage, 1)
+            rec['meets_minimum'] = test.score >= min_score
     
     context = {
         'test': test,
@@ -2768,12 +2913,18 @@ def student_university_target(request):
     # Get all universities for suggestions (top 10 by tier)
     suggested_universities = University.objects.filter(is_active=True).order_by('tier', 'minimum_utbk_score')[:10]
     
+    # Calculate score percentage for progress bar
+    score_percentage = 0
+    if latest_utbk_test:
+        score_percentage = min((latest_utbk_test.score / 1000) * 100, 100)
+    
     context = {
         'form': form,
         'university_target': university_target,
         'recommendations': recommendations,
         'latest_utbk_test': latest_utbk_test,
         'suggested_universities': suggested_universities,
+        'score_percentage': score_percentage,
     }
     
     return render(request, 'students/university/target_settings.html', context)
@@ -2829,4 +2980,423 @@ def student_university_recommendations(request):
     }
     
     return render(request, 'students/university/recommendations.html', context)
+
+# ============================
+# TRYOUT PACKAGE MANAGEMENT
+# ============================
+
+@admin_or_operator_required
+def admin_package_list(request):
+    """List all tryout packages for admin/operator"""
+    packages = TryoutPackage.objects.all().order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        packages = packages.filter(
+            Q(package_name__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(packages, 10)
+    page = request.GET.get('page')
+    
+    try:
+        packages = paginator.page(page)
+    except PageNotAnInteger:
+        packages = paginator.page(1)
+    except EmptyPage:
+        packages = paginator.page(paginator.num_pages)
+    
+    context = {
+        'packages': packages,
+        'search_query': search_query,
+        'total_packages': TryoutPackage.objects.count(),
+        'active_packages': TryoutPackage.objects.filter(is_active=True).count(),
+        'inactive_packages': TryoutPackage.objects.filter(is_active=False).count(),
+    }
+    
+    return render(request, 'admin/package/package_list.html', context)
+
+@admin_or_operator_required
+def admin_package_create(request):
+    """Create new tryout package"""
+    if request.method == 'POST':
+        form = TryoutPackageForm(request.POST)
+        formset = TryoutPackageCategoryFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                package = form.save(commit=False)
+                package.created_by = request.user
+                package.save()
+                
+                formset.instance = package
+                formset.save()
+                
+                # Validate total score
+                total_score = package.get_total_max_score()
+                if abs(total_score - 1000) > 0.01:
+                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 1000. Silakan sesuaikan.')
+                else:
+                    messages.success(request, f'Paket "{package.package_name}" berhasil dibuat!')
+                
+                return redirect('admin_package_update', package_id=package.id)
+    else:
+        form = TryoutPackageForm()
+        formset = TryoutPackageCategoryFormSet()
+    
+    context = {
+        'form': form,
+        'formset': formset,
+        'title': 'Buat Paket Tryout Baru'
+    }
+    
+    return render(request, 'admin/package/package_form.html', context)
+
+@admin_or_operator_required
+def admin_package_update(request, package_id):
+    """Update existing tryout package"""
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    if request.method == 'POST':
+        form = TryoutPackageForm(request.POST, instance=package)
+        formset = TryoutPackageCategoryFormSet(request.POST, instance=package)
+        
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                package = form.save()
+                formset.save()
+                
+                # Validate total score
+                total_score = package.get_total_max_score()
+                if abs(total_score - 1000) > 0.01:
+                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 1000. Silakan sesuaikan.')
+                else:
+                    messages.success(request, f'Paket "{package.package_name}" berhasil diperbarui!')
+                
+                return redirect('admin_package_list')
+    else:
+        form = TryoutPackageForm(instance=package)
+        formset = TryoutPackageCategoryFormSet(instance=package)
+    
+    context = {
+        'form': form,
+        'formset': formset,
+        'package': package,
+        'title': f'Edit Paket: {package.package_name}',
+        'total_score': package.get_total_max_score(),
+        'total_questions': package.get_total_questions(),
+        'is_scoring_complete': package.is_scoring_complete()
+    }
+    
+    return render(request, 'admin/package/package_form.html', context)
+
+@admin_or_operator_required
+def admin_package_delete(request, package_id):
+    """Delete tryout package"""
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    if request.method == 'POST':
+        # Check if package has been used by students
+        if Test.objects.filter(tryout_package=package).exists():
+            messages.error(request, f'Paket "{package.package_name}" tidak dapat dihapus karena sudah digunakan oleh siswa.')
+        else:
+            package_name = package.package_name
+            package.delete()
+            messages.success(request, f'Paket "{package_name}" berhasil dihapus!')
+        
+        return redirect('admin_package_list')
+    
+    context = {
+        'package': package,
+        'tests_count': Test.objects.filter(tryout_package=package).count()
+    }
+    
+    return render(request, 'admin/package/package_confirm_delete.html', context)
+
+@admin_or_operator_required
+def admin_package_detail(request, package_id):
+    """View package details and statistics"""
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    # Get package statistics
+    package_tests = Test.objects.filter(tryout_package=package, is_submitted=True)
+    
+    statistics = {
+        'total_attempts': package_tests.count(),
+        'average_score': package_tests.aggregate(avg_score=Avg('score'))['avg_score'] or 0,
+        'highest_score': package_tests.aggregate(max_score=Max('score'))['max_score'] or 0,
+        'pass_rate': 0
+    }
+    
+    # Calculate pass rate (60% of 1000 = 600)
+    if statistics['total_attempts'] > 0:
+        passed_tests = package_tests.filter(score__gte=600).count()
+        statistics['pass_rate'] = round((passed_tests / statistics['total_attempts']) * 100, 1)
+    
+    # Get recent test results
+    recent_tests = package_tests.select_related('student').order_by('-date_taken')[:10]
+    
+    context = {
+        'package': package,
+        'statistics': statistics,
+        'recent_tests': recent_tests,
+        'category_breakdown': package.tryoutpackagecategory_set.all().order_by('order')
+    }
+    
+    return render(request, 'admin/package/package_detail.html', context)
+
+
+@login_required
+@active_subscription_required
+def take_package_test(request, package_id):
+    """Start a tryout package test session"""
+    from django.utils import timezone
+    
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    # Check if package can be taken
+    if not package.can_be_taken:
+        messages.error(request, 'Paket tryout ini belum dapat diambil.')
+        return redirect('tryout_list')
+    
+    # Check if there's an existing unsubmitted test for this package and user
+    existing_test = Test.objects.filter(
+        student=request.user,
+        is_submitted=False,
+        tryout_package=package
+    ).first()
+    
+    if existing_test:
+        # Continue existing test
+        # Find the current question position
+        answered_count = existing_test.answer_set.count()
+        next_question = answered_count + 1
+        
+        # Get first category for redirection
+        first_category = package.tryoutpackagecategory_set.first()
+        if first_category:
+            return redirect('take_package_test_question', 
+                          package_id=package_id, 
+                          question=next_question)
+    
+    # Create a new test instance for this package
+    test = Test.objects.create(
+        student=request.user,
+        tryout_package=package,
+        start_time=timezone.now(),
+        time_limit=package.total_time
+    )
+    
+    # Connect test to all categories in the package
+    for package_category in package.tryoutpackagecategory_set.all():
+        test.categories.add(package_category.category)
+    
+    messages.success(request, f'Tryout paket "{package.package_name}" dimulai.')
+    
+    # Redirect to first question
+    return redirect('take_package_test_question', 
+                   package_id=package_id, 
+                   question=1)
+
+
+@login_required
+@active_subscription_required
+def take_package_test_question(request, package_id, question):
+    """Handle individual questions in package test"""
+    from django.utils import timezone
+    
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    # Get the current test for this package
+    test = Test.objects.filter(
+        student=request.user,
+        is_submitted=False,
+        tryout_package=package
+    ).first()
+    
+    if not test:
+        messages.error(request, 'Sesi tryout tidak ditemukan. Silakan mulai ulang.')
+        return redirect('tryout_list')
+    
+    # Check if time is up
+    if test.is_time_up():
+        test.is_submitted = True
+        test.end_time = timezone.now()
+        test.calculate_score()
+        test.save()
+        messages.warning(request, 'Waktu tryout telah habis. Test otomatis disubmit.')
+        return redirect('test_results', test_id=test.id)
+    
+    # Get all questions for this package in order
+    all_questions = []
+    for package_category in package.tryoutpackagecategory_set.all().order_by('order'):
+        category_questions = list(Question.objects.filter(
+            category=package_category.category
+        ).order_by('id'))
+        all_questions.extend(category_questions)
+    
+    # Validate question number
+    if question < 1 or question > len(all_questions):
+        messages.error(request, 'Nomor soal tidak valid.')
+        return redirect('tryout_list')
+    
+    current_question = all_questions[question - 1]
+    choices = current_question.choices.all()
+    
+    # Get previous answer if exists
+    previous_answer = Answer.objects.filter(
+        test=test,
+        question=current_question
+    ).first()
+    
+    # Update current question position in the test model
+    test.current_question = question
+    test.save(update_fields=['current_question'])
+    
+    if request.method == 'POST':
+        choice_id = request.POST.get('choice')
+        action = request.POST.get('action')
+        
+        # Handle AJAX requests for saving answers
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if choice_id:
+            choice = get_object_or_404(Choice, id=choice_id, question=current_question)
+            
+            # Check for existing answers and clean up duplicates if any
+            existing_answers = Answer.objects.filter(
+                test=test,
+                question=current_question
+            )
+            
+            if existing_answers.count() > 1:
+                # Keep the first answer and delete the rest
+                first_answer = existing_answers.first()
+                existing_answers.exclude(id=first_answer.id).delete()
+                
+                # Update the remaining answer
+                first_answer.selected_choice = choice
+                first_answer.save()
+                answer = first_answer
+                created = False
+            elif existing_answers.count() == 1:
+                # Update existing single answer
+                answer = existing_answers.first()
+                answer.selected_choice = choice
+                answer.save()
+                created = False
+            else:
+                # Create new answer
+                answer = Answer.objects.create(
+                    test=test,
+                    question=current_question,
+                    selected_choice=choice
+                )
+                created = True
+                
+            # If this is AJAX, return JSON response
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': 'Answer saved'})
+        
+        # If not AJAX, handle navigation
+        if not is_ajax:
+            # Handle navigation
+            if action == 'next' and question < len(all_questions):
+                return redirect('take_package_test_question', 
+                              package_id=package_id, 
+                              question=question + 1)
+            elif action == 'previous' and question > 1:
+                return redirect('take_package_test_question', 
+                              package_id=package_id, 
+                              question=question - 1)
+            elif action == 'submit':
+                # Direct submit without confirmation page - let the modal handle it
+                test.is_submitted = True
+                test.end_time = timezone.now()
+                test.calculate_score()
+                test.save()
+                messages.success(request, 'Tryout berhasil disubmit!')
+                return redirect('test_results', test_id=test.id)
+    
+    # Calculate progress and answered questions
+    answered_questions = Answer.objects.filter(test=test).count()
+    answered_question_ids = set(Answer.objects.filter(test=test).values_list('question_id', flat=True))
+    answered_question_numbers = []
+    
+    # Map question IDs to question numbers in the package
+    for i, q in enumerate(all_questions):
+        if q.id in answered_question_ids:
+            answered_question_numbers.append(i + 1)
+    
+    progress = round((answered_questions / len(all_questions)) * 100, 1) if all_questions else 0
+    unanswered_questions = len(all_questions) - answered_questions
+    
+    # Time remaining
+    time_remaining = None
+    if test.start_time and test.time_limit:
+        from datetime import timedelta
+        elapsed_time = timezone.now() - test.start_time
+        total_time = timedelta(minutes=test.time_limit)
+        time_remaining = total_time - elapsed_time
+        
+        if time_remaining.total_seconds() <= 0:
+            time_remaining = timedelta(0)
+    
+    context = {
+        'package': package,
+        'test': test,
+        'question': current_question,
+        'choices': choices,
+        'current_question_number': question,
+        'total_questions': len(all_questions),
+        'previous_answer': previous_answer,
+        'progress': progress,
+        'answered_questions': answered_questions,
+        'unanswered_questions': unanswered_questions,
+        'answered_question_numbers': answered_question_numbers,
+        'time_remaining': time_remaining,
+        'can_go_previous': question > 1,
+        'can_go_next': question < len(all_questions),
+        'is_last_question': question == len(all_questions),
+        'remaining_time': test.get_remaining_time() if test.start_time else 0,
+    }
+    
+    return render(request, 'students/tryouts/package_test_question.html', context)
+
+
+@login_required
+@active_subscription_required
+def submit_package_test(request, package_id):
+    """Submit package test and calculate results"""
+    from django.utils import timezone
+    
+    package = get_object_or_404(TryoutPackage, id=package_id)
+    
+    # Get the current test for this package
+    test = Test.objects.filter(
+        student=request.user,
+        is_submitted=False,
+        tryout_package=package
+    ).first()
+    
+    if not test:
+        messages.error(request, 'Sesi tryout tidak ditemukan.')
+        return redirect('tryout_list')
+    
+    # Only accept POST requests (direct submit, no confirmation page)
+    if request.method == 'POST':
+        # Submit the test
+        test.is_submitted = True
+        test.end_time = timezone.now()
+        test.calculate_score()
+        test.save()
+        
+        messages.success(request, 'Tryout berhasil disubmit!')
+        return redirect('test_results', test_id=test.id)
+    
+    # If GET request, redirect back to the test (no separate confirmation page)
+    return redirect('take_package_test_question', package_id=package_id, question=1)
 

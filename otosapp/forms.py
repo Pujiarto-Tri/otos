@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
@@ -729,3 +729,88 @@ class UniversityTargetForm(forms.ModelForm):
             raise forms.ValidationError('Pilih universitas yang berbeda untuk setiap target.')
         
         return cleaned_data
+
+class TryoutPackageForm(forms.ModelForm):
+    """Form for creating and editing tryout packages"""
+    
+    class Meta:
+        model = TryoutPackage
+        fields = ['package_name', 'description', 'total_time', 'is_active']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Style form fields
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.update({
+                    'class': 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+                })
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs.update({
+                    'class': 'block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                })
+            else:
+                field.widget.attrs.update({
+                    'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                })
+        
+        # Set help texts
+        self.fields['package_name'].help_text = "Nama paket tryout (contoh: UTBK Saintek 2025)"
+        self.fields['description'].help_text = "Deskripsi paket dan target peserta"
+        self.fields['total_time'].help_text = "Total waktu pengerjaan dalam menit (contoh: 180 untuk 3 jam)"
+        self.fields['is_active'].help_text = "Centang untuk membuat paket tersedia untuk siswa"
+
+class TryoutPackageCategoryForm(forms.ModelForm):
+    """Form for configuring categories within a package"""
+    
+    class Meta:
+        model = TryoutPackageCategory
+        fields = ['category', 'question_count', 'max_score', 'order']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Style form fields
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+            })
+        
+        # Only show categories that have questions
+        self.fields['category'].queryset = Category.objects.filter(question__isnull=False).distinct()
+        
+        # Set help texts
+        self.fields['category'].help_text = "Pilih kategori soal"
+        self.fields['question_count'].help_text = "Jumlah soal dari kategori ini"
+        self.fields['max_score'].help_text = "Skor maksimum untuk kategori ini (kontribusi ke total 1000)"
+        self.fields['order'].help_text = "Urutan kategori dalam paket (1 = pertama)"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get('category')
+        question_count = cleaned_data.get('question_count')
+        
+        if category and question_count:
+            available_questions = category.get_question_count()
+            if question_count > available_questions:
+                raise forms.ValidationError(
+                    f'Kategori "{category.category_name}" hanya memiliki {available_questions} soal. '
+                    f'Anda meminta {question_count} soal.'
+                )
+        
+        return cleaned_data
+
+# Create formset for package categories
+TryoutPackageCategoryFormSet = inlineformset_factory(
+    TryoutPackage,
+    TryoutPackageCategory,
+    form=TryoutPackageCategoryForm,
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True
+)

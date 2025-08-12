@@ -24,9 +24,17 @@
                     </a>
                 {% elif not test.is_submitted %}
                     <!-- Continue or start test -->
-                    <a href="{% url 'take_test' test.categories.first.id|default:1 test.get_remaining_time|default:1 %}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                        {% if test.start_time %}Lanjutkan{% else %}Mulai{% endif %}
-                    </a>
+                    {% if test.tryout_package %}
+                        <!-- This is a package test -->
+                        <a href="{% url 'take_package_test_question' test.tryout_package.id test.get_remaining_time|default:1 %}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            {% if test.start_time %}Lanjutkan{% else %}Mulai{% endif %}
+                        </a>
+                    {% elif test.categories.exists %}
+                        <!-- This is a category test -->
+                        <a href="{% url 'take_test' test.categories.first.id test.get_remaining_time|default:1 %}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            {% if test.start_time %}Lanjutkan{% else %}Mulai{% endif %}
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

@@ -116,74 +116,78 @@
         <div class="space-y-6">
             {% if latest_utbk_test %}
             <!-- Latest Test Results -->
-            <div class="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-                <h3 class="text-lg font-medium text-blue-800 dark:text-blue-200 mb-4">
-                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    ✅
                     Hasil UTBK Terbaru
                 </h3>
-                <div class="space-y-2 text-sm text-blue-700 dark:text-blue-300">
-                    <div class="flex justify-between">
-                        <span>Tanggal:</span>
-                        <span class="font-medium">{{ latest_utbk_test.date_taken|date:"d M Y" }}</span>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Tanggal:</span>
+                        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ latest_utbk_test.date_taken|date:"d M Y" }}</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Skor:</span>
-                        <span class="font-bold text-lg">{{ latest_utbk_test.score|floatformat:0 }}/1000</span>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Skor:</span>
+                        <span class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ latest_utbk_test.score|floatformat:0 }}<span class="text-sm font-normal text-gray-500 dark:text-gray-400">/1000</span></span>
                     </div>
-                    <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
-                        <div class="bg-blue-600 dark:bg-blue-400 h-2 rounded-full" style="width: {{ latest_utbk_test.score|floatformat:0|add:"0"|div:"10" }}%"></div>
+                    <div class="mt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Progress</span>
+                            <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ score_percentage|floatformat:1 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300" style="width: {{ score_percentage|floatformat:1 }}%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {% if recommendations %}
             <!-- Target Recommendations -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <svg class="w-5 h-5 inline mr-2 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                     Status Target Anda
                 </h3>
                 <div class="space-y-3">
                     {% for rec in recommendations %}
-                    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                         <div class="flex-1">
                             <div class="flex items-center">
                                 {% if rec.target_type == 'primary' %}
-                                <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                                <span class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
                                 {% elif rec.target_type == 'secondary' %}
-                                <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                <span class="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
                                 {% else %}
-                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
                                 {% endif %}
                                 <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ rec.university.name }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.target_label }}</p>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ rec.university.name }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-300">{{ rec.target_label }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
                             {% if rec.recommendation.status == 'sangat_aman' %}
-                            <span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-green-800 bg-green-100 border border-green-200 rounded-full dark:bg-green-900 dark:text-green-200 dark:border-green-800">
                                 {{ rec.recommendation.message }}
                             </span>
                             {% elif rec.recommendation.status == 'aman' %}
-                            <span class="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-100 border border-blue-200 rounded-full dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
                                 {{ rec.recommendation.message }}
                             </span>
                             {% elif rec.recommendation.status == 'kurang_aman' %}
-                            <span class="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-full dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-800">
                                 {{ rec.recommendation.message }}
                             </span>
                             {% else %}
-                            <span class="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:bg-red-900 dark:text-red-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-red-800 bg-red-100 border border-red-200 rounded-full dark:bg-red-900 dark:text-red-200 dark:border-red-800">
                                 {{ rec.recommendation.message }}
                             </span>
                             {% endif %}
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-1">
                                 {{ rec.recommendation.percentage|floatformat:1 }}%
                             </p>
                         </div>
@@ -221,35 +225,35 @@
 
             <!-- University Suggestions -->
             {% if suggested_universities %}
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <svg class="w-5 h-5 inline mr-2 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                     Saran Universitas
                 </h3>
-                <div class="space-y-2 max-h-80 overflow-y-auto">
+                <div class="space-y-3 max-h-80 overflow-y-auto">
                     {% for university in suggested_universities %}
-                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ university.name }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ university.location }}</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ university.name }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300">{{ university.location }}</p>
                         </div>
                         <div class="text-right">
                             {% if university.tier == 'tier1' %}
-                            <span class="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-full dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-800">
                                 Tier 1
                             </span>
                             {% elif university.tier == 'tier2' %}
-                            <span class="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-100 border border-blue-200 rounded-full dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
                                 Tier 2
                             </span>
                             {% else %}
-                            <span class="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full dark:bg-gray-900 dark:text-gray-300">
+                            <span class="px-3 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500">
                                 Tier 3
                             </span>
                             {% endif %}
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mt-1">
                                 Min: {{ university.minimum_utbk_score }}
                             </p>
                         </div>

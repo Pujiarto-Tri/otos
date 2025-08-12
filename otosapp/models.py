@@ -254,6 +254,76 @@ class Category(models.Model):
             return abs(self.get_total_custom_points() - 100) < 0.01
         return True
 
+class TryoutPackage(models.Model):
+    """Model for creating packages of multiple categories for UTBK simulation"""
+    package_name = models.CharField(max_length=200, help_text="Nama paket tryout (contoh: UTBK Saintek 2025)")
+    description = models.TextField(blank=True, help_text="Deskripsi paket tryout")
+    is_active = models.BooleanField(default=True, help_text="Apakah paket ini aktif dan tersedia untuk siswa")
+    total_time = models.IntegerField(help_text="Total waktu pengerjaan dalam menit")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    # Categories in this package
+    categories = models.ManyToManyField(Category, through='TryoutPackageCategory')
+    
+    def __str__(self):
+        return self.package_name
+    
+    def get_total_questions(self):
+        """Get total number of questions in this package"""
+        return sum([pc.question_count for pc in self.tryoutpackagecategory_set.all()])
+    
+    def get_total_max_score(self):
+        """Get total maximum score (should be 1000 for UTBK)"""
+        return sum([pc.max_score for pc in self.tryoutpackagecategory_set.all()])
+    
+    def is_scoring_complete(self):
+        """Check if total max score equals 1000"""
+        return abs(self.get_total_max_score() - 1000) < 0.01
+    
+    def get_category_composition(self):
+        """Get formatted string of category composition"""
+        compositions = []
+        for pc in self.tryoutpackagecategory_set.all():
+            compositions.append(f"{pc.category.category_name} ({pc.question_count} soal, {pc.max_score} poin)")
+        return " | ".join(compositions)
+    
+    def can_be_taken(self):
+        """Check if package can be taken by students"""
+        return (
+            self.is_active and 
+            self.is_scoring_complete() and 
+            self.get_total_questions() > 0 and
+            all(pc.category.get_question_count() >= pc.question_count for pc in self.tryoutpackagecategory_set.all())
+        )
+
+class TryoutPackageCategory(models.Model):
+    """Through model for TryoutPackage and Category relationship with scoring configuration"""
+    package = models.ForeignKey(TryoutPackage, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    question_count = models.PositiveIntegerField(help_text="Jumlah soal dari kategori ini dalam paket")
+    max_score = models.FloatField(help_text="Skor maksimum untuk kategori ini (kontribusi ke total 1000)")
+    order = models.PositiveIntegerField(default=1, help_text="Urutan kategori dalam paket")
+    
+    class Meta:
+        unique_together = ('package', 'category')
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.package.package_name} - {self.category.category_name}"
+    
+    def get_score_per_question(self):
+        """Get score per question for this category in the package"""
+        if self.question_count > 0:
+            return self.max_score / self.question_count
+        return 0
+    
+    def validate_question_count(self):
+        """Validate if category has enough questions"""
+        available_questions = self.category.get_question_count()
+        return available_questions >= self.question_count
+
 class Question(models.Model):
     question_text = CKEditor5Field('Text', config_name='extends')
     pub_date = models.DateTimeField('date published')
@@ -324,28 +394,70 @@ class Test(models.Model):
     time_limit = models.IntegerField(default=60, verbose_name="Time Limit (minutes)")
     is_submitted = models.BooleanField(default=False, verbose_name="Is Submitted")
     categories = models.ManyToManyField(Category, related_name="tests", blank=True)
+    
+    # Add support for tryout packages
+    tryout_package = models.ForeignKey(
+        TryoutPackage, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        help_text="Paket tryout yang digunakan (jika ada)"
+    )
+    
+    # Track current question position
+    current_question = models.IntegerField(default=1, verbose_name="Current Question Index")
 
     def __str__(self):
         return f"Test by {self.student.username} on {self.date_taken}"
 
     def calculate_score(self):
-        """Calculate score based on category scoring method"""
+        """Calculate score based on category scoring method or package scoring"""
         answers = self.answers.all()
         if not answers.exists():
             self.score = 0
             self.save()
             return
 
-        category = answers.first().question.category
-        
-        if category.scoring_method == 'default':
-            self._calculate_default_score()
-        elif category.scoring_method == 'custom':
-            self._calculate_custom_score()
-        elif category.scoring_method == 'utbk':
-            self._calculate_utbk_score()
+        # If this is a package test, use package scoring
+        if self.tryout_package:
+            self._calculate_package_score()
+        else:
+            # Single category test
+            category = answers.first().question.category
+            
+            if category.scoring_method == 'default':
+                self._calculate_default_score()
+            elif category.scoring_method == 'custom':
+                self._calculate_custom_score()
+            elif category.scoring_method == 'utbk':
+                self._calculate_utbk_score()
         
         self.save()
+    
+    def _calculate_package_score(self):
+        """Calculate score for package-based test with weighted categories"""
+        total_score = 0
+        
+        # Calculate score for each category in the package
+        for package_category in self.tryout_package.tryoutpackagecategory_set.all():
+            category = package_category.category
+            
+            # Get answers for this specific category
+            category_answers = self.answers.filter(question__category=category)
+            if not category_answers.exists():
+                continue
+            
+            # Calculate correct answers for this category
+            correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+            total_questions = category_answers.count()
+            
+            if total_questions > 0:
+                # Calculate score for this category based on package configuration
+                category_score_percentage = correct_answers / total_questions
+                category_contribution = category_score_percentage * package_category.max_score
+                total_score += category_contribution
+        
+        self.score = total_score
     
     def _calculate_default_score(self):
         """Default scoring: 100 points divided equally among questions"""
@@ -399,8 +511,45 @@ class Test(models.Model):
         remaining_seconds = (self.time_limit * 60) - elapsed_time.total_seconds()
         return max(0, int(remaining_seconds))
     
+    def get_current_question_index(self):
+        """Get the current question index based on answered questions"""
+        if self.tryout_package:
+            # For package tests, get all questions from all categories
+            all_questions = []
+            for package_category in self.tryout_package.tryoutpackagecategory_set.all():
+                category_questions = list(package_category.category.question_set.all())
+                all_questions.extend(category_questions)
+            
+            # Find first unanswered question
+            answered_question_ids = set(self.answers.values_list('question_id', flat=True))
+            for i, question in enumerate(all_questions):
+                if question.id not in answered_question_ids:
+                    return i + 1  # 1-based index
+            
+            # If all questions answered, return last question
+            return len(all_questions) if all_questions else 1
+        else:
+            # For single category tests
+            category = self.categories.first()
+            if not category:
+                return 1
+            
+            questions = list(category.question_set.all())
+            answered_question_ids = set(self.answers.values_list('question_id', flat=True))
+            
+            for i, question in enumerate(questions):
+                if question.id not in answered_question_ids:
+                    return i + 1  # 1-based index
+            
+            # If all questions answered, return last question
+            return len(questions) if questions else 1
+    
     def is_passed(self):
         """Check if test score meets the category's passing requirement"""
+        if self.tryout_package:
+            # For package tests, use 60% of 1000 as passing score
+            return self.score >= 600
+        
         answers = self.answers.all()
         if not answers.exists():
             return False
@@ -408,6 +557,37 @@ class Test(models.Model):
         # Get the category from the first answer (all questions in a test should be from same category)
         category = answers.first().question.category
         return category.is_passing_score(self.score)
+    
+    def get_package_score_breakdown(self):
+        """Get detailed score breakdown for package tests"""
+        if not self.tryout_package:
+            return None
+        
+        breakdown = []
+        for package_category in self.tryout_package.tryoutpackagecategory_set.all():
+            category = package_category.category
+            category_answers = self.answers.filter(question__category=category)
+            
+            if category_answers.exists():
+                correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                total_questions = category_answers.count()
+                score_percentage = correct_answers / total_questions if total_questions > 0 else 0
+                category_score = score_percentage * package_category.max_score
+                
+                breakdown.append({
+                    'category_name': category.category_name,
+                    'correct_answers': correct_answers,
+                    'total_questions': total_questions,
+                    'max_score': package_category.max_score,
+                    'achieved_score': round(category_score, 1),
+                    'percentage': round(score_percentage * 100, 1)
+                })
+        
+        return breakdown
+    
+    def is_package_test(self):
+        """Check if this is a package test"""
+        return self.tryout_package is not None
     
     def get_pass_status(self):
         """Get pass/fail status with color for display"""
