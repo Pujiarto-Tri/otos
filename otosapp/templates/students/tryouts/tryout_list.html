@@ -3,6 +3,11 @@
 {% block title %}Tryout - Pilih Kategori atau Paket{% endblock %}
 
 {% block content %}
+<style>
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+}
+</style>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     <!-- Header Section -->
     <div class="text-center mb-10">
@@ -97,12 +102,17 @@
                     <!-- Action Button -->
                     <div class="mt-6">
                         {% if package.can_be_taken %}
-                        <a href="{% url 'take_package_test' package.id %}" class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
+                        <button type="button" onclick="showStartWarning(this)"
+                            data-url="{% url 'take_package_test' package.id %}"
+                            data-title="Paket UTBK: {{ package.package_name }}"
+                            data-questions="{{ package.get_total_questions }}"
+                            data-time="{{ package.total_time }}"
+                            class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
                             <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Mulai Paket Tryout
-                        </a>
+                        </button>
                         {% else %}
                         <div class="w-full text-center py-3 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 font-medium rounded-xl">
                             ⚠ Paket Belum Siap
@@ -276,12 +286,18 @@
                     <!-- Action Button -->
                     <div class="mt-6">
                         {% if category.question_set.count > 0 %}
-                        <a href="{% url 'question_list_by_category' category.id %}" class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
+                        <button type="button" onclick="showStartWarning(this)"
+                            data-url="{% url 'take_test' category.id 1 %}"
+                            data-title="Kategori: {{ category.category_name }}"
+                            data-questions="{{ category.question_set.count }}"
+                            data-time="{{ category.time_limit }}"
+                            class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl group">
+                            <!-- Cache bust: Updated URL to student take_test path -->
                             <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0013.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h4.5m0-6.25C8.25 8.268 8.61 8 9 8h2.25C11.64 8 12 8.268 12 8.5 0 8.732 11.64 9 11.25 9H9c-.39 0-.75-.268-.75-.5 0-.233.36-.5.75-.5zm0 0v6h4.5m-4.5-6v6m0 0v.375c0 .621.504 1.125 1.125 1.125H9c.621 0 1.125-.504 1.125-1.125V18.5m-2.25 0H5.625c-.621 0-1.125-.504-1.125-1.125V13.5c0-.621.504-1.125 1.125-1.125h1.5"></path>
                             </svg>
                             Mulai Latihan
-                        </a>
+                        </button>
                         {% else %}
                         <div class="w-full text-center py-3 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 font-medium rounded-xl">
                             ✗ Belum Ada Soal
@@ -306,31 +322,172 @@
     </div>
 </div>
 
+<!-- Start Warning Modal -->
+<div id="startTestModal" class="fixed inset-0 bg-gray-900/50 modal-backdrop hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-fadeIn">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mr-4">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Konfirmasi Memulai Tryout</h3>
+                            <p class="text-amber-100 text-sm">Pastikan Anda sudah siap</p>
+                        </div>
+                    </div>
+                    <button onclick="hideStartWarning()" class="text-white/70 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-8">
+                <!-- Tryout Info -->
+                <div class="text-center mb-8">
+                    <h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        <span id="modal-category-name"></span>
+                    </h4>
+                    <p class="text-gray-600 dark:text-gray-400">Anda akan memulai tryout kategori ini</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4 text-center border border-blue-200 dark:border-blue-700">
+                        <div class="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-lg mx-auto mb-2">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-2xl font-bold text-blue-700 dark:text-blue-300"><span id="modal-question-count"></span></p>
+                        <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Soal</p>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-4 text-center border border-green-200 dark:border-green-700">
+                        <div class="flex items-center justify-center w-10 h-10 bg-green-500 rounded-lg mx-auto mb-2">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-2xl font-bold text-green-700 dark:text-green-300"><span id="modal-time-limit"></span></p>
+                        <p class="text-sm text-green-600 dark:text-green-400 font-medium">Menit</p>
+                    </div>
+                </div>
+
+                <!-- Warning Box -->
+                <div class="bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-400 dark:border-amber-500 p-6 mb-8 rounded-r-xl">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-amber-500 mt-0.5 mr-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <h5 class="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-3">Perhatian Penting!</h5>
+                            <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-300">
+                                <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Timer akan mulai berjalan segera setelah Anda mengklik "Mulai Sekarang"</li>
+                                <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Anda dapat keluar dan masuk kembali, namun timer tetap berjalan</li>
+                                <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Ujian akan otomatis berakhir ketika waktu habis</li>
+                                <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Pastikan koneksi internet Anda stabil</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ready Check -->
+                <div class="text-center mb-8">
+                    <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">Apakah Anda sudah siap untuk memulai tryout ini?</p>
+                    <div class="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-sm font-medium text-green-700 dark:text-green-300">Semua informasi telah dibaca</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="hideStartWarning()" class="px-8 py-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-base font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all duration-300 flex items-center justify-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>Batal</button>
+                    <button id="start-now-button" onclick="startTryout()" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-base font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Mulai Sekarang<svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// Tab navigation
 function showTab(tabName) {
-    // Hide all tab contents
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.classList.add('hidden'));
-    
-    // Remove active class from all tabs
+    document.getElementById(tabName + '-section').classList.remove('hidden');
     const tabs = document.querySelectorAll('#packages-tab, #categories-tab');
     tabs.forEach(tab => {
-        tab.classList.remove('text-white', 'bg-blue-600');
-        tab.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
+        const active = tab.id === tabName + '-tab';
+        tab.classList.toggle('text-white', active);
+        tab.classList.toggle('bg-blue-600', active);
+        tab.classList.toggle('text-gray-600', !active);
+        tab.classList.toggle('dark:text-gray-400', !active);
     });
-    
-    // Show selected tab content
-    document.getElementById(tabName + '-section').classList.remove('hidden');
-    
-    // Add active class to selected tab
-    const activeTab = document.getElementById(tabName + '-tab');
-    activeTab.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white');
-    activeTab.classList.add('text-white', 'bg-blue-600');
 }
 
-// Initialize with packages tab active on page load
+// Initialize tabs on load
+document.addEventListener('DOMContentLoaded', () => showTab('packages'));
+
+// Custom Start Warning Modal functions
+function showStartWarning(button) {
+    console.log('showStartWarning called', button);
+    const title = button.getAttribute('data-title');
+    const questions = button.getAttribute('data-questions');
+    const time = button.getAttribute('data-time');
+    const url = button.getAttribute('data-url');
+    
+    console.log('Modal data:', { title, questions, time, url });
+    console.log('DEBUGGING: URL should be take_test, not admin URL:', url);
+    
+    document.getElementById('modal-category-name').textContent = title;
+    document.getElementById('modal-question-count').textContent = questions;
+    document.getElementById('modal-time-limit').textContent = time;
+    document.getElementById('start-now-button').setAttribute('data-url', url);
+    document.getElementById('startTestModal').classList.remove('hidden');
+}
+
+function hideStartWarning() {
+    console.log('hideStartWarning called');
+    document.getElementById('startTestModal').classList.add('hidden');
+}
+
+function startTryout() {
+    const url = document.getElementById('start-now-button').getAttribute('data-url');
+    console.log('Starting tryout with URL:', url);
+    console.log('DEBUGGING: This should be /students/tryouts/ID/take/1/ format:', url);
+    
+    // Add error handling for the redirect
+    try {
+        if (url) {
+            console.log('Redirecting to:', url);
+            window.location.href = url;
+        } else {
+            console.error('No URL found for redirect');
+            alert('Error: Tidak dapat memulai tryout. URL tidak ditemukan.');
+        }
+    } catch (error) {
+        console.error('Error during redirect:', error);
+        alert('Error: Terjadi kesalahan saat memulai tryout.');
+    }
+}
+
+// Close modal when clicking outside
 document.addEventListener('DOMContentLoaded', function() {
-    showTab('packages');
+    const modal = document.getElementById('startTestModal');
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            hideStartWarning();
+        }
+    });
 });
 </script>
 
