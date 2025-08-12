@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
@@ -619,3 +619,113 @@ class UserSubscriptionEditForm(forms.ModelForm):
                 'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
             }),
         }
+
+
+# ======================= UNIVERSITY FORMS =======================
+
+class UniversityForm(forms.ModelForm):
+    """Form untuk mengelola data universitas"""
+    
+    class Meta:
+        model = University
+        fields = ['name', 'location', 'website', 'description', 'minimum_utbk_score', 'tier', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Nama Universitas'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'Lokasi/Kota'
+            }),
+            'website': forms.URLInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'placeholder': 'https://university.ac.id'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'rows': 3,
+                'placeholder': 'Deskripsi singkat tentang universitas'
+            }),
+            'minimum_utbk_score': forms.NumberInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'min': '0',
+                'max': '1000',
+                'placeholder': 'Nilai minimum UTBK (0-1000)'
+            }),
+            'tier': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
+            }),
+        }
+    
+    def clean_minimum_utbk_score(self):
+        """Validate UTBK score range"""
+        score = self.cleaned_data.get('minimum_utbk_score')
+        if score is not None:
+            if score < 0 or score > 1000:
+                raise forms.ValidationError('Nilai UTBK harus antara 0-1000')
+        return score
+
+
+class UniversityTargetForm(forms.ModelForm):
+    """Form untuk student mengatur target universitas"""
+    
+    class Meta:
+        model = UniversityTarget
+        fields = ['primary_university', 'secondary_university', 'backup_university', 'notes']
+        widgets = {
+            'primary_university': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'secondary_university': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'backup_university': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'rows': 3,
+                'placeholder': 'Catatan personal tentang target universitas Anda'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show active universities
+        active_universities = University.objects.filter(is_active=True).order_by('tier', 'name')
+        
+        # Add empty option
+        self.fields['primary_university'].queryset = active_universities
+        self.fields['secondary_university'].queryset = active_universities
+        self.fields['backup_university'].queryset = active_universities
+        
+        # Make all universities optional
+        self.fields['primary_university'].required = False
+        self.fields['secondary_university'].required = False
+        self.fields['backup_university'].required = False
+        
+        # Add help text
+        self.fields['primary_university'].help_text = "Universitas impian/target utama"
+        self.fields['secondary_university'].help_text = "Universitas cadangan jika target utama tidak tercapai"
+        self.fields['backup_university'].help_text = "Universitas yang relatif aman untuk nilai Anda"
+        self.fields['notes'].help_text = "Catatan personal, motivasi, atau rencana belajar"
+    
+    def clean(self):
+        """Validate that universities are different"""
+        cleaned_data = super().clean()
+        primary = cleaned_data.get('primary_university')
+        secondary = cleaned_data.get('secondary_university')
+        backup = cleaned_data.get('backup_university')
+        
+        universities = [primary, secondary, backup]
+        non_empty_universities = [u for u in universities if u is not None]
+        
+        # Check for duplicates
+        if len(non_empty_universities) != len(set(non_empty_universities)):
+            raise forms.ValidationError('Pilih universitas yang berbeda untuk setiap target.')
+        
+        return cleaned_data

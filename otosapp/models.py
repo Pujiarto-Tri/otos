@@ -107,6 +107,20 @@ class User(AbstractUser):
                 'end_date': None,
                 'package': None
             }
+    
+    def has_university_target(self):
+        """Check if user has set university targets"""
+        try:
+            return hasattr(self, 'university_target') and self.university_target.primary_university is not None
+        except:
+            return False
+    
+    def get_university_target(self):
+        """Get user's university targets"""
+        try:
+            return self.university_target
+        except UniversityTarget.DoesNotExist:
+            return None
 
 class Role(models.Model):
     role_name = models.CharField(max_length=200, unique=True)
@@ -351,7 +365,7 @@ class Test(models.Model):
         self.score = total_score
     
     def _calculate_utbk_score(self):
-        """UTBK scoring: Difficulty-based scoring"""
+        """UTBK scoring: Difficulty-based scoring with 1000 max score"""
         total_score = 0
         total_possible_score = 0
         
@@ -363,8 +377,8 @@ class Test(models.Model):
                 total_score += question_weight
         
         if total_possible_score > 0:
-            # Normalize to 100 scale
-            self.score = (total_score / total_possible_score) * 100
+            # Normalize to 1000 scale for UTBK
+            self.score = (total_score / total_possible_score) * 1000
         else:
             self.score = 0
         
@@ -401,6 +415,67 @@ class Test(models.Model):
             return {'status': 'LULUS', 'color': 'green'}
         else:
             return {'status': 'TIDAK LULUS', 'color': 'red'}
+    
+    def get_university_recommendations(self):
+        """Get university recommendations based on test score"""
+        if not self.is_submitted:
+            return []
+        
+        # Only for UTBK scoring method
+        category = self.categories.first()
+        if not category or category.scoring_method != 'utbk':
+            return []
+        
+        # Get user's university targets
+        try:
+            user_targets = self.student.university_target
+            return user_targets.get_recommendations_for_score(self.score)
+        except:
+            return []
+    
+    def get_score_analysis(self):
+        """Get detailed score analysis for UTBK tests"""
+        category = self.categories.first()
+        if not category or category.scoring_method != 'utbk':
+            return None
+        
+        return {
+            'raw_score': self.score,
+            'max_score': 1000,
+            'percentage': (self.score / 1000) * 100,
+            'grade': self._get_utbk_grade(),
+            'interpretation': self._get_score_interpretation()
+        }
+    
+    def _get_utbk_grade(self):
+        """Get letter grade based on UTBK score"""
+        if self.score >= 800:
+            return {'grade': 'A', 'color': 'green'}
+        elif self.score >= 700:
+            return {'grade': 'B+', 'color': 'blue'}
+        elif self.score >= 600:
+            return {'grade': 'B', 'color': 'blue'}
+        elif self.score >= 500:
+            return {'grade': 'C+', 'color': 'yellow'}
+        elif self.score >= 400:
+            return {'grade': 'C', 'color': 'orange'}
+        else:
+            return {'grade': 'D', 'color': 'red'}
+    
+    def _get_score_interpretation(self):
+        """Get interpretation of the score"""
+        if self.score >= 800:
+            return "Excellent! Nilai sangat tinggi untuk universitas top."
+        elif self.score >= 700:
+            return "Very Good! Nilai tinggi untuk universitas favorit."
+        elif self.score >= 600:
+            return "Good! Nilai baik untuk sebagian besar universitas."
+        elif self.score >= 500:
+            return "Fair. Perlu peningkatan untuk universitas favorit."
+        elif self.score >= 400:
+            return "Below Average. Perlu banyak latihan tambahan."
+        else:
+            return "Poor. Perlu fokus belajar yang intensif."
     
     @classmethod
     def update_utbk_difficulty_coefficients(cls, category_id):
@@ -440,10 +515,10 @@ class Test(models.Model):
             stat['question'].difficulty_coefficient = coefficient
             stat['question'].save()
         
-        # Normalize coefficients so total equals 100 when all questions answered correctly
+        # Normalize coefficients so total equals 1000 when all questions answered correctly
         current_total = sum(q.difficulty_coefficient for q in questions)
         if current_total > 0:
-            normalization_factor = 100 / current_total
+            normalization_factor = 1000 / current_total
             for question in questions:
                 question.difficulty_coefficient *= normalization_factor
                 question.save()
@@ -741,3 +816,167 @@ class UserSubscription(models.Model):
 def payment_proof_pre_delete(sender, instance, **kwargs):
     """Handle file deletion sebelum PaymentProof dihapus"""
     instance.delete_proof_image()
+
+
+# ======================= UNIVERSITY & TARGET MODELS =======================
+
+class University(models.Model):
+    """Model untuk data universitas dan passing grade"""
+    name = models.CharField(max_length=200, verbose_name="Nama Universitas")
+    location = models.CharField(max_length=100, verbose_name="Lokasi")
+    website = models.URLField(blank=True, null=True, verbose_name="Website")
+    description = models.TextField(blank=True, null=True, verbose_name="Deskripsi")
+    
+    # UTBK minimum scores for different categories
+    minimum_utbk_score = models.IntegerField(
+        default=400, 
+        verbose_name="Nilai UTBK Minimum (Aman)",
+        help_text="Nilai minimum UTBK yang aman untuk masuk universitas ini (0-1000)"
+    )
+    
+    # University rank/tier for sorting
+    tier = models.CharField(max_length=20, choices=[
+        ('tier1', 'Tier 1 (Top Universities)'),
+        ('tier2', 'Tier 2 (Good Universities)'),
+        ('tier3', 'Tier 3 (Standard Universities)'),
+    ], default='tier3', verbose_name="Tingkatan")
+    
+    is_active = models.BooleanField(default=True, verbose_name="Aktif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Universitas"
+        verbose_name_plural = "Universitas"
+        ordering = ['tier', 'name']
+    
+    def __str__(self):
+        return f"{self.name} - {self.location}"
+    
+    def get_tier_display_short(self):
+        """Get short tier display"""
+        tier_map = {
+            'tier1': 'T1',
+            'tier2': 'T2', 
+            'tier3': 'T3'
+        }
+        return tier_map.get(self.tier, 'T3')
+    
+    def get_recommendation_for_score(self, utbk_score):
+        """Get recommendation status based on UTBK score"""
+        if utbk_score >= self.minimum_utbk_score + 100:
+            return {
+                'status': 'sangat_aman',
+                'message': 'Sangat Aman',
+                'color': 'green',
+                'percentage': min(100, (utbk_score / self.minimum_utbk_score) * 100)
+            }
+        elif utbk_score >= self.minimum_utbk_score:
+            return {
+                'status': 'aman',
+                'message': 'Aman',
+                'color': 'blue',
+                'percentage': (utbk_score / self.minimum_utbk_score) * 100
+            }
+        elif utbk_score >= self.minimum_utbk_score - 50:
+            return {
+                'status': 'kurang_aman',
+                'message': 'Kurang Aman',
+                'color': 'yellow',
+                'percentage': (utbk_score / self.minimum_utbk_score) * 100
+            }
+        else:
+            return {
+                'status': 'tidak_aman',
+                'message': 'Tidak Aman',
+                'color': 'red',
+                'percentage': (utbk_score / self.minimum_utbk_score) * 100
+            }
+
+
+class UniversityTarget(models.Model):
+    """Model untuk target universitas student"""
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='university_target',
+        limit_choices_to={'role__role_name': 'Student'}
+    )
+    primary_university = models.ForeignKey(
+        University, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='primary_targets',
+        verbose_name="Universitas Target Utama"
+    )
+    secondary_university = models.ForeignKey(
+        University, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='secondary_targets',
+        verbose_name="Universitas Target Cadangan"
+    )
+    backup_university = models.ForeignKey(
+        University, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='backup_targets',
+        verbose_name="Universitas Target Aman"
+    )
+    
+    notes = models.TextField(
+        blank=True, 
+        null=True, 
+        verbose_name="Catatan",
+        help_text="Catatan personal tentang target universitas"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Target Universitas Student"
+        verbose_name_plural = "Target Universitas Student"
+    
+    def __str__(self):
+        return f"Target {self.user.email} - {self.primary_university}"
+    
+    def get_all_targets(self):
+        """Get all university targets as list"""
+        targets = []
+        if self.primary_university:
+            targets.append({
+                'university': self.primary_university,
+                'type': 'primary',
+                'label': 'Target Utama'
+            })
+        if self.secondary_university:
+            targets.append({
+                'university': self.secondary_university,
+                'type': 'secondary',
+                'label': 'Target Cadangan'
+            })
+        if self.backup_university:
+            targets.append({
+                'university': self.backup_university,
+                'type': 'backup',
+                'label': 'Target Aman'
+            })
+        return targets
+    
+    def get_recommendations_for_score(self, utbk_score):
+        """Get recommendations for all target universities based on score"""
+        recommendations = []
+        for target in self.get_all_targets():
+            university = target['university']
+            recommendation = university.get_recommendation_for_score(utbk_score)
+            recommendations.append({
+                'university': university,
+                'target_type': target['type'],
+                'target_label': target['label'],
+                'recommendation': recommendation
+            })
+        return recommendations

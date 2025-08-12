@@ -69,4 +69,14 @@ urlpatterns = [
     path('admin/subscription/extend/<int:subscription_id>/', views.extend_user_subscription, name='extend_user_subscription'),
     path('admin/subscription/toggle/<int:subscription_id>/', views.toggle_subscription_status, name='toggle_subscription_status'),
     path('admin/users/<int:user_id>/change-role/', views.manual_role_change, name='manual_role_change'),
+    
+    # University Management URLs
+    path('admin/university/', views.admin_university_list, name='admin_university_list'),
+    path('admin/university/create/', views.admin_university_create, name='admin_university_create'),
+    path('admin/university/<int:university_id>/edit/', views.admin_university_update, name='admin_university_update'),
+    path('admin/university/<int:university_id>/delete/', views.admin_university_delete, name='admin_university_delete'),
+    
+    # Student University Target URLs
+    path('students/university/target/', views.student_university_target, name='student_university_target'),
+    path('students/university/recommendations/', views.student_university_recommendations, name='student_university_recommendations'),
 ]

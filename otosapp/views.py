@@ -5,8 +5,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -1156,10 +1156,22 @@ def test_results(request, test_id):
     if test.answers.exists():
         test.calculate_score()
     
-    return render(request, 'students/tests/test_results.html', {
+    # Get university recommendations for UTBK tests
+    university_recommendations = []
+    score_analysis = None
+    
+    if category and category.scoring_method == 'utbk':
+        university_recommendations = test.get_university_recommendations()
+        score_analysis = test.get_score_analysis()
+    
+    context = {
         'test': test,
-        'category': category
-    })
+        'category': category,
+        'university_recommendations': university_recommendations,
+        'score_analysis': score_analysis,
+    }
+    
+    return render(request, 'students/tests/test_results.html', context)
 
 @login_required
 @active_subscription_required
@@ -2584,4 +2596,237 @@ def student_rankings(request):
     }
     
     return render(request, 'students/rankings/student_rankings.html', context)
+
+
+# ======================= UNIVERSITY MANAGEMENT VIEWS =======================
+
+@login_required
+@admin_or_operator_required
+def admin_university_list(request):
+    """Admin view untuk mengelola daftar universitas"""
+    search_query = request.GET.get('search', '')
+    tier_filter = request.GET.get('tier', '')
+    
+    universities = University.objects.all().order_by('tier', 'name')
+    
+    if search_query:
+        universities = universities.filter(
+            Q(name__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
+    
+    if tier_filter:
+        universities = universities.filter(tier=tier_filter)
+    
+    # Pagination
+    paginator = Paginator(universities, 15)
+    page = request.GET.get('page')
+    try:
+        universities_page = paginator.page(page)
+    except PageNotAnInteger:
+        universities_page = paginator.page(1)
+    except EmptyPage:
+        universities_page = paginator.page(paginator.num_pages)
+    
+    # Calculate statistics
+    total_universities = University.objects.count()
+    active_universities = University.objects.filter(is_active=True).count()
+    tier1_count = University.objects.filter(tier='tier1').count()
+    tier2_count = University.objects.filter(tier='tier2').count()
+    tier3_count = University.objects.filter(tier='tier3').count()
+    
+    context = {
+        'universities': universities_page,
+        'current_search': search_query,
+        'current_tier': tier_filter,
+        'tier_choices': University._meta.get_field('tier').choices,
+        'total_universities': total_universities,
+        'active_universities': active_universities,
+        'tier1_count': tier1_count,
+        'tier2_count': tier2_count,
+        'tier3_count': tier3_count,
+    }
+    
+    return render(request, 'admin/university/university_list.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def admin_university_create(request):
+    """Admin view untuk membuat universitas baru"""
+    if request.method == 'POST':
+        form = UniversityForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Universitas berhasil ditambahkan!')
+            return redirect('admin_university_list')
+    else:
+        form = UniversityForm()
+    
+    context = {
+        'form': form,
+        'title': 'Tambah Universitas Baru'
+    }
+    
+    return render(request, 'admin/university/university_form.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def admin_university_update(request, university_id):
+    """Admin view untuk mengupdate universitas"""
+    university = get_object_or_404(University, id=university_id)
+    
+    if request.method == 'POST':
+        form = UniversityForm(request.POST, instance=university)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Data universitas berhasil diupdate!')
+            return redirect('admin_university_list')
+    else:
+        form = UniversityForm(instance=university)
+    
+    context = {
+        'form': form,
+        'university': university,
+        'title': f'Edit Universitas - {university.name}'
+    }
+    
+    return render(request, 'admin/university/university_form.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def admin_university_delete(request, university_id):
+    """Admin view untuk menghapus universitas"""
+    university = get_object_or_404(University, id=university_id)
+    
+    # Check if university is being used as target
+    target_count = UniversityTarget.objects.filter(
+        Q(primary_university=university) |
+        Q(secondary_university=university) |
+        Q(backup_university=university)
+    ).count()
+    
+    if request.method == 'POST':
+        if target_count > 0:
+            # Don't actually delete, just deactivate
+            university.is_active = False
+            university.save()
+            messages.warning(request, f'Universitas dinonaktifkan karena masih digunakan sebagai target oleh {target_count} student(s).')
+        else:
+            university.delete()
+            messages.success(request, 'Universitas berhasil dihapus!')
+        return redirect('admin_university_list')
+    
+    context = {
+        'university': university,
+        'target_count': target_count,
+    }
+    
+    return render(request, 'admin/university/university_confirm_delete.html', context)
+
+
+@login_required
+@active_subscription_required
+def student_university_target(request):
+    """Student view untuk mengatur target universitas"""
+    try:
+        university_target = request.user.university_target
+    except UniversityTarget.DoesNotExist:
+        university_target = None
+    
+    if request.method == 'POST':
+        if university_target:
+            form = UniversityTargetForm(request.POST, instance=university_target)
+        else:
+            form = UniversityTargetForm(request.POST)
+        
+        if form.is_valid():
+            target = form.save(commit=False)
+            target.user = request.user
+            target.save()
+            messages.success(request, 'Target universitas berhasil disimpan!')
+            return redirect('student_university_target')
+    else:
+        if university_target:
+            form = UniversityTargetForm(instance=university_target)
+        else:
+            form = UniversityTargetForm()
+    
+    # Get recommendations based on latest UTBK test score
+    recommendations = []
+    latest_utbk_test = Test.objects.filter(
+        student=request.user,
+        is_submitted=True,
+        categories__scoring_method='utbk'
+    ).order_by('-date_taken').first()
+    
+    if latest_utbk_test and university_target:
+        recommendations = university_target.get_recommendations_for_score(latest_utbk_test.score)
+    
+    # Get all universities for suggestions (top 10 by tier)
+    suggested_universities = University.objects.filter(is_active=True).order_by('tier', 'minimum_utbk_score')[:10]
+    
+    context = {
+        'form': form,
+        'university_target': university_target,
+        'recommendations': recommendations,
+        'latest_utbk_test': latest_utbk_test,
+        'suggested_universities': suggested_universities,
+    }
+    
+    return render(request, 'students/university/target_settings.html', context)
+
+
+@login_required
+@active_subscription_required
+def student_university_recommendations(request):
+    """Student view untuk melihat rekomendasi universitas berdasarkan skor terbaru"""
+    # Get latest UTBK test
+    latest_utbk_test = Test.objects.filter(
+        student=request.user,
+        is_submitted=True,
+        categories__scoring_method='utbk'
+    ).order_by('-date_taken').first()
+    
+    if not latest_utbk_test:
+        messages.info(request, 'Anda perlu mengerjakan tryout UTBK terlebih dahulu untuk mendapatkan rekomendasi.')
+        return redirect('tryout_list')
+    
+    # Get user's targets
+    try:
+        user_targets = request.user.university_target
+        target_recommendations = user_targets.get_recommendations_for_score(latest_utbk_test.score)
+    except UniversityTarget.DoesNotExist:
+        user_targets = None
+        target_recommendations = []
+    
+    # Get general recommendations (all universities sorted by suitability)
+    all_universities = University.objects.filter(is_active=True).order_by('tier', 'minimum_utbk_score')
+    general_recommendations = []
+    
+    for university in all_universities:
+        recommendation = university.get_recommendation_for_score(latest_utbk_test.score)
+        general_recommendations.append({
+            'university': university,
+            'recommendation': recommendation
+        })
+    
+    # Sort by recommendation status (sangat_aman first, then aman, etc.)
+    status_order = {'sangat_aman': 1, 'aman': 2, 'kurang_aman': 3, 'tidak_aman': 4}
+    general_recommendations.sort(key=lambda x: (
+        status_order.get(x['recommendation']['status'], 5),
+        -x['recommendation']['percentage']
+    ))
+    
+    context = {
+        'latest_utbk_test': latest_utbk_test,
+        'user_targets': user_targets,
+        'target_recommendations': target_recommendations,
+        'general_recommendations': general_recommendations[:20],  # Limit to top 20
+        'test_score_analysis': latest_utbk_test.get_score_analysis(),
+    }
+    
+    return render(request, 'students/university/recommendations.html', context)
 

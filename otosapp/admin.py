@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message
+from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message, University, UniversityTarget
 
 class CustomUserAdmin(UserAdmin):
     model = User
@@ -107,3 +107,60 @@ class MessageAdmin(admin.ModelAdmin):
 
 admin.site.register(MessageThread, MessageThreadAdmin)
 admin.site.register(Message, MessageAdmin)
+
+
+# ======================= UNIVERSITY ADMIN =======================
+
+class UniversityAdmin(admin.ModelAdmin):
+    list_display = ('name', 'location', 'tier', 'minimum_utbk_score', 'is_active', 'created_at')
+    list_filter = ('tier', 'is_active', 'created_at')
+    search_fields = ('name', 'location')
+    ordering = ('tier', 'name')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Informasi Dasar', {
+            'fields': ('name', 'location', 'website', 'description')
+        }),
+        ('Klasifikasi & Scoring', {
+            'fields': ('tier', 'minimum_utbk_score')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Timestamp', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+class UniversityTargetAdmin(admin.ModelAdmin):
+    list_display = ('user_email', 'primary_university', 'secondary_university', 'backup_university', 'updated_at')
+    list_filter = ('primary_university__tier', 'updated_at')
+    search_fields = ('user__email', 'user__username', 'primary_university__name', 'secondary_university__name', 'backup_university__name')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = 'User Email'
+    
+    fieldsets = (
+        ('User', {
+            'fields': ('user',)
+        }),
+        ('Target Universitas', {
+            'fields': ('primary_university', 'secondary_university', 'backup_university')
+        }),
+        ('Catatan', {
+            'fields': ('notes',)
+        }),
+        ('Timestamp', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+admin.site.register(University, UniversityAdmin)
+admin.site.register(UniversityTarget, UniversityTargetAdmin)
