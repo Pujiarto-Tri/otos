@@ -207,48 +207,46 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Pagination -->
-            <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4" aria-label="Table navigation">
-                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+            <!-- Pagination Flowbite Style -->
+            <nav aria-label="Page navigation example" class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4">
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400 mb-2 md:mb-0">
                     Showing
                     <span class="font-semibold text-gray-900 dark:text-white">{{ universities.start_index }}-{{ universities.end_index }}</span>
                     of
                     <span class="font-semibold text-gray-900 dark:text-white">{{ universities.paginator.count }}</span>
                 </span>
-                <ul class="inline-flex items-stretch -space-x-px">
-                    {% if universities.has_previous %}
+                <ul class="inline-flex -space-x-px text-sm">
                     <li>
-                        <a href="?page={{ universities.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}" 
-                           class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="sr-only">Previous</span>
-                            <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.293 16.293a1 1 0 010-1.414L8.707 12l3.586-3.586a1 1 0 10-1.414-1.414l-5 5a1 1 0 000 1.414l5 5a1 1 0 001.414-1.414z" clip-rule="evenodd"></path></svg>
+                        {% if universities.has_previous %}
+                        <a href="?page={{ universities.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}"
+                           class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                            Previous
                         </a>
+                        {% else %}
+                        <span class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-300 bg-white border border-e-0 border-gray-200 rounded-s-lg cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-600">Previous</span>
+                        {% endif %}
                     </li>
-                    {% endif %}
-                    
                     {% for num in universities.paginator.page_range %}
                         {% if universities.number == num %}
                         <li>
-                            <a href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}" 
-                               aria-current="page" class="flex items-center justify-center text-sm z-10 py-2 px-3 leading-tight text-primary-600 bg-primary-50 border border-primary-300 hover:bg-primary-100 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">{{ num }}</a>
+                            <a href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}"
+                               aria-current="page" class="flex items-center justify-center px-3 h-8 text-blue-600 border border-gray-300 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">{{ num }}</a>
                         </li>
                         {% elif num > universities.number|add:'-3' and num < universities.number|add:'3' %}
                         <li>
-                            <a href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}" 
-                               class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">{{ num }}</a>
+                            <a href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}"
+                               class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">{{ num }}</a>
                         </li>
                         {% endif %}
                     {% endfor %}
-                    
-                    {% if universities.has_next %}
                     <li>
-                        <a href="?page={{ universities.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}" 
-                           class="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="sr-only">Next</span>
-                            <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L11.293 8l-3.586 3.586a1 1 0 101.414 1.414l5-5a1 1 0 000-1.414l-5-5a1 1 0 00-1.414 1.414z" clip-rule="evenodd"></path></svg>
-                        </a>
+                        {% if universities.has_next %}
+                        <a href="?page={{ universities.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_tier %}&tier={{ current_tier }}{% endif %}"
+                           class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">Next</a>
+                        {% else %}
+                        <span class="flex items-center justify-center px-3 h-8 leading-tight text-gray-300 bg-white border border-gray-200 rounded-e-lg cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-600">Next</span>
+                        {% endif %}
                     </li>
-                    {% endif %}
                 </ul>
             </nav>
         </div>

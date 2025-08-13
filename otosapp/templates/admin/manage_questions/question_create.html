@@ -148,25 +148,4 @@
 </section>
 
 
-{% comment %} {% block extrajs %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Main question text
-        const questionText = document.querySelector('#id_question_text');
-        if (questionText) {
-            ClassicEditor.create(questionText)
-                .then(editor => console.log('Main editor initialized'))
-                .catch(error => console.error(error));
-        }
-
-        // Choices
-        document.querySelectorAll('textarea').forEach(element => {
-            if (element.id.startsWith('id_choice_set-') && element.id.endsWith('-choice_text')) {
-                ClassicEditor.create(element)
-                    .then(editor => console.log('Choice editor initialized'))
-                    .catch(error => console.error(error));
-            }
-        });
-    });
-</script> {% endcomment %}
 {% endblock %}
