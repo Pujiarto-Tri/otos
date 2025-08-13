@@ -33,7 +33,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Rata-rata Skor</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|floatformat:1 }}%</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|floatformat:1 }}</p>
                 </div>
                 <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -47,7 +47,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Skor Tertinggi</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|floatformat:1 }}%</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|floatformat:1 }}</p>
                 </div>
                 <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -296,7 +296,7 @@
                             <div class="text-3xl font-bold
                                 {% if test.is_passed %}text-green-600 dark:text-green-400
                                 {% else %}text-red-600 dark:text-red-400{% endif %}">
-                                {{ test.score|floatformat:1 }}%
+                                {{ test.score|floatformat:1 }}
                             </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skor Akhir</div>
                             <div class="text-xs font-medium mt-1
