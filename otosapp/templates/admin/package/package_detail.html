@@ -4,14 +4,14 @@
 {% block title %}Detail Paket: {{ package.package_name }}{% endblock %}
 
 {% block content %}
-<div class="p-4 sm:ml-64">
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+<div class="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="w-full max-w-5xl p-6 mt-16">
         
-        <!-- Header Section -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ package.package_name }}</h1>
-                <p class="text-gray-600 dark:text-gray-400">Detail dan statistik paket tryout</p>
+        <!-- Header Card -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-left w-full">
+                <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1">{{ package.package_name }}</h1>
+                <p class="text-base text-gray-500 dark:text-gray-400">Detail dan statistik paket tryout</p>
             </div>
             <div class="flex space-x-2">
                 <a href="{% url 'admin_package_update' package.id %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700">
@@ -20,7 +20,7 @@
                     </svg>
                     Edit
                 </a>
-                <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
@@ -29,8 +29,8 @@
             </div>
         </div>
 
-        <!-- Package Status -->
-        <div class="mb-6">
+    <!-- Package Status -->
+    <div class="mb-6">
             {% if package.can_be_taken %}
             <div class="p-4 bg-green-50 dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700">
                 <div class="flex">
@@ -65,8 +65,8 @@
             {% endif %}
         </div>
 
-        <!-- Package Information -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Package Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
             <!-- Basic Info -->
             <div class="lg:col-span-2 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
@@ -142,8 +142,8 @@
             </div>
         </div>
 
-        <!-- Category Configuration -->
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+    <!-- Category Configuration -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Konfigurasi Kategori</h3>
             
             <div class="space-y-4">
@@ -199,7 +199,6 @@
         {% if recent_tests %}
         <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Hasil Tryout Terbaru</h3>
-            
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-700">

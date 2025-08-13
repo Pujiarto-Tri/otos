@@ -2764,7 +2764,7 @@ def admin_university_list(request):
         universities = universities.filter(tier=tier_filter)
     
     # Pagination
-    paginator = Paginator(universities, 15)
+    paginator = Paginator(universities, 10)
     page = request.GET.get('page')
     try:
         universities_page = paginator.page(page)

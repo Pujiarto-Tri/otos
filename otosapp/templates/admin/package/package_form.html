@@ -4,16 +4,16 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="p-4 sm:ml-64">
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
+<div class="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="w-full max-w-5xl p-6 mt-16">
         
-        <!-- Header Section -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
-                <p class="text-gray-600 dark:text-gray-400">Konfigurasi paket tryout dengan komposisi kategori untuk simulasi UTBK</p>
+        <!-- Header Card -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-left w-full">
+                <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1">Buat Paket Tryout Baru</h1>
+                <p class="text-base text-gray-500 dark:text-gray-400">Konfigurasi paket tryout dengan komposisi kategori untuk simulasi UTBK</p>
             </div>
-            <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-transparent rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+            <a href="{% url 'admin_package_list' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -65,7 +65,7 @@
         </div>
         {% endif %}
 
-        <form method="post" class="space-y-6">
+    <form method="post" class="space-y-6 mt-8">
             {% csrf_token %}
             
             <!-- Basic Package Information -->
