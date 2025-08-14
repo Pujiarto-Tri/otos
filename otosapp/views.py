@@ -1,3 +1,4 @@
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.utils import timezone
@@ -527,9 +528,18 @@ def user_list(request):
     except EmptyPage:
         users = paginator.page(paginator.num_pages)
 
+    # Stat cards for roles
+    from otosapp.models import Role
+    student_count = User.objects.filter(role__role_name='Student').count()
+    teacher_count = User.objects.filter(role__role_name='Teacher').count()
+    operator_count = User.objects.filter(role__role_name='Operator').count()
+
     return render(request, 'admin/manage_user/user_list.html', {
         'users': users,
-        'paginator': paginator
+        'paginator': paginator,
+        'student_count': student_count,
+        'teacher_count': teacher_count,
+        'operator_count': operator_count,
     })
     
 
@@ -614,10 +624,22 @@ def category_list(request):
             category.scoring_status = {'complete': True, 'total_points': 100}
 
     form = CategoryCreationForm()
+
+    # Stat cards data
+    custom_scoring_count = Category.objects.filter(scoring_method='custom').count()
+    utbk_scoring_count = Category.objects.filter(scoring_method='utbk').count()
+    total_questions = 0
+    for cat in Category.objects.all():
+        total_questions += cat.question_set.count()
+
     return render(request, 'admin/manage_categories/category_list.html', {
         'categories': categories,
         'form': form,
-        'paginator': paginator
+        'paginator': paginator,
+        'custom_scoring_count': custom_scoring_count,
+        'utbk_scoring_count': utbk_scoring_count,
+        'total_questions': total_questions,
+        'total_categories': Category.objects.count(),
     })
 
 @login_required
@@ -685,7 +707,21 @@ def update_utbk_coefficients(request, category_id):
     
     return redirect('category_list')
 
-
+# Update all UTBK coefficients for all categories with scoring_method='utbk'
+@login_required
+@admin_required
+@require_POST
+def update_all_utbk_coefficients(request):
+    utbk_categories = Category.objects.filter(scoring_method='utbk')
+    updated_count = 0
+    for category in utbk_categories:
+        Test.update_utbk_difficulty_coefficients(category.id)
+        updated_count += 1
+    if updated_count:
+        messages.success(request, f'UTBK coefficients updated for {updated_count} categories.')
+    else:
+        messages.info(request, 'No UTBK categories found to update.')
+    return redirect('category_list')
 
 ##Question View##
 

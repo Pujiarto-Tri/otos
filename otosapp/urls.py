@@ -16,6 +16,7 @@ urlpatterns = [
     path('admin/categories/<int:category_id>/edit/', views.category_update, name='category_update'),
     path('admin/categories/<int:category_id>/delete/', views.category_delete, name='category_delete'),
     path('admin/categories/<int:category_id>/update-utbk/', views.update_utbk_coefficients, name='update_utbk_coefficients'),
+    path('admin/categories/update-all-utbk/', views.update_all_utbk_coefficients, name='update_all_utbk'),
 
     path('admin/users/', views.user_list, name='user_list'),
     path('admin/users/create/', views.user_create, name='user_create'),
