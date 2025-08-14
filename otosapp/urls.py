@@ -90,4 +90,6 @@ urlpatterns = [
     # Student University Target URLs
     path('students/university/target/', views.student_university_target, name='student_university_target'),
     path('students/university/recommendations/', views.student_university_recommendations, name='student_university_recommendations'),
+    # API endpoint for university ajax search
+    path('api/universities/', views.api_universities, name='api_universities'),
 ]

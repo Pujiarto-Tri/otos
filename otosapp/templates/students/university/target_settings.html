@@ -1,11 +1,33 @@
+
 {% extends 'base.html' %}
 {% load static %}
+
+{% block extrahead %}
+    <!-- Tom Select CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <style>
+        /* Ensure Tom Select dropdown is visible */
+        .ts-dropdown {
+            z-index: 9999 !important;
+        }
+        
+        /* Make sure select elements are ready for Tom Select */
+        select[data-tomselect] {
+            opacity: 0.5;
+        }
+        
+        /* Hide original select when Tom Select is active */
+        .ts-wrapper + select {
+            display: none !important;
+        }
+    </style>
+{% endblock %}
 
 {% block title %}Target Universitas{% endblock %}
 
 {% block content %}
-<div class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
-    <div class="flex items-center justify-between mb-6">
+<div class="pt-2 pb-4 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+    <div class="flex items-center justify-between mb-6  ">
         <div>
             <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Target Universitas</h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -25,8 +47,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Target Settings Form -->
-        <div class="space-y-6">
-            <form method="post" class="space-y-6">
+        <div class="space-y-2">
+            <form method="post" class="space-y-2">
                 {% csrf_token %}
                 
                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
@@ -45,6 +67,23 @@
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.primary_university.errors.0 }}</p>
                             {% endif %}
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.primary_university.help_text }}</p>
+                            <p class="mt-1 text-xs text-blue-500">Ketik nama universitas atau tier (contoh: "tier1", "UI", "Bandung")</p>
+                        </div>
+
+
+                        <div>
+                            <label for="{{ form.backup_university.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                    Target Aman
+                                </span>
+                            </label>
+                            {{ form.backup_university }}
+                            {% if form.backup_university.errors %}
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.backup_university.errors.0 }}</p>
+                            {% endif %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.backup_university.help_text }}</p>
+                            <p class="mt-1 text-xs text-blue-500">Ketik nama universitas atau tier (contoh: "tier2", "UGM", "Jakarta")</p>
                         </div>
 
                         <div>
@@ -59,20 +98,7 @@
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.secondary_university.errors.0 }}</p>
                             {% endif %}
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.secondary_university.help_text }}</p>
-                        </div>
-
-                        <div>
-                            <label for="{{ form.backup_university.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                <span class="inline-flex items-center">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                    Target Aman
-                                </span>
-                            </label>
-                            {{ form.backup_university }}
-                            {% if form.backup_university.errors %}
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.backup_university.errors.0 }}</p>
-                            {% endif %}
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.backup_university.help_text }}</p>
+                            <p class="mt-1 text-xs text-blue-500">Ketik nama universitas atau tier (contoh: "tier3", "UNPAD", "Surabaya")</p>
                         </div>
 
                         <div>
@@ -85,6 +111,13 @@
                             {% endif %}
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.notes.help_text }}</p>
                         </div>
+
+                        <div class="flex justify-end space-x-3">
+                        <button type="submit" 
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Simpan Target
+                        </button>
+                </div>
                     </div>
                 </div>
 
@@ -103,12 +136,7 @@
                 </div>
                 {% endif %}
 
-                <div class="flex justify-end space-x-3">
-                    <button type="submit" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                        Simpan Target
-                    </button>
-                </div>
+                
             </form>
         </div>
 
@@ -265,4 +293,183 @@
         </div>
     </div>
 </div>
+
+<!-- Tom Select JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+function initializeTomSelect(selector) {
+    const element = document.querySelector(selector);
+    if (!element || !window.TomSelect) {
+        console.log('Tom Select not available for:', selector);
+        return;
+    }
+    
+    // Destroy existing instance if any
+    if (element.tomselect) {
+        element.tomselect.destroy();
+    }
+    
+    try {
+        const tomSelect = new TomSelect(selector, {
+            valueField: 'id',
+            labelField: 'name',
+            searchField: [],  // Disable client-side search
+            create: false,
+            maxOptions: 100,
+            placeholder: 'Ketik nama universitas atau tier (contoh: tier1, tier2)...',
+            allowEmptyOption: true,
+            preload: true,
+            loadThrottle: 300,
+            shouldLoad: function(query) {
+                // Always load from server, even for short queries
+                return true;
+            },
+            // Store all university data in a separate map
+            universityData: {},
+            load: function(query, callback) {
+                // Always do AJAX call for any query
+                const url = `/api/universities/?q=${encodeURIComponent(query || '')}`;
+                
+                console.log('Tom Select load called with query:', query);
+                console.log('Fetching from:', url);
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('API returned', data.results.length, 'results for query:', query);
+                        
+                        const options = data.results.map(u => {
+                            // Store full data in universityData map
+                            this.settings.universityData[String(u.id)] = {
+                                id: String(u.id),
+                                name: u.name,
+                                tier: u.tier,
+                                tier_display: u.tier_display,
+                                minimum_score: u.minimum_utbk_score,
+                                location: u.location
+                            };
+                            
+                            // Return option with searchable fields
+                            return {
+                                id: String(u.id),
+                                name: u.name,
+                                tier: u.tier,
+                                tier_display: u.tier_display,
+                                location: u.location,
+                                text: u.name // fallback
+                            };
+                        });
+                        
+                        callback(options);
+                        
+                        // After loading, refresh selected item display if there's a value
+                        const currentValue = this.getValue();
+                        if (currentValue && this.settings.universityData[currentValue]) {
+                            this.updateOption(currentValue, this.settings.universityData[currentValue]);
+                            this.refreshItems();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('API Error:', error);
+                        callback();
+                    });
+            },
+            render: {
+                option: function(item, escape) {
+                    // Get full data from stored university data
+                    const fullData = this.settings.universityData[item.id];
+                    
+                    if (!fullData) {
+                        // Fallback for empty option or missing data
+                        return `<div class="py-3 px-2 hover:bg-gray-50 cursor-pointer">
+                            <div class="font-semibold text-gray-900 text-sm">${escape(item.name || item.text)}</div>
+                        </div>`;
+                    }
+                    
+                    // Tentukan warna berdasarkan tier
+                    let tierColor = 'bg-gray-100 text-gray-800';
+                    
+                    if (fullData.tier === 'tier1') {
+                        tierColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    } else if (fullData.tier === 'tier2') {
+                        tierColor = 'bg-blue-100 text-blue-800 border-blue-200';
+                    } else if (fullData.tier === 'tier3') {
+                        tierColor = 'bg-green-100 text-green-800 border-green-200';
+                    }
+                    
+                    const tierDisplay = fullData.tier_display || '';
+                    const minScore = fullData.minimum_score || '';
+                    const location = fullData.location || '';
+                    
+                    return `<div class="py-3 px-2 hover:bg-gray-50 cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-900 text-sm">${escape(fullData.name)}</div>
+                                ${location ? `<div class="text-xs text-gray-500 mt-1">${escape(location)}</div>` : ''}
+                            </div>
+                            <div class="text-right ml-3">
+                                ${tierDisplay ? `<span class="px-2 py-1 text-xs font-medium rounded-full border ${tierColor}">${escape(tierDisplay)}</span>` : ''}
+                                ${minScore ? `<div class="text-xs font-medium text-gray-700 mt-1">Min: ${escape(minScore)}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                },
+                item: function(item, escape) {
+                    // Get full data from stored university data
+                    const fullData = this.settings.universityData[item.id];
+                    
+                    if (!fullData) {
+                        // Fallback for selected item without full data
+                        return `<div class="flex items-center justify-between w-full p-2">
+                            <div>
+                                <div class="font-medium text-sm">${escape(item.name || item.text)}</div>
+                            </div>
+                        </div>`;
+                    }
+                    
+                    // Tentukan warna berdasarkan tier
+                    let tierColor = 'bg-gray-100 text-gray-800';
+                    
+                    if (fullData.tier === 'tier1') {
+                        tierColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    } else if (fullData.tier === 'tier2') {
+                        tierColor = 'bg-blue-100 text-blue-800 border-blue-200';
+                    } else if (fullData.tier === 'tier3') {
+                        tierColor = 'bg-green-100 text-green-800 border-green-200';
+                    }
+                    
+                    const tierDisplay = fullData.tier_display || '';
+                    const minScore = fullData.minimum_score || '';
+                    
+                    return `<div class="flex items-center justify-between w-full p-2">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-sm text-gray-900 truncate">${escape(fullData.name)}</div>
+                            ${fullData.location ? `<div class="text-xs text-gray-500 truncate">${escape(fullData.location)}</div>` : ''}
+                        </div>
+                        <div class="flex flex-col items-end ml-3 flex-shrink-0">
+                            ${tierDisplay ? `<span class="px-2 py-1 text-xs font-medium rounded-full border ${tierColor} mb-1">${escape(tierDisplay)}</span>` : ''}
+                            ${minScore ? `<div class="text-xs font-medium text-gray-600">Min: ${escape(minScore)}</div>` : ''}
+                        </div>
+                    </div>`;
+                }
+            },
+            dropdownParent: 'body'
+        });
+        
+        return tomSelect;
+    } catch (error) {
+        console.error('Failed to initialize TomSelect for', selector, ':', error);
+        return null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Tom Select for all university fields
+    setTimeout(() => {
+        initializeTomSelect('#id_primary_university');
+        initializeTomSelect('#id_backup_university');
+        initializeTomSelect('#id_secondary_university');
+    }, 100);
+});
+</script>
 {% endblock %}

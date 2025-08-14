@@ -109,9 +109,12 @@ class User(AbstractUser):
             }
     
     def has_university_target(self):
-        """Check if user has set university targets"""
+        """Check if user has set any university target (utama, aman, atau cadangan)"""
         try:
-            return hasattr(self, 'university_target') and self.university_target.primary_university is not None
+            if not hasattr(self, 'university_target'):
+                return False
+            ut = self.university_target
+            return bool(ut.primary_university or ut.backup_university or ut.secondary_university)
         except:
             return False
     
@@ -597,10 +600,7 @@ class Test(models.Model):
             return {'status': 'TIDAK LULUS', 'color': 'red'}
     
     def get_university_recommendations(self):
-        """Get university recommendations based on test score"""
-        if not self.is_submitted:
-            return []
-        
+        """Get university recommendations based on test score. Target universitas akan selalu ditampilkan, plus saran universitas hanya jika ada target yang tidak memenuhi."""
         # Only for UTBK scoring method
         category = self.categories.first()
         if not category or category.scoring_method != 'utbk':
@@ -609,9 +609,112 @@ class Test(models.Model):
         # Get user's university targets
         try:
             user_targets = self.student.university_target
-            return user_targets.get_recommendations_for_score(self.score)
-        except:
-            return []
+            target_recs = user_targets.get_recommendations_for_score(self.score)
+            
+            # Tambahkan informasi meets_minimum untuk setiap target
+            for rec in target_recs:
+                rec['meets_minimum'] = self.score >= rec['university'].minimum_utbk_score
+                rec['achievement_percentage'] = round((self.score / rec['university'].minimum_utbk_score) * 100, 1) if rec['university'].minimum_utbk_score > 0 else 0
+            
+            # Cek apakah ada target yang tidak memenuhi syarat
+            unmet_targets = [rec for rec in target_recs if not rec['meets_minimum']]
+            
+            # Jika semua target sudah memenuhi, tidak perlu rekomendasi
+            suggestions = []
+            if unmet_targets:
+                target_ids = [rec['university'].id for rec in target_recs]
+                from .models import University
+                
+                # Kumpulkan tier dari target yang tidak terpenuhi untuk menentukan rekomendasi
+                unmet_tiers = list(set([rec['university'].tier for rec in unmet_targets]))
+                
+                # Prioritas rekomendasi berdasarkan tier target yang tidak terpenuhi
+                # Mulai dari tier yang sama, lalu tier di bawahnya
+                suggested_tiers = []
+                for tier in ['tier1', 'tier2', 'tier3']:
+                    if tier in unmet_tiers:
+                        # Untuk tier yang tidak terpenuhi, rekomendasikan:
+                        if tier == 'tier1':
+                            # Jika tier 1 tidak terpenuhi → coba tier 1 lain dulu, lalu tier 2
+                            suggested_tiers.extend(['tier1', 'tier2'])
+                        elif tier == 'tier2':
+                            # Jika tier 2 tidak terpenuhi → coba tier 2 lain dulu, lalu tier 3
+                            suggested_tiers.extend(['tier2', 'tier3'])
+                        else:
+                            # Jika tier 3 tidak terpenuhi → coba tier 3 lain
+                            suggested_tiers.append('tier3')
+                
+                # Hapus duplikat dan urutkan
+                suggested_tiers = list(dict.fromkeys(suggested_tiers))  # Remove duplicates while preserving order
+                
+                # Cari universitas yang memenuhi syarat (skor >= minimum) dari tier yang disarankan
+                suggestions_qs = University.objects.filter(
+                    is_active=True, 
+                    tier__in=suggested_tiers,
+                    minimum_utbk_score__lte=self.score
+                ).exclude(id__in=target_ids).order_by('tier', 'minimum_utbk_score')[:3]
+                
+                for uni in suggestions_qs:
+                    rec = uni.get_recommendation_for_score(self.score)
+                    suggestions.append({
+                        'university': uni,
+                        'target_type': 'suggested',
+                        'target_label': f'Rekomendasi {uni.get_tier_display_short()}',
+                        'recommendation': rec,
+                        'achievement_percentage': round((self.score / uni.minimum_utbk_score) * 100, 1) if uni.minimum_utbk_score > 0 else 0,
+                        'meets_minimum': self.score >= uni.minimum_utbk_score
+                    })
+                
+                # Jika tidak ada universitas yang memenuhi, tampilkan yang paling mendekati (sebagai motivasi)
+                if not suggestions and suggested_tiers:
+                    fallback_qs = University.objects.filter(
+                        is_active=True,
+                        tier__in=suggested_tiers
+                    ).exclude(id__in=target_ids).order_by('minimum_utbk_score')[:2]
+                    
+                    for uni in fallback_qs:
+                        rec = uni.get_recommendation_for_score(self.score)
+                        suggestions.append({
+                            'university': uni,
+                            'target_type': 'suggested',
+                            'target_label': f'Opsi {uni.get_tier_display_short()}',
+                            'recommendation': rec,
+                            'achievement_percentage': round((self.score / uni.minimum_utbk_score) * 100, 1) if uni.minimum_utbk_score > 0 else 0,
+                            'meets_minimum': self.score >= uni.minimum_utbk_score
+                        })
+            
+            # Return target universitas + saran universitas (hanya jika ada target yang tidak terpenuhi)
+            return list(target_recs) + suggestions
+            
+        except Exception as e:
+            # Jika user belum set target, berikan saran universitas yang sesuai dengan skor
+            from .models import University
+            suggestions = []
+            
+            # Cari universitas yang memenuhi dari tier 3 dulu (paling mudah), lalu tier 2, lalu tier 1
+            for tier in ['tier3', 'tier2', 'tier1']:
+                suggestions_qs = University.objects.filter(
+                    is_active=True, 
+                    tier=tier,
+                    minimum_utbk_score__lte=self.score
+                ).order_by('minimum_utbk_score')[:2]
+                
+                for uni in suggestions_qs:
+                    rec = uni.get_recommendation_for_score(self.score)
+                    suggestions.append({
+                        'university': uni,
+                        'target_type': 'suggested',
+                        'target_label': f'Rekomendasi {uni.get_tier_display_short()}',
+                        'recommendation': rec,
+                        'achievement_percentage': round((self.score / uni.minimum_utbk_score) * 100, 1) if uni.minimum_utbk_score > 0 else 0,
+                        'meets_minimum': self.score >= uni.minimum_utbk_score
+                    })
+                
+                # Batasi maksimal 3 rekomendasi
+                if len(suggestions) >= 3:
+                    break
+            
+            return suggestions[:3]
     
     def get_score_analysis(self):
         """Get detailed score analysis for UTBK tests"""
@@ -1125,7 +1228,7 @@ class UniversityTarget(models.Model):
         return f"Target {self.user.email} - {self.primary_university}"
     
     def get_all_targets(self):
-        """Get all university targets as list"""
+        """Get all university targets as list in order: utama, aman, cadangan"""
         targets = []
         if self.primary_university:
             targets.append({
@@ -1133,22 +1236,22 @@ class UniversityTarget(models.Model):
                 'type': 'primary',
                 'label': 'Target Utama'
             })
-        if self.secondary_university:
-            targets.append({
-                'university': self.secondary_university,
-                'type': 'secondary',
-                'label': 'Target Cadangan'
-            })
         if self.backup_university:
             targets.append({
                 'university': self.backup_university,
                 'type': 'backup',
                 'label': 'Target Aman'
             })
+        if self.secondary_university:
+            targets.append({
+                'university': self.secondary_university,
+                'type': 'secondary',
+                'label': 'Target Cadangan'
+            })
         return targets
     
     def get_recommendations_for_score(self, utbk_score):
-        """Get recommendations for all target universities based on score"""
+        """Get recommendations for all target universities based on score, sorted by priority"""
         recommendations = []
         for target in self.get_all_targets():
             university = target['university']
@@ -1159,4 +1262,9 @@ class UniversityTarget(models.Model):
                 'target_label': target['label'],
                 'recommendation': recommendation
             })
+        
+        # Sort recommendations by priority: primary -> backup -> secondary
+        priority_order = {'primary': 1, 'backup': 2, 'secondary': 3}
+        recommendations.sort(key=lambda x: priority_order.get(x['target_type'], 4))
+        
         return recommendations

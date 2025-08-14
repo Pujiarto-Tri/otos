@@ -1,22 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}Hasil Test - {{ category.category_name|default:"Test" }}{% endblock %}
+{% block title %}Hasil Test - {% if package %}{{ package.package_name }}{% else %}{{ category.category_name|default:"Test" }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
     <!-- Header Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
         <div class="text-center">
-            <!-- Success Icon -->
-            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full mx-auto mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            <!-- Success Header: Icon + Title + Kategori (side by side) -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex flex-col items-center sm:items-start">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Test Selesai!</h1>
+                    <p class="text-base text-gray-600 dark:text-gray-400">
+                        {% if package %}
+                            {{ package.package_name }}
+                        {% else %}
+                            {{ category.category_name|default:"Test Kategori" }}
+                        {% endif %}
+                    </p>
+                </div>
             </div>
-            
-            <!-- Title -->
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Test Selesai!</h1>
-            <p class="text-base text-gray-600 dark:text-gray-400 mb-6">{{ category.category_name|default:"Test Kategori" }}</p>
             
             <!-- Score Display -->
             <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 mb-4">
@@ -27,193 +35,417 @@
             </div>
             
             <!-- Pass/Fail Status -->
-            {% with status=test.get_pass_status %}
-            <div class="mb-6">
-                <div class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-full
-                    {% if status.color == 'green' %}
-                        bg-gradient-to-r from-green-500 to-emerald-600
-                    {% else %}
-                        bg-gradient-to-r from-red-500 to-red-600
-                    {% endif %}">
-                    {% if status.color == 'green' %}
+            {# Custom logic for UTBK/university target tests #}
+            {% if show_university_section and university_recommendations %}
+                {% if target_achievement_status == 'all_met' %}
+                <div class="mb-6">
+                    <div class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-full bg-gradient-to-r from-green-500 to-emerald-600">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                    {% else %}
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    {% endif %}
-                    {{ status.status }}
+                        Nilai memenuhi syarat universitas (
+                        <b>
+                        {% if met_target_type == 'primary' %}Target Utama{% elif met_target_type == 'backup' %}Target Aman{% else %}Target Cadangan{% endif %}
+                        </b>)
+                    </div>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    Nilai minimum untuk lulus: {{ category.get_passing_score }}
-                </p>
-            </div>
-            {% endwith %}
+                {% elif target_achievement_status == 'some_met' %}
+                <div class="mb-6">
+                    <div class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-full bg-gradient-to-r from-yellow-500 to-orange-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                        Sebagian target universitas terpenuhi
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-6">
+                    <div class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-full bg-gradient-to-r from-red-500 to-red-600">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Point belum memenuhi target universitas
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                {% with status=test.get_pass_status %}
+                <div class="mb-6">
+                    <div class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-full
+                        {% if status.color == 'green' %}
+                            bg-gradient-to-r from-green-500 to-emerald-600
+                        {% else %}
+                            bg-gradient-to-r from-red-500 to-red-600
+                        {% endif %}">
+                        {% if status.color == 'green' %}
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        {% else %}
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        {% endif %}
+                        {{ status.status }}
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Nilai minimum untuk lulus: {{ category.get_passing_score }}
+                    </p>
+                </div>
+                {% endwith %}
+            {% endif %}
             
             <!-- University Target Achievement (for UTBK tests) -->
-            {% if university_recommendations %}
+            {% if show_university_section %}
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     </svg>
-                    Capaian Target Universitas
+                    Target Universitas & Rekomendasi
                 </h3>
                 
-                <div class="space-y-3">
-                    {% for rec in university_recommendations %}
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                        <!-- ...isi card universitas tetap... -->
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center">
-                                {% if rec.target_type == 'primary' %}
-                                <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                                {% elif rec.target_type == 'secondary' %}
-                                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                                {% else %}
-                                <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                                {% endif %}
-                                <div>
-                                    <h4 class="text-base font-medium text-gray-900 dark:text-white">{{ rec.university.name }}</h4>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ rec.target_label }} • {{ rec.university.location }}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                {% if rec.university.tier == 'tier1' %}
-                                <span class="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900 dark:text-yellow-300">Tier 1</span>
-                                {% elif rec.university.tier == 'tier2' %}
-                                <span class="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">Tier 2</span>
-                                {% else %}
-                                <span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">Tier 3</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <div class="flex items-center justify-between text-sm mb-2">
-                                <span class="text-gray-600 dark:text-gray-400">Nilai Anda:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ test.score }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm mb-2">
-                                <span class="text-gray-600 dark:text-gray-400">Nilai Minimum (Aman):</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ rec.university.minimum_utbk_score }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm mb-3">
-                                <span class="text-gray-600 dark:text-gray-400">Capaian vs Target:</span>
-                                {% if rec.meets_minimum %}
-                                    <span class="font-bold text-green-600 dark:text-green-400">{{ rec.achievement_percentage }}% <span class="text-xs">(✓ Memenuhi)</span></span>
-                                {% else %}
-                                    <span class="font-bold text-red-600 dark:text-red-400">{{ rec.achievement_percentage }}% <span class="text-xs">(✗ Belum Memenuhi)</span></span>
-                                {% endif %}
-                            </div>
-                            <div class="mt-3">
-                                {% if rec.recommendation.status == 'sangat_aman' %}
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        {{ rec.recommendation.message }}
-                                    </span>
-                                    <span class="text-sm font-medium text-green-600 dark:text-green-400">{{ rec.recommendation.percentage|floatformat:1 }}%</span>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600"><div class="bg-green-600 h-2 rounded-full" style="width: {{ rec.recommendation.percentage|floatformat:0 }}%"></div></div>
-                                {% elif rec.recommendation.status == 'aman' %}
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        {{ rec.recommendation.message }}
-                                    </span>
-                                    <span class="text-sm font-medium text-blue-600 dark:text-blue-400">{{ rec.recommendation.percentage|floatformat:1 }}%</span>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600"><div class="bg-blue-600 h-2 rounded-full" style="width: {{ rec.recommendation.percentage|floatformat:0 }}%"></div></div>
-                                {% elif rec.recommendation.status == 'kurang_aman' %}
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                                        {{ rec.recommendation.message }}
-                                    </span>
-                                    <span class="text-sm font-medium text-yellow-600 dark:text-yellow-400">{{ rec.recommendation.percentage|floatformat:1 }}%</span>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600"><div class="bg-yellow-600 h-2 rounded-full" style="width: {{ rec.recommendation.percentage|floatformat:0 }}%"></div></div>
-                                {% else %}
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        {{ rec.recommendation.message }}
-                                    </span>
-                                    <span class="text-sm font-medium text-red-600 dark:text-red-400">{{ rec.recommendation.percentage|floatformat:1 }}%</span>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600"><div class="bg-red-600 h-2 rounded-full" style="width: {{ rec.recommendation.percentage|floatformat:0 }}%"></div></div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                {# Saran universitas jika ada minimal satu yang belum memenuhi nilai minimum #}
                 {% if university_recommendations %}
-                    {% with all_meet=True any_not_meet=False %}
-                        {% for rec in university_recommendations %}
-                            {% if not rec.meets_minimum %}
-                                {% with all_meet=False any_not_meet=True %}{% endwith %}
+                    {% comment %} Pisahkan target dan rekomendasi {% endcomment %}
+                    {% regroup university_recommendations by target_type as grouped_recommendations %}
+                    
+                    {% comment %} Target Universitas User {% endcomment %}
+                    {% for group in grouped_recommendations %}
+                        {% if group.grouper != 'suggested' %}
+                            {% if forloop.first %}
+                            <div class="mb-6">
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Target Universitas Anda
+                                </h4>
+                            </div>
                             {% endif %}
-                        {% endfor %}
-                        {% if any_not_meet %}
-                        <div class="mt-8">
-                            <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Saran Universitas Berdasarkan Nilai Anda
-                            </h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Berikut universitas yang belum memenuhi nilai minimum, namun mendekati target:</p>
-                            <div class="space-y-2">
-                                {% for rec in university_recommendations|dictsortreversed:'achievement_percentage' %}
-                                    {% if not rec.meets_minimum %}
-                                    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-600">
-                                        <div>
-                                            <span class="font-semibold text-gray-900 dark:text-white">{{ rec.university.name }}</span>
-                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ rec.university.location }}</span>
+                            
+                            {% for rec in group.list %}
+                            <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                <!-- Header Card -->
+                                <div class="bg-gradient-to-r 
+                                    {% if rec.target_type == 'primary' %}from-orange-400 to-white
+                                    {% elif rec.target_type == 'backup' %}from-green-500 to-emerald-500
+                                    {% else %}from-blue-500 to-indigo-500{% endif %} 
+                                    px-4 py-3">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center text-white">
+                                            {% if rec.target_type == 'primary' %}
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                                </svg>
+                                                <span class="font-bold text-sm uppercase tracking-wide">Target Utama</span>
+                                            {% elif rec.target_type == 'backup' %}
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                                </svg>
+                                                <span class="font-bold text-sm uppercase tracking-wide">Target Aman</span>
+                                            {% else %}
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                </svg>
+                                                <span class="font-bold text-sm uppercase tracking-wide">Target Cadangan</span>
+                                            {% endif %}
                                         </div>
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">Min: {{ rec.university.minimum_utbk_score }}</span>
-                                            <span class="text-xs font-semibold text-orange-600 dark:text-orange-400">{{ rec.achievement_percentage }}%</span>
+                                        
+                                        <!-- Tier Badge -->
+                                        <div class="flex items-center">
+                                            {% if rec.university.tier == 'tier1' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-yellow-900 bg-yellow-100 border border-yellow-300">
+                                                <span class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                                                Tier 1
+                                            </span>
+                                            {% elif rec.university.tier == 'tier2' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-blue-900 bg-blue-100 border border-blue-300">
+                                                <span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                                                Tier 2
+                                            </span>
+                                            {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-green-900 bg-green-100 border border-green-300">
+                                                <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                                Tier 3
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Body Card -->
+                                <div class="p-4">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div>
+                                            <h5 class="text-lg font-bold text-gray-900 dark:text-white">{{ rec.university.name }}</h5>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center mt-1">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+                                                {{ rec.university.location }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Score Comparison -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nilai Anda</div>
+                                            <div class="text-xl font-bold text-gray-900 dark:text-white">{{ test.score }}</div>
+                                        </div>
+                                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nilai Minimum (Aman)</div>
+                                            <div class="text-xl font-bold text-gray-900 dark:text-white">{{ rec.university.minimum_utbk_score }}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Achievement Status -->
+                                    <div class="mb-4">
+                                        {% if rec.meets_minimum %}
+                                        <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg">
+                                            <div class="flex items-center">
+                                                <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span class="text-green-800 dark:text-green-300 font-medium">Memenuhi Syarat</span>
+                                            </div>
+                                            <span class="text-green-700 dark:text-green-400 font-bold">{{ rec.achievement_percentage }}%</span>
+                                        </div>
+                                        {% else %}
+                                        <div class="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                                            <div class="flex items-center">
+                                                <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span class="text-red-800 dark:text-red-300 font-medium">Belum Memenuhi</span>
+                                            </div>
+                                            <span class="text-red-700 dark:text-red-400 font-bold">{{ rec.achievement_percentage }}%</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% comment %} Rekomendasi Universitas Lain {% endcomment %}
+                    {% for group in grouped_recommendations %}
+                        {% if group.grouper == 'suggested' %}
+                            <div class="mt-8 mb-6">
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                    </svg>
+                                    Rekomendasi Universitas Alternatif
+                                </h4>
+                                <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-3 mb-4">
+                                    <p class="text-sm text-orange-800 dark:text-orange-200">
+                                        Karena ada target universitas yang belum memenuhi syarat nilai, berikut adalah alternatif universitas yang sesuai dengan nilai UTBK Anda saat ini.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% for rec in group.list %}
+                            <div class="mb-4 bg-gradient-to-r from-orange-100 to-white dark:from-orange-900/20 dark:to-white/10 rounded-xl shadow-sm border border-orange-200 dark:border-orange-700 overflow-hidden">
+                                <!-- Rekomendasi Header -->
+                                <div class="bg-gradient-to-r from-orange-400 to-white px-4 py-2">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center text-white">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 0l7 7H8l7-7z"/>
+                                            </svg>
+                                            <span class="font-medium text-sm">{{ rec.target_label }}</span>
+                                        </div>
+                                        
+                                        <!-- Tier Badge -->
+                                        {% if rec.university.tier == 'tier1' %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold text-yellow-900 bg-yellow-100">
+                                            Tier 1
+                                        </span>
+                                        {% elif rec.university.tier == 'tier2' %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold text-blue-900 bg-blue-100">
+                                            Tier 2
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold text-green-900 bg-green-100">
+                                            Tier 3
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Rekomendasi Body -->
+                                <div class="p-4">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div>
+                                            <h5 class="text-base font-bold text-gray-900 dark:text-white">{{ rec.university.name }}</h5>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center mt-1">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+                                                {{ rec.university.location }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Score Info -->
+                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 text-center border border-gray-200 dark:border-gray-700">
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">Nilai Anda</div>
+                                            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ test.score }}</div>
+                                        </div>
+                                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 text-center border border-gray-200 dark:border-gray-700">
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">Minimum Aman</div>
+                                            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ rec.university.minimum_utbk_score }}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status -->
+                                    {% if rec.meets_minimum %}
+                                    <div class="p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-600 rounded-lg text-center">
+                                        <div class="flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="text-green-800 dark:text-green-200 font-bold text-sm">Cocok dengan nilai Anda! ({{ rec.achievement_percentage }}%)</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="p-3 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-600 rounded-lg text-center">
+                                        <div class="flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-orange-600 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"/>
+                                            </svg>
+                                            <span class="text-orange-800 dark:text-orange-200 font-medium text-sm">Kurang {{ rec.score_gap|default:"0" }} poin ({{ rec.achievement_percentage }}%)</span>
                                         </div>
                                     </div>
                                     {% endif %}
-                                {% endfor %}
-                                {% if not university_recommendations|dictsortreversed:'achievement_percentage'|yesno:'1,0' %}
-                                <div class="mt-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-center">
-                                    <h5 class="text-base font-semibold text-red-700 dark:text-red-300 mb-2 flex items-center justify-center">
-                                        <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"/></svg>
-                                        Nilai Anda Masih Terlalu Rendah
-                                    </h5>
-                                    <p class="text-sm text-red-700 dark:text-red-300">Belum ada universitas yang bisa direkomendasikan berdasarkan skor saat ini.<br> Tetap semangat! Tingkatkan latihan tryout dan terus belajar, kamu pasti bisa meningkatkan hasilmu!</p>
                                 </div>
-                                {% endif %}
                             </div>
-                        </div>
+                            {% endfor %}
                         {% endif %}
+                    {% endfor %}
+                    
+                    {% comment %} Cek apakah ada rekomendasi atau tidak {% endcomment %}
+                    {% with has_suggestions=False %}
+                        {% for group in grouped_recommendations %}
+                            {% if group.grouper == 'suggested' %}
+                                {% with has_suggestions=True %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% comment %} Tampilkan card status berdasarkan pencapaian target {% endcomment %}
+                        {% if not has_suggestions %}
+                            {% if target_achievement_status == 'all_met' %}
+                            <div class="mt-8 mb-6">
+                                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-6 text-center">
+                                    <div class="flex items-center justify-center mb-4">
+                                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-green-800 dark:text-green-200 mb-2">Selamat! 🎉</h4>
+                                    <p class="text-sm text-green-700 dark:text-green-300 mb-4">
+                                        Nilai UTBK Anda <b>memenuhi kriteria {% if met_target_type == 'primary' %}Target Utama{% elif met_target_type == 'backup' %}Target Aman{% else %}Target Cadangan{% endif %}</b> dari seluruh target universitas yang Anda pilih.<br>
+                                        Tidak diperlukan rekomendasi tambahan.
+                                    </p>
+                                    <div class="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-lg px-3 py-2 inline-block">
+                                        💡 Tip: Tetap konsisten berlatih untuk mempertahankan atau meningkatkan nilai Anda
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            {% if target_achievement_status == 'some_met' %}
+                            <div class="mt-8 mb-6">
+                                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6 text-center">
+                                    <div class="flex items-center justify-center mb-4">
+                                        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">Perlu Peningkatan ⚡</h4>
+                                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+                                        Nilai UTBK Anda sudah memenuhi <b>sebagian target universitas</b>, namun masih ada beberapa target yang belum tercapai.<br>
+                                        Silakan cek rekomendasi universitas alternatif di atas.
+                                    </p>
+                                    <div class="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg px-3 py-2 inline-block">
+                                        💡 Tip: Fokus berlatih pada materi yang masih lemah untuk meningkatkan skor
+                                    </div>
+                                </div>
+                            </div>
+                            {% elif target_achievement_status == 'none_met' %}
+                            <div class="mt-8 mb-6">
+                                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6 text-center">
+                                    <div class="flex items-center justify-center mb-4">
+                                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-red-800 dark:text-red-200 mb-2">Perlu Usaha Lebih 💪</h4>
+                                    <p class="text-sm text-red-700 dark:text-red-300 mb-4">
+                                        Nilai UTBK Anda <b>belum memenuhi semua target universitas</b> yang telah ditetapkan.<br>
+                                        Jangan menyerah! Silakan cek rekomendasi universitas alternatif yang sesuai dengan nilai Anda saat ini.
+                                    </p>
+                                    <div class="text-xs text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg px-3 py-2 inline-block">
+                                        💡 Tip: Buat jadwal belajar yang intensif dan fokus pada semua mata pelajaran
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                        
                     {% endwith %}
+                    
+                {% else %}
+                <div class="p-6 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-xl text-center">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h4 class="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">Belum Ada Target Universitas</h4>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-4">Silakan atur target universitas Anda untuk mendapatkan rekomendasi berdasarkan nilai UTBK.</p>
+                    <a href="{% url 'student_university_target' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-yellow-900 bg-yellow-200 rounded-lg hover:bg-yellow-300 focus:outline-none focus:ring-4 focus:ring-yellow-100 dark:bg-yellow-800 dark:text-yellow-200 dark:hover:bg-yellow-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.5 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Atur Target Universitas
+                    </a>
+                </div>
                 {% endif %}
                 
                 <!-- Quick Actions -->
-                <div class="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                <div class="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl border border-indigo-200 dark:border-indigo-700">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-medium text-indigo-900 dark:text-indigo-300">Tingkatkan Hasil Anda</h4>
-                            <p class="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Latih kemampuan Anda dengan tryout lebih banyak</p>
+                            <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-200">Tingkatkan Hasil Anda</h4>
+                            <p class="text-xs text-indigo-700 dark:text-indigo-300 mt-1">Latih kemampuan dengan lebih banyak tryout</p>
                         </div>
                         <div class="flex gap-2">
-                            <a href="{% url 'tryout_list' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            <a href="{% url 'tryout_list' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                                 </svg>
                                 Tryout Lagi
                             </a>
-                            <a href="{% url 'student_university_target' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-300 rounded-lg hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-600 dark:hover:bg-gray-700">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <a href="{% url 'student_university_target' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-300 rounded-lg hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-600 dark:hover:bg-gray-700">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.5 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                                 Atur Target
                             </a>
@@ -222,61 +454,67 @@
                 </div>
             </div>
             {% endif %}
-            
-            <!-- Test Info Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <!-- Date Card -->
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div class="flex items-center justify-center mb-3">
-                        <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
                         </div>
+    </div>
+    
+    <!-- Info & Action Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 mt-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <!-- Date Card -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex flex-col items-center">
+                <div class="flex items-center justify-center mb-3">
+                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
                     </div>
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ test.date_taken|date:"d M Y" }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">Tanggal Pengerjaan</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ test.date_taken|date:"H:i" }} WIB</div>
                 </div>
-                
-                <!-- Category Card -->
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div class="flex items-center justify-center mb-3">
-                        <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
+                <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ test.date_taken|date:"d M Y" }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Tanggal Pengerjaan</div>
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ test.date_taken|date:"H:i" }} WIB</div>
+            </div>
+            <!-- Category/Package Card -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex flex-col items-center">
+                <div class="flex items-center justify-center mb-3">
+                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
                     </div>
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ category.category_name|default:"Test Kategori" }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">Kategori Test</div>
                 </div>
+                <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    {% if package %}
+                        {{ package.package_name }}
+                    {% else %}
+                        {{ category.category_name|default:"Test Kategori" }}
+                    {% endif %}
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{% if package %}Paket UTBK{% else %}Kategori Test{% endif %}</div>
             </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="{% url 'test_results_detail' test.id %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-all shadow-md">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    Lihat Detail Hasil Test
-                </a>
-                
-                <a href="{% url 'tryout_list' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-all shadow-md">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v1H8V5z"></path>
-                    </svg>
-                    Kembali ke Daftar Tryout
-                </a>
-                
-                <a href="{% url 'home' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700 transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    Kembali ke Beranda
-                </a>
-            </div>
+        </div>
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{% url 'test_results_detail' test.id %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-all shadow-md">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Lihat Detail Hasil Test
+            </a>
+            <a href="{% url 'tryout_list' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-all shadow-md">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v1H8V5z"></path>
+                </svg>
+                Kembali ke Daftar Tryout
+            </a>
+            <a href="{% url 'home' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                Kembali ke Beranda
+            </a>
+        </div>
+    </div>
         </div>
     </div>
 </div>

@@ -695,23 +695,17 @@ class UniversityTargetForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show active universities
-        active_universities = University.objects.filter(is_active=True).order_by('tier', 'name')
+        # Configure queryset for AJAX - allow all universities for validation
+        for field in ['primary_university', 'backup_university', 'secondary_university']:
+            if field in self.fields:
+                # Set queryset to all universities so any valid ID can be accepted
+                self.fields[field].queryset = University.objects.all()
+                self.fields[field].required = False
+                self.fields[field].empty_label = "-- Pilih Universitas --"
         
-        # Add empty option
-        self.fields['primary_university'].queryset = active_universities
-        self.fields['secondary_university'].queryset = active_universities
-        self.fields['backup_university'].queryset = active_universities
-        
-        # Make all universities optional
-        self.fields['primary_university'].required = False
-        self.fields['secondary_university'].required = False
-        self.fields['backup_university'].required = False
-        
-        # Add help text
         self.fields['primary_university'].help_text = "Universitas impian/target utama"
-        self.fields['secondary_university'].help_text = "Universitas cadangan jika target utama tidak tercapai"
         self.fields['backup_university'].help_text = "Universitas yang relatif aman untuk nilai Anda"
+        self.fields['secondary_university'].help_text = "Universitas cadangan jika target utama tidak tercapai"
         self.fields['notes'].help_text = "Catatan personal, motivasi, atau rencana belajar"
     
     def clean(self):
@@ -759,7 +753,23 @@ class TryoutPackageForm(forms.ModelForm):
                 })
         
         # Set help texts
-        self.fields['package_name'].help_text = "Nama paket tryout (contoh: UTBK Saintek 2025)"
+            fields = ['primary_university', 'backup_university', 'secondary_university', 'notes']
+            widgets = {
+                'primary_university': forms.Select(attrs={
+                    'class': 'form-select w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600',
+                }),
+                'backup_university': forms.Select(attrs={
+                    'class': 'form-select w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600',
+                }),
+                'secondary_university': forms.Select(attrs={
+                    'class': 'form-select w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600',
+                }),
+                'notes': forms.Textarea(attrs={
+                    'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                    'rows': 3,
+                    'placeholder': 'Catatan personal tentang target universitas Anda'
+                }),
+            }
         self.fields['description'].help_text = "Deskripsi paket dan target peserta"
         self.fields['total_time'].help_text = "Total waktu pengerjaan dalam menit (contoh: 180 untuk 3 jam)"
         self.fields['is_active'].help_text = "Centang untuk membuat paket tersedia untuk siswa"

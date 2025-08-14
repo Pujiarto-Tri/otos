@@ -1,3 +1,6 @@
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.forms import inlineformset_factory
@@ -1320,38 +1323,73 @@ def test_results(request, test_id):
     
     # Get category from test.categories (many-to-many relationship)
     category = test.categories.first()
-    
+    package = test.tryout_package if hasattr(test, 'tryout_package') and test.tryout_package else None
+
     # If no category found from test.categories, try to get from first answer (fallback)
     if not category:
         first_answer = test.answers.first()
         category = first_answer.question.category if first_answer else None
-    
+
     # Calculate score if not already calculated
     if test.answers.exists():
         test.calculate_score()
-    
+
     # Get university recommendations for UTBK tests
     university_recommendations = []
     score_analysis = None
-    
-    if category and category.scoring_method == 'utbk':
+
+    # Cek scoring_method dari kategori pertama saja (paket UTBK tetap utbk)
+    scoring_method = category.scoring_method if category else None
+    show_university_section = False
+    if scoring_method == 'utbk':
+        show_university_section = True
         university_recommendations = test.get_university_recommendations()
         score_analysis = test.get_score_analysis()
-        
         # Calculate achievement percentages for each recommendation
         for rec in university_recommendations:
             min_score = rec['university'].minimum_utbk_score
             achievement_percentage = (test.score / min_score) * 100 if min_score > 0 else 0
             rec['achievement_percentage'] = round(achievement_percentage, 1)
             rec['meets_minimum'] = test.score >= min_score
+            rec['score_gap'] = max(0, min_score - test.score)  # Selisih nilai yang dibutuhkan
+
+    # Determine target achievement status
+    met_target_type = None
+    target_achievement_status = None  # 'all_met', 'some_met', 'none_met'
     
+    if show_university_section and university_recommendations:
+        # Only check user targets (not 'suggested')
+        total_targets = 0
+        met_targets = 0
+        
+        for rec in university_recommendations:
+            if rec.get('target_type') != 'suggested':
+                total_targets += 1
+                if rec.get('meets_minimum'):
+                    met_targets += 1
+                    if not met_target_type:  # Set first met target type
+                        met_target_type = rec.get('target_type')
+        
+        # Determine status based on how many targets are met
+        if total_targets > 0:
+            if met_targets == total_targets:
+                target_achievement_status = 'all_met'
+            elif met_targets > 0:
+                target_achievement_status = 'some_met'
+            else:
+                target_achievement_status = 'none_met'
+
     context = {
         'test': test,
         'category': category,
+        'package': package,
         'university_recommendations': university_recommendations,
         'score_analysis': score_analysis,
+        'show_university_section': show_university_section,
+        'met_target_type': met_target_type,
+        'target_achievement_status': target_achievement_status,
     }
-    
+
     return render(request, 'students/tests/test_results.html', context)
 
 @login_required
@@ -3435,4 +3473,93 @@ def submit_package_test(request, package_id):
     
     # If GET request, redirect back to the test (no separate confirmation page)
     return redirect('take_package_test_question', package_id=package_id, question=1)
+
+
+@csrf_exempt
+def api_universities(request):
+    """API endpoint untuk pencarian universitas (ajax search)"""
+    q = request.GET.get('q', '').strip()
+    results = []
+    if q:
+        # Normalize query untuk pencarian tier
+        q_lower = q.lower().replace(' ', '')
+        
+        # Prioritized search results
+        exact_tier_matches = []
+        partial_matches = []
+        name_location_matches = []
+        
+        # Check for exact tier matches first
+        if q_lower == 'tier1' or q_lower == 'tier3':
+            tier_value = q_lower
+            exact_tier_matches = University.objects.filter(
+                is_active=True, tier=tier_value
+            ).order_by('name')
+        elif q_lower == 'tier2':
+            exact_tier_matches = University.objects.filter(
+                is_active=True, tier='tier2'
+            ).order_by('name')
+        elif 'tier1' in q_lower or 'top' in q_lower:
+            exact_tier_matches = University.objects.filter(
+                is_active=True, tier='tier1'
+            ).order_by('name')
+        elif 'tier2' in q_lower or 'good' in q_lower:
+            exact_tier_matches = University.objects.filter(
+                is_active=True, tier='tier2'
+            ).order_by('name')
+        elif 'tier3' in q_lower or 'standard' in q_lower:
+            exact_tier_matches = University.objects.filter(
+                is_active=True, tier='tier3'
+            ).order_by('name')
+        
+        # If we have exact tier matches, prioritize them
+        if exact_tier_matches:
+            # For exact tier search, show only that tier unless query is just "tier"
+            if q_lower == 'tier':
+                # Show all tiers when just searching "tier"
+                partial_matches = University.objects.filter(
+                    is_active=True, tier__icontains='tier'
+                ).exclude(
+                    id__in=[u.id for u in exact_tier_matches]
+                ).order_by('tier', 'name')[:30]
+            
+            # Also include name/location matches for the query
+            name_location_matches = University.objects.filter(
+                is_active=True
+            ).filter(
+                Q(name__icontains=q) | Q(location__icontains=q)
+            ).exclude(
+                id__in=[u.id for u in exact_tier_matches]
+            ).order_by('name')[:20]
+        else:
+            # No tier match, search by name and location
+            name_location_matches = University.objects.filter(
+                is_active=True
+            ).filter(
+                Q(name__icontains=q) | Q(location__icontains=q)
+            ).order_by('name')[:50]
+        
+        # Combine results with priority
+        queryset = list(exact_tier_matches) + list(partial_matches) + list(name_location_matches)
+        queryset = queryset[:50]  # Limit total results
+    else:
+        # Tanpa query, ambil semua universitas (untuk preload)
+        queryset = University.objects.filter(is_active=True).order_by('tier', 'name')[:100]
+
+    for uni in queryset:
+        results.append({
+            'id': uni.id,
+            'name': uni.name,
+            'tier': uni.tier,
+            'tier_display': uni.get_tier_display(),
+            'minimum_utbk_score': uni.minimum_utbk_score,
+            'location': uni.location,
+        })
+    
+    # Debug logging
+    print(f"API Search - Query: '{q}', Results: {len(results)}")
+    if results:
+        print(f"First 3 results: {[r['name'] + ' (' + r['tier'] + ')' for r in results[:3]]}")
+    
+    return JsonResponse({'results': results})
 
