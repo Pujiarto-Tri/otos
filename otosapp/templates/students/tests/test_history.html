@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Riwayat Test - Exam System{% endblock %}
 
@@ -299,11 +300,43 @@
                                 {{ test.score|floatformat:1 }}
                             </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skor Akhir</div>
-                            <div class="text-xs font-medium mt-1
-                                {% if test.is_passed %}text-green-600 dark:text-green-400
-                                {% else %}text-red-600 dark:text-red-400{% endif %}">
-                                {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
+                            <div class="text-xs font-medium mt-1">
+                                {% with category=test.categories.first %}
+                                    {% if category and category.scoring_method == 'utbk' and test_university_info|get_item:test.id %}
+                                        {% with info=test_university_info|get_item:test.id %}
+                                            {% if info.target_achievement_status == 'all_met' %}
+                                                <span class="text-green-600 dark:text-green-400">Nilai memenuhi syarat universitas</span>
+                                            {% elif info.target_achievement_status == 'some_met' %}
+                                                <span class="text-yellow-600 dark:text-yellow-400">Sebagian target terpenuhi</span>
+                                            {% elif info.target_achievement_status == 'none_met' %}
+                                                <span class="text-red-600 dark:text-red-400">Nilai belum memenuhi target universitas</span>
+                                            {% else %}
+                                                <span class="text-gray-500 dark:text-gray-400">-</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
+                                    {% endif %}
+                                {% endwith %}
                             </div>
+                            {# Pill Universitas Target (khusus UTBK) #}
+                            {% with category=test.categories.first %}
+                                {% if category and category.scoring_method == 'utbk' and test_university_info|get_item:test.id %}
+                                    {% with info=test_university_info|get_item:test.id %}
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            {% for rec in info.recommendations %}
+                                                {% if rec.target_type != 'suggested' %}
+                                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                                        {% if rec.meets_minimum %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                                        {% else %}bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100{% endif %}">
+                                                        {{ rec.university.name }}
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endwith %}
+                                {% endif %}
+                            {% endwith %}
                         </div>
                         
                         <!-- Action Buttons -->

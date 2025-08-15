@@ -1,11 +1,12 @@
+
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}🏆 Peringkat Camba{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
+<div class="max-w-7xl mx-auto py-8">
     <!-- Header Section -->
     <div class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
         <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
@@ -29,100 +30,200 @@
     <!-- Filter Section -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-8">
         <form method="GET" class="space-y-6" id="filterForm">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                
-                <!-- Ranking Type -->
-                <div class="space-y-2">
-                    <label for="ranking_type" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4 inline mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
-                        </svg>
+            <!-- Filter Bar: Jenis Peringkat + Filter Button -->
+            <div class="flex flex-row items-center gap-4">
+                <div class="flex flex-col bg-white dark:bg-gray-900/60 rounded-xl shadow-md p-4 border border-transparent hover:border-purple-400 transition-all duration-200 group w-full max-w-full">
+                    <label class="flex items-center gap-2 mb-1 text-xs font-bold text-purple-700 dark:text-purple-300" for="ranking_type">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300 shadow-sm">
+                            <i class="fa-solid fa-trophy"></i>
+                        </span>
                         Jenis Peringkat
                     </label>
                     <select name="ranking_type" id="ranking_type" 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200"
-                            onchange="toggleCategoryField()">
-                        <option value="overall_average" {% if ranking_type == 'overall_average' %}selected{% endif %}>
-                            📊 Rata-rata Keseluruhan
-                        </option>
-                        <option value="category_best" {% if ranking_type == 'category_best' %}selected{% endif %}>
-                            🎯 Skor Tertinggi per Kategori
-                        </option>
-                        <option value="category_average" {% if ranking_type == 'category_average' %}selected{% endif %}>
-                            📈 Rata-rata per Kategori
-                        </option>
+                        class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" onchange="onRankingTypeChange()">
+                        <option value="" {% if not ranking_type %}selected{% endif %} disabled>Pilih Jenis Peringkat</option>
+                        <option value="utbk_package_best" {% if ranking_type == 'utbk_package_best' %}selected{% endif %}>🏆 Skor Tertinggi per Simulasi UTBK</option>
+                        <option value="overall_average" {% if ranking_type == 'overall_average' %}selected{% endif %}>📊 Rata-rata Keseluruhan</option>
+                        <option value="category_best" {% if ranking_type == 'category_best' %}selected{% endif %}>🎯 Skor Tertinggi per Kategori</option>
+                        <option value="category_average" {% if ranking_type == 'category_average' %}selected{% endif %}>📈 Rata-rata per Kategori</option>
                     </select>
                 </div>
+                <div class="flex items-center h-full">
+                    <button type="button" id="filterToggleBtn" class="ml-2 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg shadow hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-semibold disabled:opacity-50" onclick="toggleFilterPanel()" disabled>
+                        <span id="chevronIcon" class="flex items-center justify-center w-6 h-6">
+                            <svg id="chevronSvg" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" class="chevron-shape" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <!-- Hidden Filter Panel -->
+            <div id="filterPanel" class="max-h-0 overflow-hidden transition-all duration-300 opacity-0 pointer-events-none">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Universitas -->
+                    <div class="flex flex-col bg-white dark:bg-gray-900/60 rounded-xl shadow-md p-4 border border-transparent hover:border-green-400 transition-all duration-200 group">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300 shadow-sm">
+                                <i class="fa-solid fa-building-columns"></i>
+                            </span>
+                            <span class="text-xs font-bold text-green-700 dark:text-green-300 tracking-wide">Universitas</span>
+                        </div>
+                        <select name="university_id" id="university_id" class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Semua Universitas</option>
+                            {% for university in universities %}
+                                <option value="{{ university.id }}" {% if university_id == university.id|stringformat:"s" %}selected{% endif %}>{{ university.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <!-- Category or UTBK Package Selection (single stable card) -->
+                    <div class="flex flex-col bg-white dark:bg-gray-900/60 rounded-xl shadow-md p-4 border border-transparent hover:border-blue-400 transition-all duration-200 group">
+                        <!-- UTBK Package -->
+                        <div id="utbk_package_field" class="{% if ranking_type == 'utbk_package_best' %}block{% else %}hidden{% endif %}">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm">
+                                    <i class="fa-solid fa-tags"></i>
+                                </span>
+                                <span class="text-xs font-bold text-blue-700 dark:text-blue-300 tracking-wide">Paket Simulasi UTBK</span>
+                            </div>
+                            <select name="utbk_package_id" id="utbk_package_id"
+                                    class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Semua Paket UTBK</option>
+                                {% for package in utbk_packages %}
+                                    <option value="{{ package.id }}">{{ package.package_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Category -->
+                        <div id="category_field" class="{% if ranking_type == 'utbk_package_best' %}hidden{% else %}block{% endif %}">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300 shadow-sm">
+                                    <i class="fa-solid fa-layer-group"></i>
+                                </span>
+                                <span class="text-xs font-bold text-yellow-700 dark:text-yellow-300 tracking-wide">Kategori</span>
+                            </div>
+                            <select name="category_id" id="category_id" 
+                                class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">Semua Kategori</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if category_id == category.id|stringformat:"s" %}selected{% endif %}>{{ category.category_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Time Period -->
+                    <div class="flex flex-col bg-white dark:bg-gray-900/60 rounded-xl shadow-md p-4 border border-transparent hover:border-green-400 transition-all duration-200 group">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300 shadow-sm">
+                                <i class="fa-regular fa-clock"></i>
+                            </span>
+                            <span class="text-xs font-bold text-green-700 dark:text-green-300 tracking-wide">Periode Waktu</span>
+                        </div>
+                        <select name="time_period" id="time_period" 
+                                class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="all" {% if time_period == 'all' %}selected{% endif %}>🌟 Sepanjang Waktu</option>
+                            <option value="week" {% if time_period == 'week' %}selected{% endif %}>📅 Minggu Ini</option>
+                            <option value="month" {% if time_period == 'month' %}selected{% endif %}>📆 Bulan Ini</option>
+                            <option value="year" {% if time_period == 'year' %}selected{% endif %}>🗓️ Tahun Ini</option>
+                        </select>
+                    </div>
+                    <!-- Scoring Method removed as requested -->
+                </div>
+            </div>
+{% block extra_js %}
+<script>
+// Filter panel toggle logic
+let filterPanelOpen = false;
+function toggleFilterPanel() {
+    const panel = document.getElementById('filterPanel');
+    const chevronSvg = document.getElementById('chevronSvg');
+    if (!panel) return;
+    filterPanelOpen = !filterPanelOpen;
+    if (filterPanelOpen) {
+        panel.classList.remove('opacity-0', 'pointer-events-none');
+        panel.classList.add('opacity-100');
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+        chevronSvg.style.transform = 'rotate(180deg)';
+    } else {
+        panel.classList.remove('opacity-100');
+        panel.classList.add('opacity-0', 'pointer-events-none');
+        panel.style.maxHeight = '0px';
+        chevronSvg.style.transform = 'rotate(0deg)';
+    }
+}
 
-                <!-- Category Selection -->
-                <div class="space-y-2" id="category_field">
-                    <label for="category_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4 inline mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
-                        </svg>
-                        Kategori
-                    </label>
-                    <select name="category_id" id="category_id" 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
-                        <option value="">Semua Kategori</option>
-                        {% for category in categories %}
-                            <option value="{{ category.id }}" {% if category_id == category.id|stringformat:"s" %}selected{% endif %}>
-                                {{ category.category_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+function onRankingTypeChange() {
+    const rankingType = document.getElementById('ranking_type').value;
+    const filterBtn = document.getElementById('filterToggleBtn');
+    const panel = document.getElementById('filterPanel');
+    if (rankingType) {
+        filterBtn.disabled = false;
+        filterBtn.classList.remove('disabled:opacity-50');
+    } else {
+        filterBtn.disabled = true;
+        filterBtn.classList.add('disabled:opacity-50');
+        if (filterPanelOpen) toggleFilterPanel();
+        panel.classList.remove('opacity-100');
+        panel.classList.add('opacity-0', 'pointer-events-none');
+        panel.style.maxHeight = '0px';
+        filterPanelOpen = false;
+    }
+    const utbkField = document.getElementById('utbk_package_field');
+    const catField = document.getElementById('category_field');
+    if (rankingType === 'utbk_package_best') {
+        utbkField.classList.remove('hidden');
+        utbkField.classList.add('block');
+        catField.classList.add('hidden');
+        catField.classList.remove('block');
+        if (catField.querySelector('select')) catField.querySelector('select').value = '';
+    } else {
+        catField.classList.remove('hidden');
+        catField.classList.add('block');
+        utbkField.classList.add('hidden');
+        utbkField.classList.remove('block');
+        if (utbkField.querySelector('select')) utbkField.querySelector('select').value = '';
+    }
+}
 
-                <!-- Time Period -->
-                <div class="space-y-2">
-                    <label for="time_period" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4 inline mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Periode Waktu
-                    </label>
-                    <select name="time_period" id="time_period" 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
-                        <option value="all" {% if time_period == 'all' %}selected{% endif %}>🌟 Sepanjang Waktu</option>
-                        <option value="week" {% if time_period == 'week' %}selected{% endif %}>📅 Minggu Ini</option>
-                        <option value="month" {% if time_period == 'month' %}selected{% endif %}>📆 Bulan Ini</option>
-                        <option value="year" {% if time_period == 'year' %}selected{% endif %}>🗓️ Tahun Ini</option>
-                    </select>
-                </div>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set chevron icon state on load
+    const chevronSvg = document.getElementById('chevronSvg');
+    if (filterPanelOpen) {
+        chevronSvg.style.transform = 'rotate(180deg)';
+    } else {
+        chevronSvg.style.transform = 'rotate(0deg)';
+    }
+    // Set initial state for filter button and panel
+    const rankingType = document.getElementById('ranking_type').value;
+    const filterBtn = document.getElementById('filterToggleBtn');
+    const panel = document.getElementById('filterPanel');
+    if (rankingType) {
+        filterBtn.disabled = false;
+        filterBtn.classList.remove('disabled:opacity-50');
+    } else {
+        filterBtn.disabled = true;
+        filterBtn.classList.add('disabled:opacity-50');
+        panel.classList.remove('opacity-100');
+        panel.classList.add('opacity-0', 'pointer-events-none');
+        panel.style.maxHeight = '0px';
+    }
+    // Show/hide UTBK/Category fields
+    const utbkField = document.getElementById('utbk_package_field');
+    const catField = document.getElementById('category_field');
+    if (rankingType === 'utbk_package_best') {
+        utbkField.classList.remove('hidden'); utbkField.classList.add('block');
+        catField.classList.add('hidden'); catField.classList.remove('block');
+    } else {
+        catField.classList.remove('hidden'); catField.classList.add('block');
+        utbkField.classList.add('hidden'); utbkField.classList.remove('block');
+    }
+    document.getElementById('ranking_type').addEventListener('change', onRankingTypeChange);
+});
+</script>
+{% endblock %}
+                <!-- Time Period and Scoring Method fields removed from outside filter panel -->
 
-                <!-- Scoring Method -->
-                <div class="space-y-2">
-                    <label for="scoring_method" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4 inline mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Metode Penilaian
-                    </label>
-                    <select name="scoring_method" id="scoring_method" 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
-                        <option value="all" {% if scoring_method == 'all' %}selected{% endif %}>🎲 Semua Metode</option>
-                        <option value="default" {% if scoring_method == 'default' %}selected{% endif %}>📊 Standar</option>
-                        <option value="custom" {% if scoring_method == 'custom' %}selected{% endif %}>⚖️ Berbobot</option>
-                        <option value="utbk" {% if scoring_method == 'utbk' %}selected{% endif %}>🎓 UTBK</option>
-                    </select>
-                </div>
 
-                <!-- Minimum Tests -->
-                <div class="space-y-2">
-                    <label for="min_tests" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4 inline mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                        </svg>
-                        Min. Tes
-                    </label>
-                    <select name="min_tests" id="min_tests" 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
-                        <option value="1" {% if min_tests == 1 %}selected{% endif %}>1 Tes</option>
-                        <option value="3" {% if min_tests == 3 %}selected{% endif %}>3 Tes</option>
-                        <option value="5" {% if min_tests == 5 %}selected{% endif %}>5 Tes</option>
-                        <option value="10" {% if min_tests == 10 %}selected{% endif %}>10 Tes</option>
-                    </select>
-                </div>
             </div>
 
             <!-- Filter Buttons -->
@@ -134,7 +235,6 @@
                     </svg>
                     Terapkan Filter
                 </button>
-                
                 <a href="{% url 'student_rankings' %}" 
                    class="inline-flex items-center justify-center px-6 py-3 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,11 +366,7 @@
                             Mahasiswa
                         </th>
                         <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            {% if ranking_type == 'category_best' %}
-                                Skor Tertinggi
-                            {% else %}
-                                Rata-rata Skor
-                            {% endif %}
+                            Nilai
                         </th>
                         {% if ranking_type == 'category_best' %}
                         <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -335,7 +431,7 @@
                         <!-- Main Score -->
                         <td class="px-6 py-4 text-center">
                             <div class="text-2xl font-bold {% if ranking.score >= 90 %}text-green-600 dark:text-green-400{% elif ranking.score >= 80 %}text-blue-600 dark:text-blue-400{% elif ranking.score >= 70 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                {{ ranking.score }}%
+                                {{ ranking.score|floatformat:"0" }}
                             </div>
                         </td>
 
@@ -357,9 +453,36 @@
 
                         <!-- Latest Test -->
                         <td class="px-6 py-4 text-center">
+                            {# Show package or category name above university for latest test #}
+                            {% if ranking.latest_test_package_name %}
+                                <div class="text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">{{ ranking.latest_test_package_name }}</div>
+                            {% elif ranking.latest_test_category_name %}
+                                <div class="text-xs font-bold text-yellow-700 dark:text-yellow-300 mb-1">{{ ranking.latest_test_category_name }}</div>
+                            {% endif %}
                             <div class="text-sm text-gray-500 dark:text-gray-400">
                                 {{ ranking.latest_test|date:"d M Y" }}
                             </div>
+                            {% if ranking.university_info %}
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center">
+                                    {% for rec in ranking.university_info.recommendations %}
+                                        {% if rec.target_type != 'suggested' %}
+                                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                                {% if rec.meets_minimum %}bg-green-100 text-green-800 border border-green-300{% else %}bg-red-100 text-red-800 border border-red-300{% endif %}">
+                                                {{ rec.university.name }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-1 text-xs font-medium text-center">
+                                    {% if ranking.university_info.target_achievement_status == 'all_met' %}
+                                        <span class="text-green-700">Nilai memenuhi syarat semua target universitas</span>
+                                    {% elif ranking.university_info.target_achievement_status == 'some_met' %}
+                                        <span class="text-yellow-700">Sebagian target terpenuhi</span>
+                                    {% elif ranking.university_info.target_achievement_status == 'none_met' %}
+                                        <span class="text-red-700">Nilai belum memenuhi target universitas</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -423,7 +546,7 @@
             </div>
         </div>
     </div>
-</div>
+<!-- end block content -->
 
 <!-- JavaScript for Dynamic Filters -->
 <script>
@@ -471,6 +594,7 @@ document.getElementById('filterForm').addEventListener('submit', function(e) {
         `;
         submitBtn.disabled = true;
     }
-});
+    });
 </script>
+</div>
 {% endblock %}

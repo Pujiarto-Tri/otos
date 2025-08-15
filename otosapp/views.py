@@ -1570,6 +1570,40 @@ def test_history(request):
         except Category.DoesNotExist:
             pass
     
+    # Siapkan data rekomendasi universitas dan status target untuk setiap test UTBK
+    test_university_info = {}
+    for test in page_obj:
+        category = test.categories.first()
+        if category and category.scoring_method == 'utbk':
+            university_recommendations = test.get_university_recommendations() if hasattr(test, 'get_university_recommendations') else []
+            # Cek status pencapaian target
+            total_targets = 0
+            met_targets = 0
+            met_target_type = None
+            for rec in university_recommendations:
+                if rec.get('target_type') != 'suggested':
+                    total_targets += 1
+                    if rec.get('meets_minimum'):
+                        met_targets += 1
+                        if not met_target_type:
+                            met_target_type = rec.get('target_type')
+            if total_targets > 0:
+                if met_targets == total_targets:
+                    target_achievement_status = 'all_met'
+                elif met_targets > 0:
+                    target_achievement_status = 'some_met'
+                else:
+                    target_achievement_status = 'none_met'
+            else:
+                target_achievement_status = None
+            test_university_info[test.id] = {
+                'recommendations': university_recommendations,
+                'target_achievement_status': target_achievement_status,
+                'met_target_type': met_target_type,
+            }
+        else:
+            test_university_info[test.id] = None
+
     context = {
         'page_obj': page_obj,
         'categories': categories,
@@ -1582,6 +1616,7 @@ def test_history(request):
         'current_search': search,
         'date_from': date_from,
         'date_to': date_to,
+        'test_university_info': test_university_info,
     }
     
     return render(request, 'students/tests/test_history.html', context)
@@ -2639,11 +2674,12 @@ def student_rankings(request):
     from django.db import models
     
     # Get filter parameters
-    ranking_type = request.GET.get('ranking_type', 'overall_average')  # overall_average, category_best, category_average
+    ranking_type = request.GET.get('ranking_type', 'utbk_package_best')  # utbk_package_best, overall_average, category_best, category_average
     category_id = request.GET.get('category_id', '')
     time_period = request.GET.get('time_period', 'all')  # all, week, month, year
     scoring_method = request.GET.get('scoring_method', 'all')  # all, default, custom, utbk
     min_tests = int(request.GET.get('min_tests', 3))  # Minimum number of tests to qualify
+    university_id = request.GET.get('university_id', '')
     
     # Base queryset for submitted tests
     base_tests = Test.objects.filter(is_submitted=True).select_related('student')
@@ -2672,9 +2708,76 @@ def student_rankings(request):
     
     # Build rankings based on type
     rankings = []
-    
-    if ranking_type == 'overall_average':
-        # Overall average score across all categories
+    show_utbk_university_info = False
+    utbk_category = None
+    if scoring_method == 'utbk' or (category_id and category_id.isdigit() and Category.objects.filter(id=category_id, scoring_method='utbk').exists()):
+        show_utbk_university_info = True
+        if category_id and category_id.isdigit():
+            utbk_category = Category.objects.filter(id=category_id, scoring_method='utbk').first()
+
+    if ranking_type == 'utbk_package_best':
+        # Best score per UTBK tryout package (default)
+        # Get all students who have submitted UTBK tryout package tests
+        utbk_tests = Test.objects.filter(is_submitted=True, tryout_package__isnull=False, categories__scoring_method='utbk')
+        if university_id and university_id.isdigit():
+            # Only include students whose best/latest UTBK test has this university as a target
+            utbk_tests = utbk_tests.filter(
+                student__university_target__primary_university_id=university_id
+            ) | utbk_tests.filter(
+                student__university_target__backup_university_id=university_id
+            ) | utbk_tests.filter(
+                student__university_target__secondary_university_id=university_id
+            )
+        # For each student, get their best score in any UTBK tryout package
+        student_best = {}
+        for test in utbk_tests.select_related('student').order_by('-score'):
+            sid = test.student.id
+            if sid not in student_best:
+                student_best[sid] = test
+        # Sort by score
+        sorted_best = sorted(student_best.values(), key=lambda t: t.score, reverse=True)
+        for i, test in enumerate(sorted_best[:50], 1):
+            row = {
+                'rank': i,
+                'student_id': test.student.id,
+                'username': test.student.username,
+                'email': test.student.email,
+                'score': round(test.score, 1),
+                'total_tests': Test.objects.filter(student=test.student, is_submitted=True, tryout_package__isnull=False, categories__scoring_method='utbk').count(),
+                'max_score': round(test.score, 1),
+                'latest_test': test.date_taken,
+                'is_current_user': test.student.id == request.user.id,
+                'latest_test_package_name': test.tryout_package.package_name if test.tryout_package else None,
+                'latest_test_category_name': test.categories.first().category_name if test.categories.exists() else None,
+            }
+            # Add university info for UTBK if applicable
+            recs = test.get_university_recommendations() if hasattr(test, 'get_university_recommendations') else []
+            total_targets = 0
+            met_targets = 0
+            met_target_type = None
+            for rec in recs:
+                if rec.get('target_type') != 'suggested':
+                    total_targets += 1
+                    if rec.get('meets_minimum'):
+                        met_targets += 1
+                        if not met_target_type:
+                            met_target_type = rec.get('target_type')
+            if total_targets > 0:
+                if met_targets == total_targets:
+                    target_achievement_status = 'all_met'
+                elif met_targets > 0:
+                    target_achievement_status = 'some_met'
+                else:
+                    target_achievement_status = 'none_met'
+            else:
+                target_achievement_status = None
+            row['university_info'] = {
+                'recommendations': recs,
+                'target_achievement_status': target_achievement_status,
+                'met_target_type': met_target_type,
+            }
+            rankings.append(row)
+    elif ranking_type == 'overall_average':
         student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
             .annotate(
                 avg_score=Avg('score'),
@@ -2684,9 +2787,10 @@ def student_rankings(request):
             ) \
             .filter(total_tests__gte=min_tests) \
             .order_by('-avg_score', '-total_tests')
-        
-        for i, stat in enumerate(student_stats[:50], 1):  # Top 50
-            rankings.append({
+        for i, stat in enumerate(student_stats[:50], 1):
+            # Get latest test for this student
+            latest_test_obj = Test.objects.filter(student_id=stat['student__id'], is_submitted=True).order_by('-date_taken').first()
+            ranking_row = {
                 'rank': i,
                 'student_id': stat['student__id'],
                 'username': stat['student__username'],
@@ -2695,11 +2799,42 @@ def student_rankings(request):
                 'total_tests': stat['total_tests'],
                 'max_score': round(stat['max_score'], 1),
                 'latest_test': stat['latest_test'],
-                'is_current_user': stat['student__id'] == request.user.id
-            })
-    
+                'is_current_user': stat['student__id'] == request.user.id,
+                'latest_test_package_name': latest_test_obj.tryout_package.package_name if latest_test_obj and latest_test_obj.tryout_package else None,
+                'latest_test_category_name': latest_test_obj.categories.first().category_name if latest_test_obj and latest_test_obj.categories.exists() else None,
+            }
+            # Add university info for UTBK if applicable
+            if show_utbk_university_info:
+                latest_utbk_test = Test.objects.filter(student_id=stat['student__id'], is_submitted=True, categories__scoring_method='utbk').order_by('-date_taken').first()
+                if latest_utbk_test:
+                    recs = latest_utbk_test.get_university_recommendations() if hasattr(latest_utbk_test, 'get_university_recommendations') else []
+                    # Target achievement status logic
+                    total_targets = 0
+                    met_targets = 0
+                    met_target_type = None
+                    for rec in recs:
+                        if rec.get('target_type') != 'suggested':
+                            total_targets += 1
+                            if rec.get('meets_minimum'):
+                                met_targets += 1
+                                if not met_target_type:
+                                    met_target_type = rec.get('target_type')
+                    if total_targets > 0:
+                        if met_targets == total_targets:
+                            target_achievement_status = 'all_met'
+                        elif met_targets > 0:
+                            target_achievement_status = 'some_met'
+                        else:
+                            target_achievement_status = 'none_met'
+                    else:
+                        target_achievement_status = None
+                    ranking_row['university_info'] = {
+                        'recommendations': recs,
+                        'target_achievement_status': target_achievement_status,
+                        'met_target_type': met_target_type,
+                    }
+            rankings.append(ranking_row)
     elif ranking_type == 'category_best':
-        # Best score in a specific category
         if category_id and category_id.isdigit():
             student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
                 .annotate(
@@ -2710,9 +2845,10 @@ def student_rankings(request):
                 ) \
                 .filter(total_tests__gte=min_tests) \
                 .order_by('-best_score', '-avg_score')
-            
             for i, stat in enumerate(student_stats[:50], 1):
-                rankings.append({
+                # Get latest test for this student
+                latest_test_obj = Test.objects.filter(student_id=stat['student__id'], is_submitted=True).order_by('-date_taken').first()
+                ranking_row = {
                     'rank': i,
                     'student_id': stat['student__id'],
                     'username': stat['student__username'],
@@ -2721,11 +2857,40 @@ def student_rankings(request):
                     'avg_score': round(stat['avg_score'], 1),
                     'total_tests': stat['total_tests'],
                     'latest_test': stat['latest_test'],
-                    'is_current_user': stat['student__id'] == request.user.id
-                })
-    
+                    'is_current_user': stat['student__id'] == request.user.id,
+                    'latest_test_package_name': latest_test_obj.tryout_package.package_name if latest_test_obj and latest_test_obj.tryout_package else None,
+                    'latest_test_category_name': latest_test_obj.categories.first().category_name if latest_test_obj and latest_test_obj.categories.exists() else None,
+                }
+                if show_utbk_university_info:
+                    latest_utbk_test = Test.objects.filter(student_id=stat['student__id'], is_submitted=True, categories__scoring_method='utbk').order_by('-date_taken').first()
+                    if latest_utbk_test:
+                        recs = latest_utbk_test.get_university_recommendations() if hasattr(latest_utbk_test, 'get_university_recommendations') else []
+                        total_targets = 0
+                        met_targets = 0
+                        met_target_type = None
+                        for rec in recs:
+                            if rec.get('target_type') != 'suggested':
+                                total_targets += 1
+                                if rec.get('meets_minimum'):
+                                    met_targets += 1
+                                    if not met_target_type:
+                                        met_target_type = rec.get('target_type')
+                        if total_targets > 0:
+                            if met_targets == total_targets:
+                                target_achievement_status = 'all_met'
+                            elif met_targets > 0:
+                                target_achievement_status = 'some_met'
+                            else:
+                                target_achievement_status = 'none_met'
+                        else:
+                            target_achievement_status = None
+                        ranking_row['university_info'] = {
+                            'recommendations': recs,
+                            'target_achievement_status': target_achievement_status,
+                            'met_target_type': met_target_type,
+                        }
+                rankings.append(ranking_row)
     elif ranking_type == 'category_average':
-        # Average score in a specific category
         if category_id and category_id.isdigit():
             student_stats = base_tests.values('student__id', 'student__username', 'student__email') \
                 .annotate(
@@ -2736,9 +2901,10 @@ def student_rankings(request):
                 ) \
                 .filter(total_tests__gte=min_tests) \
                 .order_by('-avg_score', '-total_tests')
-            
             for i, stat in enumerate(student_stats[:50], 1):
-                rankings.append({
+                # Get latest test for this student
+                latest_test_obj = Test.objects.filter(student_id=stat['student__id'], is_submitted=True).order_by('-date_taken').first()
+                ranking_row = {
                     'rank': i,
                     'student_id': stat['student__id'],
                     'username': stat['student__username'],
@@ -2747,8 +2913,39 @@ def student_rankings(request):
                     'total_tests': stat['total_tests'],
                     'max_score': round(stat['max_score'], 1),
                     'latest_test': stat['latest_test'],
-                    'is_current_user': stat['student__id'] == request.user.id
-                })
+                    'is_current_user': stat['student__id'] == request.user.id,
+                    'latest_test_package_name': latest_test_obj.tryout_package.package_name if latest_test_obj and latest_test_obj.tryout_package else None,
+                    'latest_test_category_name': latest_test_obj.categories.first().category_name if latest_test_obj and latest_test_obj.categories.exists() else None,
+                }
+                if show_utbk_university_info:
+                    latest_utbk_test = Test.objects.filter(student_id=stat['student__id'], is_submitted=True, categories__scoring_method='utbk').order_by('-date_taken').first()
+                    if latest_utbk_test:
+                        recs = latest_utbk_test.get_university_recommendations() if hasattr(latest_utbk_test, 'get_university_recommendations') else []
+                        total_targets = 0
+                        met_targets = 0
+                        met_target_type = None
+                        for rec in recs:
+                            if rec.get('target_type') != 'suggested':
+                                total_targets += 1
+                                if rec.get('meets_minimum'):
+                                    met_targets += 1
+                                    if not met_target_type:
+                                        met_target_type = rec.get('target_type')
+                        if total_targets > 0:
+                            if met_targets == total_targets:
+                                target_achievement_status = 'all_met'
+                            elif met_targets > 0:
+                                target_achievement_status = 'some_met'
+                            else:
+                                target_achievement_status = 'none_met'
+                        else:
+                            target_achievement_status = None
+                        ranking_row['university_info'] = {
+                            'recommendations': recs,
+                            'target_achievement_status': target_achievement_status,
+                            'met_target_type': met_target_type,
+                        }
+                rankings.append(ranking_row)
     
     # Get current user's position if not in top 50
     current_user_rank = None
@@ -2783,6 +2980,14 @@ def student_rankings(request):
     categories = Category.objects.filter(
         id__in=Test.objects.filter(is_submitted=True).values_list('categories__id', flat=True)
     ).distinct().order_by('category_name')
+    # Get universities for filter dropdown
+    universities = University.objects.filter(is_active=True).order_by('name')
+    # Get UTBK tryout packages for filter dropdown
+    from otosapp.models import TryoutPackage
+    utbk_packages = TryoutPackage.objects.filter(
+        is_active=True,
+        categories__scoring_method='utbk'
+    ).distinct().order_by('package_name')
     
     # Get selected category name
     selected_category = None
@@ -2804,9 +3009,12 @@ def student_rankings(request):
         'rankings': rankings,
         'current_user_rank': current_user_rank,
         'categories': categories,
+        'universities': universities,
+        'utbk_packages': utbk_packages,
         'selected_category': selected_category,
         'ranking_type': ranking_type,
         'category_id': category_id,
+        'university_id': university_id,
         'time_period': time_period,
         'scoring_method': scoring_method,
         'min_tests': min_tests,
