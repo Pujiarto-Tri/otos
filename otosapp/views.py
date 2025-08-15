@@ -2676,6 +2676,7 @@ def student_rankings(request):
     # Get filter parameters
     ranking_type = request.GET.get('ranking_type', 'utbk_package_best')  # utbk_package_best, overall_average, category_best, category_average
     category_id = request.GET.get('category_id', '')
+    utbk_package_id = request.GET.get('utbk_package_id', '')
     time_period = request.GET.get('time_period', 'all')  # all, week, month, year
     scoring_method = request.GET.get('scoring_method', 'all')  # all, default, custom, utbk
     min_tests = int(request.GET.get('min_tests', 3))  # Minimum number of tests to qualify
@@ -2719,6 +2720,8 @@ def student_rankings(request):
         # Best score per UTBK tryout package (default)
         # Get all students who have submitted UTBK tryout package tests
         utbk_tests = Test.objects.filter(is_submitted=True, tryout_package__isnull=False, categories__scoring_method='utbk')
+        if utbk_package_id and utbk_package_id.isdigit():
+            utbk_tests = utbk_tests.filter(tryout_package__id=int(utbk_package_id))
         if university_id and university_id.isdigit():
             # Only include students whose best/latest UTBK test has this university as a target
             utbk_tests = utbk_tests.filter(
@@ -3014,6 +3017,7 @@ def student_rankings(request):
         'selected_category': selected_category,
         'ranking_type': ranking_type,
         'category_id': category_id,
+        'utbk_package_id': utbk_package_id,
         'university_id': university_id,
         'time_period': time_period,
         'scoring_method': scoring_method,

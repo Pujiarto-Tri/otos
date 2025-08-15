@@ -27,8 +27,38 @@
         </div>
     </div>
 
-    <!-- Filter Section -->
+    <!-- Filter Section + Keterangan Peringkat -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-8">
+        <!-- Keterangan Peringkat (diperkecil & dipindah ke dalam filter) -->
+        <div class="flex items-center mb-2">
+            <div class="w-7 h-7 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-2">
+                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {% if ranking_type == 'utbk_package_best' %}
+                    🏆 Peringkat Paket UTBK Terbaik
+                {% elif ranking_type == 'overall_average' %}
+                    📊 Peringkat Rata-rata Keseluruhan
+                {% elif ranking_type == 'category_best' %}
+                    🎯 Peringkat Skor Tertinggi{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
+                {% elif ranking_type == 'category_average' %}
+                    📈 Peringkat Rata-rata{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
+                {% endif %}
+            </h3>
+        </div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+            {% if ranking_type == 'utbk_package_best' %}
+                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai pada satu paket simulasi UTBK. Setiap peserta hanya diambil skor terbaiknya dari seluruh percobaan pada masing-masing paket. Cocok untuk melihat pencapaian maksimal pada setiap simulasi UTBK.
+            {% elif ranking_type == 'overall_average' %}
+                Menampilkan peringkat berdasarkan rata-rata skor dari semua kategori yang pernah dikerjakan. Semakin tinggi rata-rata, semakin baik peringkatnya.
+            {% elif ranking_type == 'category_best' %}
+                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai dalam kategori tertentu. Cocok untuk melihat pencapaian maksimal di bidang spesifik.
+            {% elif ranking_type == 'category_average' %}
+                Menampilkan peringkat berdasarkan rata-rata skor dalam kategori tertentu. Menunjukkan konsistensi performa dalam bidang spesifik.
+            {% endif %}
+        </p>
         <form method="GET" class="space-y-6" id="filterForm">
             <!-- Filter Bar: Jenis Peringkat + Filter Button -->
             <div class="flex flex-row items-center gap-4">
@@ -90,7 +120,7 @@
                                     class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="">Semua Paket UTBK</option>
                                 {% for package in utbk_packages %}
-                                    <option value="{{ package.id }}">{{ package.package_name }}</option>
+                                    <option value="{{ package.id }}" {% if utbk_package_id == package.id|stringformat:"s" %}selected{% endif %}>{{ package.package_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -175,13 +205,13 @@ function onRankingTypeChange() {
         utbkField.classList.add('block');
         catField.classList.add('hidden');
         catField.classList.remove('block');
-        if (catField.querySelector('select')) catField.querySelector('select').value = '';
+        // Do not reset utbk_package_id value here
     } else {
         catField.classList.remove('hidden');
         catField.classList.add('block');
         utbkField.classList.add('hidden');
         utbkField.classList.remove('block');
-        if (utbkField.querySelector('select')) utbkField.querySelector('select').value = '';
+        // Do not reset utbk_package_id value here
     }
 }
 
@@ -227,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             <!-- Filter Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div class="flex flex-col sm:flex-row gap-3 pb-6 border-b border-gray-200 dark:border-gray-600">
                 <button type="submit" 
                         class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,51 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </a>
             </div>
         </form>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold">{{ total_students }}</div>
-                    <div class="text-blue-100">Total Peserta</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold">{{ total_tests_taken }}</div>
-                    <div class="text-green-100">Total Tes Dikerjakan</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-            <div class="flex items-center">
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold">{{ rankings|length }}</div>
-                    <div class="text-purple-100">Dalam Peringkat</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Current User Rank (if not in top rankings) -->
@@ -314,34 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     {% endif %}
 
-    <!-- Ranking Type Description -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-8">
-        <div class="flex items-center mb-4">
-            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-4">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {% if ranking_type == 'overall_average' %}
-                    📊 Peringkat Rata-rata Keseluruhan
-                {% elif ranking_type == 'category_best' %}
-                    🎯 Peringkat Skor Tertinggi{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
-                {% elif ranking_type == 'category_average' %}
-                    📈 Peringkat Rata-rata{% if selected_category %} - {{ selected_category.category_name }}{% endif %}
-                {% endif %}
-            </h3>
-        </div>
-        <p class="text-gray-600 dark:text-gray-400">
-            {% if ranking_type == 'overall_average' %}
-                Menampilkan peringkat berdasarkan rata-rata skor dari semua kategori yang pernah dikerjakan. Semakin tinggi rata-rata, semakin baik peringkatnya.
-            {% elif ranking_type == 'category_best' %}
-                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai dalam kategori tertentu. Cocok untuk melihat pencapaian maksimal di bidang spesifik.
-            {% elif ranking_type == 'category_average' %}
-                Menampilkan peringkat berdasarkan rata-rata skor dalam kategori tertentu. Menunjukkan konsistensi performa dalam bidang spesifik.
-            {% endif %}
-        </p>
-    </div>
 
     <!-- Rankings Table -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -512,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
     <!-- Tips Section -->
-    <div class="mt-8 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-700">
+    <div class="mt-8 mb-8 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-700">
         <h4 class="font-semibold text-green-900 dark:text-green-200 mb-3 flex items-center">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
@@ -548,6 +505,51 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 <!-- end block content -->
 
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ total_students }}</div>
+                    <div class="text-blue-100">Total Peserta</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ total_tests_taken }}</div>
+                    <div class="text-green-100">Total Tes Dikerjakan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold">{{ rankings|length }}</div>
+                    <div class="text-purple-100">Dalam Peringkat</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <!-- JavaScript for Dynamic Filters -->
 <script>
 function toggleCategoryField() {
@@ -568,17 +570,7 @@ function toggleCategoryField() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     toggleCategoryField();
-    
-    // Auto-submit form when filters change
-    const filterElements = document.querySelectorAll('#filterForm select');
-    filterElements.forEach(element => {
-        element.addEventListener('change', function() {
-            // Small delay to show visual feedback
-            setTimeout(() => {
-                document.getElementById('filterForm').submit();
-            }, 100);
-        });
-    });
+    // No auto-submit on filter change; user must click Terapkan Filter
 });
 
 // Add loading state to filter changes
