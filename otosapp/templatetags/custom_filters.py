@@ -27,11 +27,15 @@ def div(value, arg):
 
 @register.filter
 def add(value, arg):
-    """Add arg to value (convert to int)"""
+    """Add arg to value (numeric if possible, else concatenate as string)"""
     try:
         return int(float(value)) + int(float(arg))
     except (ValueError, TypeError):
-        return 0
+        try:
+            # If either value or arg is not a number, concatenate as string
+            return str(value) + str(arg)
+        except Exception:
+            return value
     
 
 @register.filter

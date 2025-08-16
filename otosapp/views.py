@@ -71,12 +71,11 @@ def home(request):
         elif request.user.is_student():
             # Student dashboard - show only tryout (UTBK) results in stat cards
 
-            # Only use tryout/UTBK tests for dashboard stats and recent tests
+            # Only use tryout/UTBK tests for dashboard stats and recent tests (sama persis dengan test_history)
             user_tests = Test.objects.filter(
                 student=request.user,
-                is_submitted=True,
-                tryout_package__isnull=False
-            ).order_by('-date_taken')
+                is_submitted=True
+            ).select_related().prefetch_related('categories').order_by('-date_taken')
             # If no tryout/UTBK tests, show empty stats/cards
             if not user_tests.exists():
                 user_tests = Test.objects.none()
@@ -1509,8 +1508,7 @@ def test_history(request):
     # Only show tryout/UTBK tests in test history
     tests = Test.objects.filter(
         student=request.user,
-        is_submitted=True,
-        tryout_package__isnull=False
+        is_submitted=True
     ).select_related().prefetch_related('categories').order_by('-date_taken')
     
     # Get filter parameters
