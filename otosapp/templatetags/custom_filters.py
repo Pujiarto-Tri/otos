@@ -1,4 +1,3 @@
-
 from django import template
 
 register = template.Library()
@@ -7,13 +6,6 @@ register = template.Library()
 def get_item(dictionary, key):
     return dictionary.get(key)
 
-@register.filter
-def range_filter(value):
-    """Return a range from 1 to value+1"""
-    try:
-        return range(1, int(value) + 1)
-    except (ValueError, TypeError):
-        return range(0)
 
 @register.filter
 def mul(value, arg):
@@ -40,3 +32,23 @@ def add(value, arg):
         return int(float(value)) + int(float(arg))
     except (ValueError, TypeError):
         return 0
+    
+
+@register.filter
+def range_filter(value):
+    """Return a range from 1 to value+1"""
+    try:
+        return range(1, int(value) + 1)
+    except (ValueError, TypeError):
+        return range(0)
+
+@register.filter
+def smart_float(value):
+    """Format float: hide .0 if integer, show 1 decimal if not"""
+    try:
+        value = float(value)
+        if value == int(value):
+            return str(int(value))
+        return f"{value:.1f}"
+    except (ValueError, TypeError):
+        return value

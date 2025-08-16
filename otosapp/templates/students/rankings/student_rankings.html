@@ -52,11 +52,11 @@
             {% if ranking_type == 'utbk_package_best' %}
                 Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai pada satu paket simulasi UTBK. Setiap peserta hanya diambil skor terbaiknya dari seluruh percobaan pada masing-masing paket. Cocok untuk melihat pencapaian maksimal pada setiap simulasi UTBK.
             {% elif ranking_type == 'overall_average' %}
-                Menampilkan peringkat berdasarkan rata-rata skor dari semua kategori yang pernah dikerjakan. Semakin tinggi rata-rata, semakin baik peringkatnya.
+                Menampilkan peringkat berdasarkan rata-rata skor dari semua subtest yang pernah dikerjakan. Semakin tinggi rata-rata, semakin baik peringkatnya.
             {% elif ranking_type == 'category_best' %}
-                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai dalam kategori tertentu. Cocok untuk melihat pencapaian maksimal di bidang spesifik.
+                Menampilkan peringkat berdasarkan skor tertinggi yang pernah dicapai dalam subtest tertentu. Cocok untuk melihat pencapaian maksimal di bidang spesifik.
             {% elif ranking_type == 'category_average' %}
-                Menampilkan peringkat berdasarkan rata-rata skor dalam kategori tertentu. Menunjukkan konsistensi performa dalam bidang spesifik.
+                Menampilkan peringkat berdasarkan rata-rata skor dalam subtest tertentu. Menunjukkan konsistensi performa dalam bidang spesifik.
             {% endif %}
         </p>
         <form method="GET" class="space-y-6" id="filterForm">
@@ -74,8 +74,8 @@
                         <option value="" {% if not ranking_type %}selected{% endif %} disabled>Pilih Jenis Peringkat</option>
                         <option value="utbk_package_best" {% if ranking_type == 'utbk_package_best' %}selected{% endif %}>🏆 Skor Tertinggi per Simulasi UTBK</option>
                         <option value="overall_average" {% if ranking_type == 'overall_average' %}selected{% endif %}>📊 Rata-rata Keseluruhan</option>
-                        <option value="category_best" {% if ranking_type == 'category_best' %}selected{% endif %}>🎯 Skor Tertinggi per Kategori</option>
-                        <option value="category_average" {% if ranking_type == 'category_average' %}selected{% endif %}>📈 Rata-rata per Kategori</option>
+                        <option value="category_best" {% if ranking_type == 'category_best' %}selected{% endif %}>🎯 Skor Tertinggi per Subtest</option>
+                        <option value="category_average" {% if ranking_type == 'category_average' %}selected{% endif %}>📈 Rata-rata per Subtest</option>
                     </select>
                 </div>
                 <div class="flex items-center h-full">
@@ -130,11 +130,11 @@
                                 <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300 shadow-sm">
                                     <i class="fa-solid fa-layer-group"></i>
                                 </span>
-                                <span class="text-xs font-bold text-yellow-700 dark:text-yellow-300 tracking-wide">Kategori</span>
+                                <span class="text-xs font-bold text-yellow-700 dark:text-yellow-300 tracking-wide">Subtest</span>
                             </div>
                             <select name="category_id" id="category_id" 
                                 class="flowbite-select w-full text-sm rounded-lg border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="">Semua Kategori</option>
+                                <option value="">Semua Subtest</option>
                                 {% for category in categories %}
                                     <option value="{{ category.id }}" {% if category_id == category.id|stringformat:"s" %}selected{% endif %}>{{ category.category_name }}</option>
                                 {% endfor %}
@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="font-medium text-purple-700 dark:text-purple-300 text-sm">🎯 Konsistensi</div>
                 <ul class="text-sm text-green-700 dark:text-green-300 space-y-1">
                     <li>• Kerjakan tes secara rutin</li>
-                    <li>• Jaga performa di semua kategori</li>
+                    <li>• Jaga performa di semua subtest</li>
                     <li>• Fokus pada peningkatan bertahap</li>
                 </ul>
             </div>

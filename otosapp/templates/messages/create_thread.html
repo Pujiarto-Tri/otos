@@ -116,23 +116,23 @@
                     </div>
                 </div>
 
-                <!-- Category Field (conditional) -->
+                <!-- Subtest Field (conditional) -->
                 <div id="category_field" class="space-y-2 hidden">
                     <label for="category" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                         <svg class="w-4 h-4 inline mr-2 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
                         </svg>
-                        Kategori Materi
+                        Subtest Materi
                     </label>
                     <select id="category" 
                             name="category"
                             class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
-                        <option value="">Pilih kategori materi (opsional)</option>
+                        <option value="">Pilih subtest materi (opsional)</option>
                         {% for category in categories %}
                             <option value="{{ category.id }}">{{ category.category_name }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-gray-500">Pilih kategori materi yang sesuai untuk memudahkan pengarahan</p>
+                    <p class="text-sm text-gray-500">Pilih subtest materi yang sesuai untuk memudahkan pengarahan</p>
                 </div>
 
                 <!-- Priority -->

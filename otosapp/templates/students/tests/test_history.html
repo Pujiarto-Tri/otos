@@ -34,7 +34,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Rata-rata Skor</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|floatformat:1 }}</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|smart_float }}</p>
                 </div>
                 <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Skor Tertinggi</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|floatformat:1 }}</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|smart_float }}</p>
                 </div>
                 <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@
         </div>
         
         <form method="get" id="filterForm" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- Search -->
                 <div>
                     <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Test</label>
@@ -103,29 +103,13 @@
                                id="search" 
                                name="search" 
                                value="{{ current_search|default:'' }}"
-                               placeholder="Nama kategori test..."
+                               placeholder="Nama subtest atau paket tryout UTBK..."
                                class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
                         <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </div>
                 </div>
-                
-                <!-- Category Filter -->
-                <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategori</label>
-                    <select id="category" 
-                            name="category"
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <option value="">Semua Kategori</option>
-                        {% for category in categories %}
-                        <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
-                            {{ category.category_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
                 <!-- Date From -->
                 <div>
                     <label for="date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dari Tanggal</label>
@@ -233,7 +217,7 @@
                                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">Paket Simulasi UTBK</span>
                                         {{ test.tryout_package.package_name|default:"Paket" }}
                                     {% elif test.categories.exists %}
-                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">Kategori</span>
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">Subtest</span>
                                         {% with test.categories.first as category %}
                                             {{ category.category_name|default:"Test" }}
                                         {% endwith %}
@@ -297,7 +281,7 @@
                             <div class="text-3xl font-bold
                                 {% if test.is_passed %}text-green-600 dark:text-green-400
                                 {% else %}text-red-600 dark:text-red-400{% endif %}">
-                                {{ test.score|floatformat:1 }}
+                                {{ test.score|smart_float }}
                             </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skor Akhir</div>
                             <div class="text-xs font-medium mt-1">
@@ -453,7 +437,7 @@
                 <br><strong>Pencarian:</strong> "{{ current_search }}"
                 {% endif %}
                 {% if current_category_name %}
-                <br><strong>Kategori:</strong> {{ current_category_name }}
+                <br><strong>Subtest:</strong> {{ current_category_name }}
                 {% endif %}
                 {% if date_from or date_to %}
                 <br><strong>Rentang Tanggal:</strong> 
@@ -476,7 +460,7 @@
                 <li>• Periksa ejaan pencarian</li>
                 {% endif %}
                 {% if current_category %}
-                <li>• Pilih kategori yang berbeda atau "Semua Kategori"</li>
+                <li>• Pilih subtest yang berbeda atau "Semua Subtest"</li>
                 {% endif %}
                 {% if date_from or date_to %}
                 <li>• Perluas rentang tanggal</li>

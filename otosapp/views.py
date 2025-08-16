@@ -69,15 +69,24 @@ def home(request):
             })
             
         elif request.user.is_student():
-            # Student dashboard - existing code with subscription check
-            user_tests = Test.objects.filter(student=request.user, is_submitted=True).order_by('-date_taken')
-            
+            # Student dashboard - show only tryout (UTBK) results in stat cards
+
+            # Only use tryout/UTBK tests for dashboard stats and recent tests
+            user_tests = Test.objects.filter(
+                student=request.user,
+                is_submitted=True,
+                tryout_package__isnull=False
+            ).order_by('-date_taken')
+            # If no tryout/UTBK tests, show empty stats/cards
+            if not user_tests.exists():
+                user_tests = Test.objects.none()
+
             # Check for ongoing test (not submitted and not timed out)
             ongoing_test = Test.objects.filter(
-                student=request.user, 
+                student=request.user,
                 is_submitted=False
             ).first()
-            
+
             # If ongoing test exists, check if it's still valid (not timed out)
             if ongoing_test:
                 if ongoing_test.is_time_up():
@@ -90,15 +99,15 @@ def home(request):
                 elif not ongoing_test.start_time:
                     # If no start_time, this test is invalid, remove it
                     ongoing_test = None
-            
-            # Statistik untuk student
+
+            # Statistik untuk student (hanya dari tryout/UTBK)
             total_tests = user_tests.count()
             completed_tests = user_tests.filter(score__gt=0).count()
-            
+
             # Rata-rata skor - deteksi format berdasarkan nilai maksimum
             avg_score_raw = user_tests.aggregate(avg_score=Avg('score'))['avg_score'] or 0
             max_score_in_data = user_tests.aggregate(max_score=Max('score'))['max_score'] or 0
-            
+
             # Jika skor maksimum <= 1, maka format adalah 0-1, konversi ke persen
             # Jika skor maksimum > 1, maka sudah dalam format persen
             if max_score_in_data <= 1:
@@ -107,35 +116,32 @@ def home(request):
             else:
                 avg_score = avg_score_raw
                 highest_score = max_score_in_data
-            
+
             # Test terbaru (maksimal 5)
             recent_tests = user_tests[:5]
-            
-            # Kategori yang paling sering dikerjakan - berdasarkan test yang sudah submitted
+
+            # Kategori yang paling sering dikerjakan - berdasarkan test tryout yang sudah submitted
             popular_categories = []
             if user_tests.exists():
                 categories_data = {}
                 for test in user_tests:
-                    # Get categories from test.categories many-to-many field
                     for category in test.categories.all():
                         category_name = category.category_name
                         if category_name in categories_data:
                             categories_data[category_name] += 1
                         else:
                             categories_data[category_name] = 1
-                
-                # Convert to list dan sort
                 popular_categories = [
-                    {'category_name': name, 'count': count} 
+                    {'category_name': name, 'count': count}
                     for name, count in sorted(categories_data.items(), key=lambda x: x[1], reverse=True)[:3]
                 ]
-            
+
             # Check if student has pending payment
             pending_payment = PaymentProof.objects.filter(
-                user=request.user, 
+                user=request.user,
                 status='pending'
             ).first()
-            
+
             context.update({
                 'is_student': True,
                 'user_tests': recent_tests,
@@ -1500,9 +1506,11 @@ def get_scoring_explanation(category):
 def test_history(request):
     """Show all completed tests for the student with filtering and pagination"""
     # Get all tests for the current student
+    # Only show tryout/UTBK tests in test history
     tests = Test.objects.filter(
-        student=request.user, 
-        is_submitted=True
+        student=request.user,
+        is_submitted=True,
+        tryout_package__isnull=False
     ).select_related().prefetch_related('categories').order_by('-date_taken')
     
     # Get filter parameters
@@ -1516,8 +1524,11 @@ def test_history(request):
         tests = tests.filter(categories__id=int(category_filter)).distinct()
     
     if search:
-        # Search in both category name and test-related fields
-        tests = tests.filter(categories__category_name__icontains=search).distinct()
+        # Search in both category name and tryout package name
+        tests = tests.filter(
+            Q(categories__category_name__icontains=search) |
+            Q(tryout_package__package_name__icontains=search)
+        ).distinct()
     
     if date_from:
         try:
@@ -1556,8 +1567,9 @@ def test_history(request):
     # Get all categories for filter dropdown (only categories that have tests)
     categories = Category.objects.filter(
         id__in=Test.objects.filter(
-            student=request.user, 
-            is_submitted=True
+            student=request.user,
+            is_submitted=True,
+            tryout_package__isnull=False
         ).values_list('categories__id', flat=True)
     ).distinct().order_by('category_name')
     

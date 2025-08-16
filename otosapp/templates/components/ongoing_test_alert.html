@@ -23,12 +23,12 @@
                     {% if ongoing_test.tryout_package %}
                         <strong>Jenis:</strong> Ujian Paket Tryout
                         <br>
-                        <strong>Kategori:</strong> 
+                        <strong>Subtest:</strong> 
                         {% for category in ongoing_test.tryout_package.tryoutpackagecategory_set.all %}
                             {{ category.category.category_name }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     {% elif ongoing_test.categories.exists %}
-                        <strong>Kategori:</strong> {{ ongoing_test.categories.first.category_name }}
+                        <strong>Subtest:</strong> {{ ongoing_test.categories.first.category_name }}
                     {% endif %}
                     {% if ongoing_test.start_time %}
                         <br>

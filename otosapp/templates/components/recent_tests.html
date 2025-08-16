@@ -11,6 +11,13 @@
                 {% comment %}Display test category and date_taken instead of non-existent fields{% endcomment %}
                 {% if test.tryout_package %}
                     <h4 class="font-semibold text-gray-900 dark:text-white">{{ test.tryout_package.package_name|default:"Paket" }}</h4>
+                    {% if test.categories.exists %}
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% for category in test.categories.all %}
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">{{ category.category_name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 {% elif test.categories.exists %}
                     {% with category=test.categories.first %}
                         <h4 class="font-semibold text-gray-900 dark:text-white">{{ category.category_name|default:"Ujian" }}</h4>
@@ -23,7 +30,7 @@
                     {% if test.tryout_package %}
                         <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 ml-2">Paket Simulasi UTBK</span>
                     {% elif test.categories.exists %}
-                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 ml-2">Kategori</span>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 ml-2">Subtest</span>
                     {% endif %}
                 </div>
                 {% if test.score %}
