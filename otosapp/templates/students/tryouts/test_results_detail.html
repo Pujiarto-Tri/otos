@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Hasil Test{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-4 sm:p-6">
+	<div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+		<div class="flex items-start justify-between mb-4">
+			<div>
+				<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Detail Hasil Test</h1>
+				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Hasil lengkap untuk test yang dikerjakan pada {{ test.date_taken|date:"d M Y H:i" }}</p>
+			</div>
+			<div class="text-right">
+				<div class="text-sm text-gray-500">Nilai: <span class="font-bold text-gray-900 dark:text-white">{{ test.score }}</span></div>
+				<div class="text-xs text-gray-400">Durasi: {{ test.duration|default:"-" }}</div>
+			</div>
+		</div>
+
+		<!-- Tabs: Summary | By Category | By Question -->
+		<div class="mb-6">
+			<nav class="flex space-x-2" aria-label="Tabs">
+				<a href="#summary" class="px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-200 text-sm font-medium">Ringkasan</a>
+				<a href="#by_category" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Per Kategori</a>
+				<a href="#by_question" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Per Soal</a>
+			</nav>
+		</div>
+
+		<div id="summary" class="space-y-4">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+					<div class="text-xs text-gray-500">Jumlah Soal</div>
+					<div class="text-xl font-bold text-gray-900 dark:text-white">{{ test.total_questions }}</div>
+				</div>
+				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+					<div class="text-xs text-gray-500">Benar</div>
+					<div class="text-xl font-bold text-green-600">{{ test.correct }}</div>
+				</div>
+				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+					<div class="text-xs text-gray-500">Salah / Kosong</div>
+					<div class="text-xl font-bold text-red-600">{{ test.incorrect_or_blank }}</div>
+				</div>
+			</div>
+
+			<div class="mt-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Perolehan per Kategori</h3>
+				<div class="space-y-3">
+					{% for stat in stats_by_category %}
+					<div class="flex items-center justify-between">
+						<div>
+							<div class="text-sm font-semibold text-gray-800 dark:text-white">{{ stat.category_name }}</div>
+							<div class="text-xs text-gray-500">Benar: {{ stat.correct }} — Salah: {{ stat.incorrect }} — Kosong: {{ stat.blank }}</div>
+						</div>
+						<div class="text-sm font-bold text-gray-900 dark:text-white">{{ stat.score }}</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+
+			<div class="mt-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Per Nyatakan Per Soal</h3>
+				<div class="divide-y divide-gray-100 dark:divide-gray-700">
+					{% for q in questions %}
+					<div class="py-3 flex items-start gap-4">
+						<div class="w-10 flex-shrink-0">
+							<div class="text-xs text-gray-500">No</div>
+							<div class="text-sm font-bold text-gray-900 dark:text-white">{{ forloop.counter }}</div>
+						</div>
+						<div class="flex-1">
+							<div class="text-sm text-gray-700 dark:text-gray-200">{{ q.question_text|safe }}</div>
+							<div class="text-xs text-gray-500 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-white">{{ q.your_answer|default:"-" }}</span></div>
+						</div>
+						<div class="w-28 text-right">
+							{% if q.is_correct %}
+								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Benar</span>
+							{% elif q.your_answer == None or q.your_answer == '' %}
+								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Kosong</span>
+							{% else %}
+								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Salah</span>
+							{% endif %}
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-6 flex justify-between">
+			<a href="{% url 'test_results' %}" class="text-sm text-indigo-600 hover:underline">Kembali ke Hasil</a>
+			<a href="{% url 'tryout_list' %}" class="text-sm text-gray-600 hover:underline">Daftar Tryout</a>
+		</div>
+	</div>
+</div>
+{% endblock %}

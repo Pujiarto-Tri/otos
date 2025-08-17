@@ -103,7 +103,7 @@
                     <div class="mt-6">
                         {% if package.can_be_taken %}
                         <button type="button" onclick="showStartWarning(this)"
-                            data-url="{% url 'take_package_test' package.id %}"
+                            data-url="{% url 'take_package_test' package.id %}?force_new=1"
                             data-title="Paket UTBK: {{ package.package_name }}"
                             data-questions="{{ package.get_total_questions }}"
                             data-time="{{ package.total_time }}"
@@ -287,7 +287,7 @@
                     <div class="mt-6">
                         {% if category.question_set.count > 0 %}
                         <button type="button" onclick="showStartWarning(this)"
-                            data-url="{% url 'take_test' category.id 1 %}"
+                            data-url="{% url 'take_test' category.id 1 %}?force_new=1"
                             data-title="Subtest: {{ category.category_name }}"
                             data-questions="{{ category.question_set.count }}"
                             data-time="{{ category.time_limit }}"

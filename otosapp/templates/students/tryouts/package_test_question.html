@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
 
-{% block title %}{{ package.package_name }} - Soal {{ current_question_number }}{% endblock %}
+{% block title %}{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %} - Soal {{ current_question_number }}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto p-6 space-y-6">
@@ -13,7 +13,7 @@
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ package.package_name }}</h1>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %}</h1>
                     <p class="text-lg text-gray-600 dark:text-gray-300">Soal {{ current_question_number }} dari {{ total_questions }}</p>
                 </div>
             </div>
@@ -91,7 +91,11 @@
                 <!-- Left: Previous Button -->
                 <div class="w-full lg:w-auto">
                     {% if can_go_previous %}
+                    {% if is_package %}
                     <a href="{% url 'take_package_test_question' package.id current_question_number|add:'-1' %}" class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-indigo-600 bg-white border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold">
+                    {% else %}
+                    <a href="{% url 'take_test' category.id current_question_number|add:'-1' %}" class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-indigo-600 bg-white border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all font-semibold">
+                    {% endif %}
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
                         Soal Sebelumnya
                     </a>
@@ -223,12 +227,21 @@
             <div class="navigation-grid mb-6">
                 {% for i in total_questions|range_filter %}
                 {% with question_num=forloop.counter %}
+                {% if is_package %}
                 <a href="{% url 'take_package_test_question' package.id question_num %}" 
                    class="nav-button"
                    data-question-index="{{ question_num }}"
                    title="Soal {{ question_num }}">
                     {{ question_num }}
                 </a>
+                {% else %}
+                <a href="{% url 'take_test' category.id question_num %}" 
+                   class="nav-button"
+                   data-question-index="{{ question_num }}"
+                   title="Soal {{ question_num }}">
+                    {{ question_num }}
+                </a>
+                {% endif %}
                 {% endwith %}
                 {% endfor %}
             </div>
@@ -449,9 +462,12 @@
 </style>
 
 <script>
-// Menggunakan package_id yang konsisten untuk localStorage  
-let packageId = {{ package.id }};
-let markedQuestions = JSON.parse(localStorage.getItem('markedQuestions_' + packageId) || '[]');
+// Support both package and single-category tests
+const isPackage = {% if is_package %}true{% else %}false{% endif %};
+const PACKAGE_ID = {% if package %}{{ package.id }}{% else %}null{% endif %};
+const CATEGORY_ID = {% if category %}{{ category.id }}{% else %}null{% endif %};
+const storageKeyId = isPackage ? `package_${PACKAGE_ID}` : `category_${CATEGORY_ID}`;
+let markedQuestions = JSON.parse(localStorage.getItem('markedQuestions_' + storageKeyId) || '[]');
 let currentQuestionNumber = {{ current_question_number }}; // Menggunakan question number, bukan ID
 
 // Update tampilan tombol mark berdasarkan status
@@ -541,12 +557,16 @@ function autoSubmitTest() {
     alert('Waktu ujian telah habis! Ujian akan diselesaikan secara otomatis.');
     
     // Clear localStorage for this test
-    localStorage.removeItem('markedQuestions_' + packageId);
+    localStorage.removeItem('markedQuestions_' + storageKeyId);
     
-    // Create and submit form
+    // Create and submit form (choose package or category submit url)
     const form = document.createElement('form');
     form.method = 'POST';
+    {% if is_package %}
     form.action = '{% url "submit_package_test" package.id %}';
+    {% else %}
+    form.action = '{% url "submit_test" test.id %}';
+    {% endif %}
     
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const csrfInput = document.createElement('input');
@@ -630,12 +650,16 @@ function hideSubmitConfirmation() {
 // Submit test function
 function submitTest() {
     // Clear localStorage when test is submitted manually
-    localStorage.removeItem('markedQuestions_' + packageId);
+    localStorage.removeItem('markedQuestions_' + storageKeyId);
     
-    // Create and submit form
+    // Create and submit form (choose package or single test submission)
     const form = document.createElement('form');
     form.method = 'POST';
+    {% if is_package %}
     form.action = '{% url "submit_package_test" package.id %}';
+    {% else %}
+    form.action = '{% url "submit_test" test.id %}';
+    {% endif %}
     
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const csrfInput = document.createElement('input');
@@ -713,7 +737,8 @@ function markAsDoubtful() {
         btn.classList.add('bg-white', 'border-yellow-200');
     }
     
-    localStorage.setItem('markedQuestions_' + packageId, JSON.stringify(markedQuestions));
+    // use unified storage key id
+    localStorage.setItem('markedQuestions_' + storageKeyId, JSON.stringify(markedQuestions));
     updateNavigationColors();
 }
 

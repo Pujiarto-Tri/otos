@@ -1040,51 +1040,60 @@ def update_utbk_coefficients(request, category_id):
 @login_required
 @active_subscription_required
 def tryout_list(request):
-    # Check if there's an ongoing test
-    ongoing_test = Test.objects.filter(
-        student=request.user, 
-        is_submitted=False
-    ).first()
-    
+    # Check if there's an ongoing test - pick the most recent valid unsubmitted test
+    ongoing_test = None
+    ongoing_tests_qs = Test.objects.filter(student=request.user, is_submitted=False).order_by('-start_time')
+    for t in ongoing_tests_qs:
+        # Ignore tests that have no start_time (not actually started)
+        if not t.start_time:
+            continue
+
+        # If time is up, finalize it and continue to next candidate
+        if t.is_time_up():
+            t.is_submitted = True
+            t.end_time = timezone.now()
+            try:
+                t.calculate_score()
+            except Exception:
+                pass
+            t.save()
+            continue
+
+        # Found a valid ongoing test
+        ongoing_test = t
+        break
+
     if ongoing_test:
-        # Check if test is still valid (not timed out)
-        if ongoing_test.is_time_up():
-            # Auto-submit expired test
-            ongoing_test.is_submitted = True
-            ongoing_test.end_time = timezone.now()
-            ongoing_test.calculate_score()
-            ongoing_test.save()
+        # Redirect to ongoing test based on type
+        if ongoing_test.tryout_package:
+            # This is a package test
+            current_question_index = ongoing_test.get_current_question_index()
+            return redirect('take_package_test_question', 
+                          package_id=ongoing_test.tryout_package.id, 
+                          question=current_question_index)
         else:
-            # Redirect to ongoing test based on type
-            if ongoing_test.tryout_package:
-                # This is a package test
-                current_question_index = ongoing_test.get_current_question_index()
-                return redirect('take_package_test_question', 
-                              package_id=ongoing_test.tryout_package.id, 
-                              question=current_question_index)
-            else:
-                # This is a category test
-                category = ongoing_test.categories.first()
-                if category:
-                    # Get current question index from session or start from 0
-                    session_key = f'test_session_{category.id}_{request.user.id}'
-                    current_question_index = 0
-                    
-                    if session_key in request.session:
-                        # Get last answered question index
-                        answered_questions = request.session[session_key].get('answered_questions', {})
-                        if answered_questions:
-                            # Find the next unanswered question
-                            questions = Question.objects.filter(category=category)
-                            for i, question in enumerate(questions):
-                                if question.id not in answered_questions:
-                                    current_question_index = i
-                                    break
-                            else:
-                                # All questions answered, go to last question
-                                current_question_index = len(questions) - 1 if questions else 0
-                    
-                    return redirect('take_test', category_id=category.id, question=current_question_index)
+            # This is a category test
+            category = ongoing_test.categories.first()
+            if category:
+                # Get current question index from session or start from 0
+                session_key = f'test_session_{category.id}_{request.user.id}'
+                current_question_index = 0
+
+                if session_key in request.session:
+                    # Get last answered question index
+                    answered_questions = request.session[session_key].get('answered_questions', {})
+                    if answered_questions:
+                        # Find the next unanswered question
+                        questions = Question.objects.filter(category=category)
+                        for i, question in enumerate(questions):
+                            if question.id not in answered_questions:
+                                current_question_index = i
+                                break
+                        else:
+                            # All questions answered, go to last question
+                            current_question_index = len(questions) - 1 if questions else 0
+
+                return redirect('take_test', category_id=category.id, question=current_question_index)
     
     # Clean up any unsubmitted test sessions for this user
     # This prevents issues when student starts a new test
@@ -1133,167 +1142,219 @@ def tryout_list(request):
 @active_subscription_required
 def take_test(request, category_id, question):
     from django.utils import timezone
-    
+    from datetime import timedelta
+
+    # DEBUG: trace invocation parameters to diagnose off-by-one skip
+    try:
+        print(f"[DEBUG take_test] user={getattr(request.user,'id',None)} category_id={category_id} question_param={question} GET_force_new={request.GET.get('force_new')} session_keys={list(request.session.keys())[:20]}")
+    except Exception:
+        pass
+
     category = get_object_or_404(Category, id=category_id)
-    questions = Question.objects.filter(category=category)
+    questions_qs = Question.objects.filter(category=category).order_by('id')
 
-    # Get the current question index from the request
-    current_question_index = question
+    # normalize current question index
+    # Accept both 0-based and 1-based incoming values: treat any positive integer as 1-based
+    try:
+        raw_q = int(question)
+    except (TypeError, ValueError):
+        raw_q = 0
 
-    # Get or create a unique session key for this test session
+    if raw_q > 0:
+        # incoming is 1-based (template start buttons use 1 for first question)
+        current_question_index = raw_q - 1
+    else:
+        # incoming is 0-based or invalid
+        current_question_index = max(0, raw_q)
+
+    # session key and existing test handling (reuse existing logic but create mapping for package-like template)
     session_key = f'test_session_{category_id}_{request.user.id}'
-    
-    # Check if there's an existing unsubmitted test for this category and user
     existing_test = Test.objects.filter(
         student=request.user,
         is_submitted=False,
         categories=category
     ).first()
-    
-    # Initialize test session if not exists OR if existing test is submitted
-    if session_key not in request.session or existing_test is None:
-        # Clear any old session data
+
+    # Allow caller to force creating a new test even if a recent submitted test exists
+    force_new = request.GET.get('force_new') == '1'
+
+    if (session_key not in request.session or existing_test is None) or force_new:
+        # If the user has JUST submitted a test for this category (e.g. clicked back after finishing),
+        # avoid creating a new test immediately. Redirect to the latest submitted test results instead.
+        # Only do this redirect when user did NOT explicitly request a new test.
+        if not force_new:
+            try:
+                recent_threshold = timezone.now() - timedelta(minutes=5)
+                recent_test = Test.objects.filter(
+                    student=request.user,
+                    categories=category,
+                    is_submitted=True,
+                    end_time__gte=recent_threshold
+                ).order_by('-end_time').first()
+                if recent_test:
+                    return redirect('test_results', test_id=recent_test.id)
+            except Exception:
+                # Fall back to normal behavior on any unexpected issue
+                pass
+
         if session_key in request.session:
             del request.session[session_key]
-            
-        # Create a new test instance for this session
+
         test = Test.objects.create(
             student=request.user,
             start_time=timezone.now(),
             time_limit=category.time_limit
         )
-        # Connect test to category
         test.categories.add(category)
-        
+
         request.session[session_key] = {
             'test_id': test.id,
-            'answered_questions': {},  # question_id: choice_id
+            'answered_questions': {},
             'category_id': category_id
         }
     else:
         test_session = request.session[session_key]
         test = get_object_or_404(Test, id=test_session['test_id'])
-        
-        # Ensure test is connected to category
         if not test.categories.filter(id=category_id).exists():
             test.categories.add(category)
-        
-        # Set start_time if not set
         if not test.start_time:
             test.start_time = timezone.now()
             test.time_limit = category.time_limit
             test.save()
-    
+
     test_session = request.session[session_key]
-    
-    # Check if time is up or test is already submitted
+
+    # If time is up or submitted, finalize and redirect
     if test.is_time_up() or test.is_submitted:
         if not test.is_submitted:
-            # Time is up, auto-submit
             test.is_submitted = True
             test.end_time = timezone.now()
             test.calculate_score()
             test.save()
-            
-        # Clear session
         if session_key in request.session:
             del request.session[session_key]
-            
         return redirect('test_results', test_id=test.id)
-    
-    # Get existing answers for this test
+
+    # Build ordered question list for this category (used to compute question numbers)
+    all_questions = list(questions_qs)
+    total_questions = len(all_questions)
+
+    # Guard index
+    if current_question_index < 0:
+        current_question_index = 0
+    if current_question_index >= total_questions:
+        current_question_index = max(0, total_questions - 1)
+
+    current_question = all_questions[current_question_index] if total_questions > 0 else None
+    choices = current_question.choices.all() if current_question else []
+
+    # Load existing answers and map to question numbers
     existing_answers = Answer.objects.filter(test=test).select_related('question', 'selected_choice')
-    answered_questions_dict = {answer.question.id: answer.selected_choice.id for answer in existing_answers}
-    
-    # Update session with existing answers
-    test_session['answered_questions'] = answered_questions_dict
-    request.session[session_key] = test_session
-    
-    # Update current question position in the test model
-    test.current_question = current_question_index + 1  # Convert to 1-based index
-    test.save(update_fields=['current_question'])
+    answered_question_ids = set(existing_answers.values_list('question_id', flat=True))
+    answered_question_numbers = [i + 1 for i, q in enumerate(all_questions) if q.id in answered_question_ids]
 
+    # Handle POST (accept both 'choice' and 'answer' names to be compatible)
     if request.method == 'POST':
-        # Process the answer for the current question
-        choice_id = request.POST.get('answer')
-        question_instance = get_object_or_404(Question, id=questions[current_question_index].id)
-        
-        # Check if this is an AJAX request (for saving answers without navigation)
+        choice_id = request.POST.get('choice') or request.POST.get('answer')
+        action = request.POST.get('action')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-        
-        if choice_id:
-            # Soal dijawab - simpan jawaban
-            choice = get_object_or_404(Choice, id=choice_id)
-            
-            # Check if answer already exists for this question
-            existing_answer = Answer.objects.filter(test=test, question=question_instance).first()
-            if existing_answer:
-                # Update existing answer
-                existing_answer.selected_choice = choice
-                existing_answer.save()
-            else:
-                # Create new answer
-                Answer.objects.create(test=test, question=question_instance, selected_choice=choice)
 
-            # Update session
-            test_session['answered_questions'][question_instance.id] = int(choice_id)
+        if choice_id:
+            choice = get_object_or_404(Choice, id=choice_id, question=current_question)
+            existing_answers_qs = Answer.objects.filter(test=test, question=current_question)
+            if existing_answers_qs.count() > 1:
+                first_answer = existing_answers_qs.first()
+                existing_answers_qs.exclude(id=first_answer.id).delete()
+                first_answer.selected_choice = choice
+                first_answer.save()
+            elif existing_answers_qs.count() == 1:
+                ans = existing_answers_qs.first()
+                ans.selected_choice = choice
+                ans.save()
+            else:
+                Answer.objects.create(test=test, question=current_question, selected_choice=choice)
+
+            # Update session store
+            test_session = request.session.get(session_key, {'answered_questions': {}})
+            test_session['answered_questions'][current_question.id] = int(choice_id)
             request.session[session_key] = test_session
-            
-            # If this is an AJAX request, return JSON response
+
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer saved'})
+
         else:
-            # Soal tidak dijawab - hapus jawaban jika ada
-            existing_answer = Answer.objects.filter(test=test, question=question_instance).first()
-            if existing_answer:
-                existing_answer.delete()
-            
-            # Remove from session if exists
-            if question_instance.id in test_session['answered_questions']:
-                del test_session['answered_questions'][question_instance.id]
+            # remove existing answer
+            existing_ans = Answer.objects.filter(test=test, question=current_question).first()
+            if existing_ans:
+                existing_ans.delete()
+            if current_question and current_question.id in test_session.get('answered_questions', {}):
+                del test_session['answered_questions'][current_question.id]
                 request.session[session_key] = test_session
-            
-            # If this is an AJAX request, return JSON response
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer removed'})
 
-        # If not AJAX, continue with normal navigation
+        # Non-AJAX navigation handling
         if not is_ajax:
-            # Redirect to the next question
-            next_question_index = current_question_index + 1
-            if next_question_index < len(questions):
-                return redirect('take_test', category_id=category_id, question=next_question_index)
-            else:
-                # All questions answered, submit the test
+            # Note: current_question_index is 0-based internally. The `take_test` view
+            # accepts either 0-based (<=0) or 1-based (>0) incoming question params.
+            # To avoid off-by-one redirects, send 1-based question numbers for outgoing redirects.
+            if action == 'next' and current_question_index + 1 < total_questions:
+                # Next question (1-based): current 0-based + 2
+                return redirect('take_test', category_id=category_id, question=current_question_index + 2)
+            elif action == 'previous' and current_question_index > 0:
+                # Previous question (1-based): current 0-based (already equals previous 1-based)
+                return redirect('take_test', category_id=category_id, question=current_question_index)
+            elif action == 'submit':
                 if not test.is_submitted:
                     test.is_submitted = True
                     test.end_time = timezone.now()
                     test.calculate_score()
                     test.save()
-                    
-                    # Clear session
                     if session_key in request.session:
                         del request.session[session_key]
-                
                 return redirect('test_results', test_id=test.id)
 
-    # Get the current question
-    current_question = questions[current_question_index] if questions else None
-    
-    # Get current question's selected answer if any
-    selected_choice_id = test_session['answered_questions'].get(current_question.id) if current_question else None
+    # Update model current question (1-based)
+    test.current_question = current_question_index + 1
+    test.save(update_fields=['current_question'])
 
-    return render(request, 'students/tests/take_test.html', {
+    # Progress stats
+    answered_count = Answer.objects.filter(test=test).count()
+    unanswered_count = max(0, total_questions - answered_count)
+    progress = round((answered_count / total_questions) * 100, 1) if total_questions else 0
+
+    # Compute time remaining as timedelta for template compatibility
+    time_remaining = None
+    if test.start_time and test.time_limit:
+        elapsed = timezone.now() - test.start_time
+        total_td = timedelta(minutes=test.time_limit)
+        remaining_td = total_td - elapsed
+        if remaining_td.total_seconds() <= 0:
+            remaining_td = timedelta(0)
+        time_remaining = remaining_td
+
+    context = {
+        'is_package': False,
         'category': category,
+        'package': None,
+        'test': test,
         'question': current_question,
-        'current_question_index': current_question_index,
-        'questions': questions,
-        'answered_questions': set(test_session['answered_questions'].keys()),
-        'selected_choice_id': selected_choice_id,
-        'test_id': test.id,
-        'remaining_time': test.get_remaining_time(),
-        'time_limit': test.time_limit,
-    })
+        'choices': choices,
+        'current_question_number': current_question_index + 1,
+        'total_questions': total_questions,
+        'previous_answer': Answer.objects.filter(test=test, question=current_question).first(),
+        'progress': progress,
+        'answered_questions': answered_count,
+        'unanswered_questions': unanswered_count,
+        'answered_question_numbers': answered_question_numbers,
+        'time_remaining': time_remaining,
+        'can_go_previous': current_question_index > 0,
+        'can_go_next': current_question_index + 1 < total_questions,
+        'is_last_question': current_question_index + 1 == total_questions,
+        'remaining_time': test.get_remaining_time() if test.start_time else 0,
+    }
+
+    return render(request, 'students/tryouts/package_test_question.html', context)
 
 @login_required
 @active_subscription_required
@@ -1316,6 +1377,25 @@ def submit_test(request, test_id):
                 session_key = f'test_session_{test_category.id}_{request.user.id}'
                 if session_key in request.session:
                     del request.session[session_key]
+            # Also mark any other unsubmitted tests for this student+category as submitted to avoid duplicates
+            try:
+                other_tests = Test.objects.filter(student=request.user, is_submitted=False, categories__in=test.categories.all()).exclude(id=test.id)
+                for ot in other_tests:
+                    ot.is_submitted = True
+                    ot.end_time = timezone.now()
+                    try:
+                        ot.calculate_score()
+                    except Exception:
+                        pass
+                    ot.save()
+                    # Remove any session keys referencing those tests
+                    for cat in ot.categories.all():
+                        sk = f'test_session_{cat.id}_{request.user.id}'
+                        if sk in request.session:
+                            del request.session[sk]
+            except Exception:
+                # swallow any unexpected errors here to avoid blocking user flow
+                pass
         
         return redirect('test_results', test_id=test.id)
     
@@ -1395,7 +1475,7 @@ def test_results(request, test_id):
         'target_achievement_status': target_achievement_status,
     }
 
-    return render(request, 'students/tests/test_results.html', context)
+    return render(request, 'students/tryouts/test_results.html', context)
 
 @login_required
 @active_subscription_required
@@ -1482,7 +1562,7 @@ def test_results_detail(request, test_id):
         'scoring_explanation': scoring_explanation,
     }
     
-    return render(request, 'students/tests/test_results_detail.html', context)
+    return render(request, 'students/tryouts/test_results_detail.html', context)
 
 def get_scoring_explanation(category):
     """Get explanation for the scoring method used"""
@@ -1629,7 +1709,7 @@ def test_history(request):
         'test_university_info': test_university_info,
     }
     
-    return render(request, 'students/tests/test_history.html', context)
+    return render(request, 'students/tryouts/test_history.html', context)
 
 @login_required
 @active_subscription_required
@@ -3478,6 +3558,27 @@ def take_package_test(request, package_id):
                           package_id=package_id, 
                           question=next_question)
     
+    # Allow forcing a new test via GET parameter (used when user explicitly clicks 'Mulai')
+    force_new = request.GET.get('force_new') == '1'
+
+    # If the user has JUST submitted a test for this package (e.g. clicked back after finishing),
+    # avoid creating a new test immediately. Redirect to the latest submitted test results instead.
+    # Only do this when not forcing a new test.
+    if not force_new:
+        try:
+            recent_threshold = timezone.now() - timedelta(minutes=5)
+            recent_test = Test.objects.filter(
+                student=request.user,
+                tryout_package=package,
+                is_submitted=True,
+                end_time__gte=recent_threshold
+            ).order_by('-end_time').first()
+            if recent_test:
+                return redirect('test_results', test_id=recent_test.id)
+        except Exception:
+            # if something goes wrong (timedelta not available etc.), fall back to normal behavior
+            pass
+
     # Create a new test instance for this package
     test = Test.objects.create(
         student=request.user,
@@ -3658,6 +3759,7 @@ def take_package_test_question(request, package_id, question):
         'can_go_next': question < len(all_questions),
         'is_last_question': question == len(all_questions),
         'remaining_time': test.get_remaining_time() if test.start_time else 0,
+    'is_package': True,
     }
     
     return render(request, 'students/tryouts/package_test_question.html', context)
@@ -3689,7 +3791,34 @@ def submit_package_test(request, package_id):
         test.end_time = timezone.now()
         test.calculate_score()
         test.save()
-        
+        # Remove any session keys that reference categories in this package
+        try:
+            for cat in package.categories.all():
+                sk = f'test_session_{cat.id}_{request.user.id}'
+                if sk in request.session:
+                    del request.session[sk]
+        except Exception:
+            pass
+
+        # Also mark any other unsubmitted package tests for this student as submitted to avoid duplicates
+        try:
+            other_tests = Test.objects.filter(student=request.user, is_submitted=False, tryout_package=package).exclude(id=test.id)
+            for ot in other_tests:
+                ot.is_submitted = True
+                ot.end_time = timezone.now()
+                try:
+                    ot.calculate_score()
+                except Exception:
+                    pass
+                ot.save()
+                # Remove session keys referencing those tests' categories as well
+                for cat in ot.categories.all():
+                    sk = f'test_session_{cat.id}_{request.user.id}'
+                    if sk in request.session:
+                        del request.session[sk]
+        except Exception:
+            pass
+
         messages.success(request, 'Tryout berhasil disubmit!')
         return redirect('test_results', test_id=test.id)
     
