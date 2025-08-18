@@ -6,22 +6,42 @@ from .models import User, Role, Category, Question, Choice, SubscriptionPackage,
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
+    phone_number = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5',
+            'placeholder': 'Masukkan nomor HP (contoh: +62812...)'
+        })
+    )
+
     class Meta:
         model = User
-        fields = ('email', 'password1', 'password2')
+        fields = ('email', 'phone_number', 'password1', 'password2')
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']
-        
+        # save phone number from form
+        user.phone_number = self.cleaned_data.get('phone_number')
+
         # Set default role sebagai Visitor untuk user baru
         if not user.role:
             default_role, created = Role.objects.get_or_create(role_name='Visitor')
             user.role = default_role
-            
+
         if commit:
             user.save()
         return user
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number', '')
+        # allow starting + and digits only
+        import re
+        if not phone:
+            raise forms.ValidationError('Nomor HP wajib diisi.')
+        if not re.match(r'^\+?\d{9,20}$', phone):
+            raise forms.ValidationError('Format nomor tidak valid. Contoh: +628123456789')
+        return phone
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
@@ -128,9 +148,17 @@ class UserUpdateForm(forms.ModelForm):
         })
     )
 
+    phone_number = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5',
+            'placeholder': 'Enter phone number (e.g. +62812...)'
+        })
+    )
+
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'role']
+        fields = ['email', 'first_name', 'last_name', 'role', 'phone_number']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -151,6 +179,14 @@ class UserUpdateForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number', '')
+        import re
+        if phone:
+            if not re.match(r'^\+?\d{9,20}$', phone):
+                raise forms.ValidationError('Format nomor tidak valid. Contoh: +628123456789')
+        return phone
     
 class CategoryCreationForm(forms.ModelForm):
     class Meta:

@@ -11,6 +11,8 @@
 {% include 'components/pending_payment_alert.html' with pending_payment=pending_payment %}
 {% endif %}
 
+{% include 'components/choose_university_warning.html' %}
+
 <!-- Access Restriction Notice -->
 {% if not can_access_tryouts %}
 {% include 'components/access_restriction_notice.html' %}

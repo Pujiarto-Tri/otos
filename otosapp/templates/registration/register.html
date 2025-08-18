@@ -7,16 +7,23 @@
 <div class="max-w-md mx-auto">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Create an Account</h2>
-        <form method="post" class="space-y-6">
+        <form method="post" id="registerForm" class="space-y-6">
             {% csrf_token %}
             {% for field in form %}
                 <div class="space-y-2">
-                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium {% if field.errors %}text-red-600 dark:text-red-400{% else %}text-gray-700 dark:text-gray-300{% endif %}">
                         {{ field.label }}
                     </label>
                     <div class="mt-1">
-                        {% render_field field class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500" %}
+                        {% if field.errors %}
+                            {% render_field field class="w-full px-3 py-2 border border-red-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" %}
+                        {% else %}
+                            {% render_field field class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-500 dark:focus:border-indigo-500" %}
+                        {% endif %}
                     </div>
+                    {% if field.name == 'phone_number' %}
+                        <p id="phoneFieldError" class="text-red-600 text-sm hidden mt-1"></p>
+                    {% endif %}
                     {% if field.errors %}
                         {% for error in field.errors %}
                             <p class="text-red-600 text-sm">{{ error }}</p>
@@ -24,10 +31,66 @@
                     {% endif %}
                 </div>
             {% endfor %}
+            <div id="formError" class="hidden text-sm text-red-600 mb-2"></div>
             <button type="submit" class="w-full px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
                 Register
             </button>
         </form>
+        <script>
+            (function(){
+                const form = document.getElementById('registerForm');
+                const errorBox = document.getElementById('formError');
+
+                form.addEventListener('submit', function(e){
+                    // Find phone field by name
+                    const phoneField = form.querySelector('[name="phone_number"]');
+                    if (!phoneField) return; // if field not present, skip client validation
+
+                    const phone = phoneField.value.trim();
+                    const re = /^\+?\d{9,20}$/;
+                    const perFieldError = document.getElementById('phoneFieldError');
+                    if (!phone){
+                        e.preventDefault();
+                        const msg = 'Nomor HP wajib diisi.';
+                        if (perFieldError){ perFieldError.textContent = msg; perFieldError.classList.remove('hidden'); }
+                        errorBox.textContent = msg; errorBox.classList.remove('hidden');
+                        phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                        phoneField.focus();
+                        return false;
+                    }
+                    if (!re.test(phone)){
+                        e.preventDefault();
+                        const msg = 'Format nomor tidak valid. Contoh: +628123456789';
+                        if (perFieldError){ perFieldError.textContent = msg; perFieldError.classList.remove('hidden'); }
+                        errorBox.textContent = msg; errorBox.classList.remove('hidden');
+                        phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                        phoneField.focus();
+                        return false;
+                    }
+                    // clear error if ok
+                    if (perFieldError){ perFieldError.classList.add('hidden'); perFieldError.textContent = ''; }
+                    errorBox.classList.add('hidden');
+                    errorBox.textContent = '';
+                });
+
+                // Remove error styling when user types
+                form.querySelectorAll('input, textarea, select').forEach(el => {
+                    el.addEventListener('input', function(){
+                        if (this.classList.contains('border-red-500')){
+                            this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                        }
+                        if (el.name === 'phone_number'){
+                            const perFieldError = document.getElementById('phoneFieldError');
+                            if (perFieldError){ perFieldError.classList.add('hidden'); perFieldError.textContent = ''; }
+                        }
+                        if (errorBox && !Array.from(form.querySelectorAll('.border-red-500')).length){
+                            errorBox.classList.add('hidden');
+                            errorBox.textContent = '';
+                        }
+                    });
+                });
+            })();
+        </script>
         <div class="mt-6 text-center">
             <a href="{% url 'login' %}" class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
                 Already have an account? Login here

@@ -95,7 +95,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Informasi Personal</h3>
                 
-                <form method="post" class="space-y-4">
+                <form method="post" id="profileForm" class="space-y-4">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="update_profile">
                     
@@ -138,6 +138,22 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 {% if user.phone_number %}{% else %}text-gray-700 dark:text-gray-300{% endif %} mb-2">Nomor HP</label>
+                            <input type="text"
+                                   id="phone_number"
+                                   name="phone_number"
+                                   value="{{ user.phone_number|default:'' }}"
+                                   placeholder="Contoh: +628123456789"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <p id="profilePhoneFieldError" class="mt-1 text-xs text-red-600 dark:text-red-400 hidden">&nbsp;</p>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Masukkan nomor HP aktif (format: 08123...)</p>
+                        </div>
+                    </div>
+
+                    <div id="profileFormError" class="hidden text-sm text-red-600"></div>
                     
                     <div class="flex justify-end">
                         <button type="submit" class="inline-flex items-center px-6 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
@@ -336,6 +352,53 @@ document.getElementById('profile-picture-input').addEventListener('change', func
         }
     }
 });
+</script>
+<script>
+    (function(){
+        const form = document.getElementById('profileForm');
+        if (!form) return;
+
+    const phoneField = form.querySelector('[name="phone_number"]');
+    const errorBox = document.getElementById('profileFormError');
+    const perField = document.getElementById('profilePhoneFieldError');
+
+        form.addEventListener('submit', function(e){
+            if (!phoneField) return;
+            const phone = phoneField.value.trim();
+            const re = /^\+?\d{9,20}$/;
+            if (!phone){
+                e.preventDefault();
+                const msg = 'Nomor HP wajib diisi.';
+                if (errorBox){ errorBox.textContent = msg; errorBox.classList.remove('hidden'); }
+                if (perField){ perField.textContent = msg; perField.classList.remove('hidden'); }
+                phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                phoneField.focus();
+                return false;
+            }
+            if (!re.test(phone)){
+                e.preventDefault();
+                const msg = 'Format nomor tidak valid. Contoh: +628123456789';
+                if (errorBox){ errorBox.textContent = msg; errorBox.classList.remove('hidden'); }
+                if (perField){ perField.textContent = msg; perField.classList.remove('hidden'); }
+                phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                phoneField.focus();
+                return false;
+            }
+            if (errorBox){ errorBox.classList.add('hidden'); errorBox.textContent = ''; }
+        });
+
+        if (phoneField){
+            phoneField.addEventListener('input', function(){
+                if (this.classList.contains('border-red-500')){
+                    this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                }
+                if (perField){ perField.classList.add('hidden'); perField.textContent = ''; }
+                if (errorBox && !Array.from(form.querySelectorAll('.border-red-500')).length){
+                    errorBox.classList.add('hidden'); errorBox.textContent = '';
+                }
+            });
+        }
+    })();
 </script>
 
 {% endblock %}

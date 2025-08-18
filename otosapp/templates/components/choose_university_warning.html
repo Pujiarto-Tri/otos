@@ -1,0 +1,45 @@
+{% comment %} Component: warning for students who haven't selected university target {% endcomment %}
+{# Show warning when student has no university target OR has a UniversityTarget object but all fields are empty #}
+{% if user.role.role_name == 'Student' %}
+    {% if not student_university_target %}
+        <div class="mb-6">
+            <div class="rounded-md bg-yellow-50 p-4 border-l-4 border-yellow-400">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <!-- Heroicon: Exclamation -->
+                        <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-800">Kamu belum memilih <strong>target universitas</strong>. Sebagai langkah pertama setelah mendaftar, silakan pilih target universitas sekarang.</p>
+                        <p class="mt-2 text-sm">
+                            <a href="{% url 'student_university_target' %}" class="inline-flex items-center px-3 py-1 rounded-md bg-yellow-600 text-white text-sm font-semibold hover:bg-yellow-700">Pilih Target Universitas</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        {% if not student_university_target.primary_university and not student_university_target.backup_university and not student_university_target.secondary_university %}
+            <div class="mb-6">
+                <div class="rounded-md bg-yellow-50 p-4 border-l-4 border-yellow-400">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <!-- Heroicon: Exclamation -->
+                            <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-800">Kamu belum memilih <strong>target universitas</strong>. Sebagai langkah pertama setelah mendaftar, silakan pilih target universitas sekarang.</p>
+                            <p class="mt-2 text-sm">
+                                <a href="{% url 'student_university_target' %}" class="inline-flex items-center px-3 py-1 rounded-md bg-yellow-600 text-white text-sm font-semibold hover:bg-yellow-700">Pilih Target Universitas</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endif %}

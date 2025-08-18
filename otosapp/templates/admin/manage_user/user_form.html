@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -13,24 +14,31 @@
         </div>
 
         <!-- Form -->
-        <form method="post" class="space-y-6">
+        <form method="post" id="userForm" class="space-y-6">
             {% csrf_token %}
             
             <!-- Form Fields -->
             {% for field in form %}
             <div class="form-group">
                 <label for="{{ field.id_for_label }}" 
-                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                       class="block mb-2 text-sm font-medium {% if field.errors %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">
                     {{ field.label }}
                     {% if field.field.required %}
                         <span class="text-red-500 dark:text-red-400">*</span>
                     {% endif %}
                 </label>
                 <div class="mt-1">
-                    {{ field }}
+                    {% if field.errors %}
+                        {% render_field field class="w-full px-3 py-2 border border-red-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" %}
+                    {% else %}
+                        {% render_field field class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" %}
+                    {% endif %}
                 </div>
                 {% if field.help_text %}
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.name == 'phone_number' %}
+                    <p id="adminPhoneFieldError" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden"></p>
                 {% endif %}
                 {% if field.errors %}
                 <div class="mt-1">
@@ -56,6 +64,45 @@
                     </button>
                 </div>
         </form>
+        <script>
+            (function(){
+                const form = document.getElementById('userForm');
+                if (!form) return;
+
+                const phoneField = form.querySelector('[name="phone_number"]');
+                if (!phoneField) return; // only attach if phone field exists
+
+                form.addEventListener('submit', function(e){
+                    const phone = phoneField.value.trim();
+                    const re = /^\+?\d{9,20}$/;
+                    const perFieldError = document.getElementById('adminPhoneFieldError');
+                    if (!phone){
+                        e.preventDefault();
+                        const msg = 'Nomor HP wajib diisi.';
+                        if (perFieldError){ perFieldError.textContent = msg; perFieldError.classList.remove('hidden'); }
+                        phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                        phoneField.focus();
+                        return false;
+                    }
+                    if (!re.test(phone)){
+                        e.preventDefault();
+                        const msg = 'Format nomor tidak valid. Contoh: +628123456789';
+                        if (perFieldError){ perFieldError.textContent = msg; perFieldError.classList.remove('hidden'); }
+                        phoneField.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                        phoneField.focus();
+                        return false;
+                    }
+                });
+
+                phoneField.addEventListener('input', function(){
+                    if (this.classList.contains('border-red-500')){
+                        this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                    }
+                    const perFieldError = document.getElementById('adminPhoneFieldError');
+                    if (perFieldError){ perFieldError.classList.add('hidden'); perFieldError.textContent = ''; }
+                });
+            })();
+        </script>
     </div>
 </div>
 {% endblock %}

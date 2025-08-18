@@ -140,6 +140,11 @@ def home(request):
                 user=request.user,
                 status='pending'
             ).first()
+            # Include student's saved university target (if any) so templates/components can check it
+            try:
+                student_university_target = request.user.university_target
+            except UniversityTarget.DoesNotExist:
+                student_university_target = None
 
             context.update({
                 'is_student': True,
@@ -153,6 +158,8 @@ def home(request):
                 'pending_payment': pending_payment,
                 'subscription_status': request.user.get_subscription_status(),
                 'can_access_tryouts': request.user.can_access_tryouts()
+                ,
+                'student_university_target': student_university_target
             })
         
         # Data untuk admin dashboard dengan statistik lengkap
@@ -522,7 +529,8 @@ def user_list(request):
         users_list = users_list.filter(
             Q(email__icontains=q) |
             Q(first_name__icontains=q) |
-            Q(last_name__icontains=q)
+            Q(last_name__icontains=q) |
+            Q(phone_number__icontains=q)
         )
     if role:
         users_list = users_list.filter(role__role_name=role)

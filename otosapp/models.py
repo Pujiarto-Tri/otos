@@ -10,6 +10,7 @@ from .utils import generate_unique_filename
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True, verbose_name='Phone Number')
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
