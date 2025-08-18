@@ -41,7 +41,7 @@
 					tab.classList.toggle('text-white', active);
 					tab.classList.toggle('bg-blue-600', active);
 					tab.classList.toggle('text-gray-600', !active);
-					tab.classList.toggle('dark:text-gray-400', !active);
+					tab.classList.toggle('dark:text-gray-300', !active);
 				});
 			}
 
@@ -49,25 +49,14 @@
 			document.addEventListener('DOMContentLoaded', () => showTab('packages'));
 			</script>
 				<div class="mt-4 flex justify-center mb-8">
-					<div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-						<button id="packages-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-white bg-blue-600" onclick="showTab('packages')">Per Subtest</button>
-						<button id="categories-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" onclick="showTab('categories')">Per Soal</button>
+					<div class="bg-gray-100 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-1 rounded-lg shadow-sm">
+						<button id="packages-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-white bg-blue-600 shadow-sm hover:bg-blue-700" onclick="showTab('packages')">Per Subtest</button>
+						<button id="categories-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" onclick="showTab('categories')">Per Soal</button>
 					</div>
 				</div>
 			<!-- Single Results container: summary + placeholders for other sections -->
 			<div class="space-y-6 mb-6">
-				<!-- Category badges (consistent location under stat cards) -->
-		    <div class="mt-3 flex justify-center">
-			    <div class="flex flex-wrap gap-2 mt-1">
-						{% if test.tryout_package and test.categories.exists %}
-							{% for cat in test.categories.all %}
-								<span class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">{{ cat.category_name }}</span>
-							{% endfor %}
-						{% elif category %}
-							<span class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">{{ category.category_name }}</span>
-						{% endif %}
-					</div>
-				</div>
+				<!-- category pills moved into each stat card for clearer association -->
 			</div>
 
 
@@ -78,13 +67,40 @@
 
 			<!-- Per Subtest section -->
 			<div id="by_category" role="tabpanel" aria-labelledby="tab-by_category" class="tab-content space-y-4 hidden transition-all duration-200 ease-out transform">
-				<div class="mt-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-					<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Per Subtest</h3>
+				<div class="mt-2 bg-white dark:bg-transparent rounded-lg p-4">
+					<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Per Subtest</h3>
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{% for stat in stats_by_category %}
-						<div class="p-4 bg-white dark:bg-gray-900 rounded-lg border">
-							<div class="text-xs text-gray-500">Benar: {{ stat.correct }} — Salah: {{ stat.incorrect }} — Kosong: {{ stat.blank }}</div>
-							<div class="text-sm font-bold text-gray-900 dark:text-white">{{ stat.score }}</div>
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 transform hover:scale-[1.01] transition">
+							{% if stat.category_name %}
+							<div class="mb-3">
+								<span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700/60 dark:text-slate-100">{{ stat.category_name }}</span>
+							</div>
+							{% elif stat.name %}
+							<div class="mb-3">
+								<span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700/60 dark:text-slate-100">{{ stat.name }}</span>
+							</div>
+							{% endif %}
+							<div class="flex items-center gap-2">
+								<span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="w-3 h-3 mr-1 text-green-600 dark:text-green-300" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clip-rule="evenodd"/></svg>
+									Benar {{ stat.correct }}
+								</span>
+								<span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-800 dark:bg-red-900/50 dark:text-red-200">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="w-3 h-3 mr-1 text-red-600 dark:text-red-300" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 00-2 0v4a1 1 0 002 0V7zm-1 8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" clip-rule="evenodd"/></svg>
+									Salah {{ stat.incorrect }}
+								</span>
+								<span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700/60 dark:text-gray-100">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="w-3 h-3 mr-1 text-gray-600 dark:text-gray-300" fill="currentColor"><path d="M10 5a1 1 0 011 1v6a1 1 0 11-2 0V6a1 1 0 011-1z"/></svg>
+									Kosong {{ stat.blank }}
+								</span>
+							</div>
+							<div class="mt-4 flex items-baseline justify-between">
+								<div>
+									<div class="text-3xl font-bold text-gray-900 dark:text-white">{{ stat.score }}</div>
+								</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Skor</div>
+							</div>
 						</div>
 						{% endfor %}
 					</div>
@@ -92,41 +108,43 @@
 			</div>
 
 		<div id="by_question" role="tabpanel" aria-labelledby="tab-by_question" class="tab-content space-y-4 hidden transition-all duration-200 ease-out transform">
-			<div class="mt-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Per Nyatakan Per Soal</h3>
-				<div class="divide-y divide-gray-100 dark:divide-gray-700">
+			<div class="mt-2 bg-white dark:bg-transparent rounded-lg p-4">
+				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Per Soal</h3>
+				<div class="space-y-4">
 					{% for q in questions %}
-					<div class="py-3 flex items-start gap-4">
-						<div class="w-10 flex-shrink-0">
-							<div class="text-xs text-gray-500">No</div>
-							<div class="text-sm font-bold text-gray-900 dark:text-white">{{ forloop.counter }}</div>
-						</div>
-						<div class="flex-1">
-							<div class="text-sm text-gray-700 dark:text-gray-200">{{ q.question_text|safe }}</div>
-							<div class="text-xs text-gray-500 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-white">{{ q.your_answer|default:"-" }}</span></div>
-								{% if not q.is_correct and q.correct_answer %}
-								<div class="text-xs text-green-700 dark:text-green-300 mt-1">Jawaban Benar: <span class="font-semibold">{{ q.correct_answer }}</span></div>
+					<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+						<div class="flex items-start gap-4">
+							<div class="w-10 flex-shrink-0">
+								<div class="text-xs text-gray-500 dark:text-gray-400">No</div>
+								<div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ forloop.counter }}</div>
+							</div>
+							<div class="flex-1">
+								<div class="text-sm text-gray-700 dark:text-gray-200">{{ q.question_text|safe }}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ q.your_answer|default:"-" }}</span></div>
+									{% if not q.is_correct and q.correct_answer %}
+									<div class="text-xs text-green-700 dark:text-green-300 mt-1">Jawaban Benar: <span class="font-semibold">{{ q.correct_answer }}</span></div>
+									{% endif %}
+
+								{% if q.all_choices %}
+								<ul class="mt-3 space-y-2 text-sm">
+									{% for ch in q.all_choices %}
+									<li class="p-3 rounded-md {% if ch.label == q.correct_choice_label %}border-2 border-green-400 bg-green-50/40 dark:bg-green-900/30 dark:border-green-600{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}border-2 border-red-400 bg-red-50/40 dark:bg-red-900/30 dark:border-red-600{% elif ch.label == q.your_choice_label %}border-2 border-indigo-300 bg-indigo-50/40 dark:bg-indigo-900/30 dark:border-indigo-600{% else %}border border-transparent bg-transparent{% endif %}">
+										<span class="font-semibold mr-2 {% if ch.label == q.correct_choice_label %}text-green-800 dark:text-green-200{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}text-red-800 dark:text-red-200{% else %}text-gray-800 dark:text-gray-100{% endif %}">{{ ch.label }}.</span>
+										<span class="{% if ch.label == q.correct_choice_label %}text-green-700 dark:text-green-200{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}text-red-700 dark:text-red-200{% else %}text-gray-700 dark:text-gray-200{% endif %}">{{ ch.text|safe }}</span>
+									</li>
+									{% endfor %}
+								</ul>
 								{% endif %}
-							
-							{% if q.all_choices %}
-							<ul class="mt-2 space-y-1 text-sm">
-								{% for ch in q.all_choices %}
-								<li class="p-2 rounded-md border {% if ch.label == q.correct_choice_label %}border-green-300 bg-green-50{% elif ch.label == q.your_choice_label %}border-indigo-300 bg-indigo-50{% else %}border-transparent{% endif %}">
-									<span class="font-semibold mr-2">{{ ch.label }}.</span>
-									<span class="text-gray-700 dark:text-gray-200">{{ ch.text|safe }}</span>
-								</li>
-								{% endfor %}
-							</ul>
-							{% endif %}
-						</div>
-						<div class="w-28 text-right">
-							{% if q.is_correct %}
-								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Benar</span>
-							{% elif q.your_answer == None or q.your_answer == '' %}
-								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Kosong</span>
-							{% else %}
-								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Salah</span>
-							{% endif %}
+							</div>
+							<div class="w-28 text-right">
+								{% if q.is_correct %}
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-800/10 text-green-800 dark:bg-green-700/60 dark:text-green-100">Benar</span>
+								{% elif q.your_answer == None or q.your_answer == '' %}
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700/60 dark:text-gray-100">Kosong</span>
+								{% else %}
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-800/10 text-red-800 dark:bg-red-700/60 dark:text-red-100">Salah</span>
+								{% endif %}
+							</div>
 						</div>
 					</div>
 					{% endfor %}
