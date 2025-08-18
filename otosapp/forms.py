@@ -331,9 +331,10 @@ ChoiceFormSet = forms.inlineformset_factory(
     Question,
     Choice,
     form=ChoiceForm,
-    extra=2,
-    min_num=2,
-    max_num=10,
+    extra=5,
+    min_num=5,
+    max_num=5,
+    validate_max=True,
     can_delete=True
 )
 

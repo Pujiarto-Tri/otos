@@ -10,13 +10,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
-from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum
 from datetime import timedelta, datetime
+from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
+from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
+
 from django.db.models.functions import TruncDay, TruncMonth
+from django.core.exceptions import PermissionDenied
 import json
 
 
@@ -504,6 +506,257 @@ def home(request):
         })
     
     return render(request, 'home.html', context)
+
+
+# ------------------------- TEACHER VIEWS -------------------------
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_category_list(request):
+    """List categories owned by the teacher (or all for admin)."""
+    if request.user.is_admin():
+        categories = Category.objects.all().order_by('-id')
+    else:
+        categories = Category.objects.filter(created_by=request.user).order_by('-id')
+
+    paginator = Paginator(categories, 10)
+    page = request.GET.get('page')
+    try:
+        categories_page = paginator.page(page)
+    except PageNotAnInteger:
+        categories_page = paginator.page(1)
+    except EmptyPage:
+        categories_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'teacher/category_list.html', {'categories': categories_page, 'paginator': paginator})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_category_create(request):
+    if request.method == 'POST':
+        form = CategoryCreationForm(request.POST)
+        if form.is_valid():
+            category = form.save(commit=False)
+            category.created_by = request.user
+            category.save()
+            messages.success(request, 'Kategori berhasil dibuat.')
+            return redirect('teacher_category_list')
+        else:
+            # Log form errors for debugging
+            try:
+                from django.utils.log import getLogger
+                logger = getLogger(__name__)
+            except Exception:
+                logger = None
+            if logger:
+                logger.error('Category creation form invalid: %s', form.errors.as_json())
+            # Also print and show message for immediate feedback during debugging
+            try:
+                print('Category creation form invalid:', form.errors.as_json())
+            except Exception:
+                try:
+                    print('Category creation form invalid:', form.errors)
+                except Exception:
+                    pass
+            try:
+                messages.error(request, 'Form validation failed: ' + form.errors.as_text())
+            except Exception:
+                pass
+    else:
+        form = CategoryCreationForm()
+
+    return render(request, 'teacher/category_form.html', {'form': form, 'title': 'Buat Kategori'})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_category_update(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    # only allow owner or admin
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = CategoryUpdateForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Kategori berhasil diperbarui.')
+            return redirect('teacher_category_list')
+    else:
+        form = CategoryUpdateForm(instance=category)
+
+    return render(request, 'teacher/category_form.html', {'form': form, 'title': 'Edit Kategori'})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_category_delete(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        category.delete()
+        messages.success(request, 'Kategori dihapus.')
+        return redirect('teacher_category_list')
+
+    return render(request, 'teacher/category_confirm_delete.html', {'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_question_list(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    questions = Question.objects.filter(category=category).order_by('-pub_date')
+    paginator = Paginator(questions, 10)
+    page = request.GET.get('page')
+    try:
+        questions_page = paginator.page(page)
+    except PageNotAnInteger:
+        questions_page = paginator.page(1)
+    except EmptyPage:
+        questions_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'teacher/question_list.html', {'questions': questions_page, 'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_question_create(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        # Ensure the bound form includes the category id so the required
+        # `category` field validates. Teachers shouldn't change category, so
+        # inject it into the POST data before binding.
+        post_data = request.POST.copy()
+        post_data['category'] = str(category.id)
+        form = QuestionForm(post_data)
+        formset = ChoiceFormSet(post_data)
+        if form.is_valid() and formset.is_valid():
+            question = form.save(commit=False)
+            question.pub_date = timezone.now()
+            question.category = category
+            question.save()
+            # save choices
+            choices = formset.save(commit=False)
+            for c in choices:
+                c.question = question
+                c.save()
+            messages.success(request, 'Soal berhasil dibuat.')
+            return redirect('teacher_question_list', category_id=category.id)
+        else:
+            # Debug: expose validation errors so we can see why the form re-renders
+            try:
+                form_json = form.errors.as_json()
+            except Exception:
+                form_json = str(form.errors)
+            try:
+                formset_errors = formset.errors
+                formset_non = formset.non_form_errors()
+            except Exception:
+                formset_errors = str(formset.errors)
+                formset_non = str(formset.non_form_errors())
+            print('\n[DEBUG] teacher_question_create validation failed')
+            print('Form errors (json):', form_json)
+            print('Form errors (text):', form.errors.as_text())
+            print('Formset errors:', formset_errors)
+            print('Formset non-field errors:', formset_non)
+            messages.error(request, 'Form validation failed: ' + (form.errors.as_text() or str(formset_errors)))
+    else:
+        form = QuestionForm(initial={'category': category})
+        formset = ChoiceFormSet()
+
+    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_question_update(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+    category = question.category
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = QuestionUpdateForm(request.POST, instance=question)
+        formset = ChoiceFormSet(request.POST, instance=question)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, 'Soal diperbarui.')
+            return redirect('teacher_question_list', category_id=category.id)
+    else:
+        form = QuestionUpdateForm(instance=question)
+        formset = ChoiceFormSet(instance=question)
+
+    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_question_delete(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+    category = question.category
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        question.delete()
+        messages.success(request, 'Soal dihapus.')
+        return redirect('teacher_question_list', category_id=category.id)
+
+    return render(request, 'teacher/question_confirm_delete.html', {'question': question})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_view_student_scores(request, category_id):
+    """Show students' tests and scores for a given teacher-owned category."""
+    category = get_object_or_404(Category, id=category_id)
+    if not (request.user.is_admin() or category.created_by == request.user):
+        raise PermissionDenied
+
+    # Get submitted tests that include this category
+    tests = Test.objects.filter(categories=category, is_submitted=True).select_related('student').order_by('-date_taken')
+
+    paginator = Paginator(tests, 15)
+    page = request.GET.get('page')
+    try:
+        tests_page = paginator.page(page)
+    except PageNotAnInteger:
+        tests_page = paginator.page(1)
+    except EmptyPage:
+        tests_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'teacher/student_scores.html', {'tests': tests_page, 'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_student_list(request):
+    """Show a card-style list of subtests (categories) that the teacher created."""
+    # Admins see all categories, teachers only their own
+    if request.user.is_admin():
+        categories = Category.objects.all().order_by('-id')
+    else:
+        categories = Category.objects.filter(created_by=request.user).order_by('-id')
+
+    # Add quick stats
+    for cat in categories:
+        stats = cat.get_test_statistics()
+        cat.total_students = stats['total_students']
+        cat.total_tests = stats['total_tests']
+        cat.avg_score = stats['average_score']
+
+    return render(request, 'teacher/student_list.html', {'categories': categories})
 
 
 def register(request):

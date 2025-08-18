@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}Questions - {{ category.category_name }}{% endblock %}
+
+{% block content %}
+<!-- Start block -->
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
+  <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
+    <!-- Breadcrumb and Header -->
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden mb-6">
+      <div class="p-6">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+          <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+              <a href="{% url 'teacher_student_list' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">Categories</a>
+            </li>
+            <li>
+              <div class="flex items-center">
+                <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20"><path d="M7 7l6 6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span class="text-sm text-gray-500">{{ category.category_name }}</span>
+              </div>
+            </li>
+          </ol>
+        </nav>
+
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0">
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
+              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"></svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ category.category_name }} Questions</h1>
+              <div class="flex items-center space-x-4 mt-2">
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ category.time_limit }} minutes</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if category.scoring_method == 'utbk' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300{% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                  {{ category.get_scoring_method_display }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            {% if category.scoring_method == 'utbk' %}
+            <a href="{% url 'update_utbk_coefficients' category.id %}" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800">Update UTBK</a>
+            {% endif %}
+            <a href="{% url 'teacher_question_create' category.id %}" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">Add Question</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Questions Table -->
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
+      <!-- Search and Filter Section -->
+      <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="w-full md:w-1/2">
+          <form method="GET" class="flex items-center space-x-2">
+            <div class="relative flex-1">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+              </div>
+              <input type="text" name="search" value="{{ request.GET.search }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="Search questions and choices...">
+            </div>
+            <button type="submit" class="flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 rounded-lg dark:bg-primary-600 dark:hover:bg-primary-700">Search</button>
+            <button type="button" onclick="toggleFilters()" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Filters</button>
+            <div class="ml-auto text-sm text-gray-500">Total: <span class="font-semibold text-gray-900 dark:text-white">{{ questions.paginator.count }}</span> questions</div>
+          </form>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <form method="GET" class="inline">
+            <select name="sort" onchange="this.form.submit()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <option value="-pub_date" {% if request.GET.sort == '-pub_date' or not request.GET.sort %}selected{% endif %}>Newest First</option>
+              <option value="pub_date" {% if request.GET.sort == 'pub_date' %}selected{% endif %}>Oldest First</option>
+              <option value="question_text" {% if request.GET.sort == 'question_text' %}selected{% endif %}>A-Z</option>
+              <option value="-question_text" {% if request.GET.sort == '-question_text' %}selected{% endif %}>Z-A</option>
+            </select>
+          </form>
+        </div>
+      </div>
+
+      <!-- Advanced Filters Panel (Hidden by default) -->
+      <div id="filtersPanel" class="hidden border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 p-4">
+        <form method="GET" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Type</label>
+              <select name="question_type" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <option value="">All</option>
+                <option value="mcq">Multiple Choice</option>
+                <option value="essay">Essay</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Weight / Difficulty</label>
+              <input type="text" name="weight" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="e.g. >= 500">
+            </div>
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-lg">Apply Filters</button>
+            <a href="{% url 'teacher_question_list' category.id %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg">Reset</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+              <th scope="col" class="px-6 py-3">#</th>
+              <th scope="col" class="px-6 py-3">Question Text</th>
+              <th scope="col" class="px-6 py-3">Difficulty Coefficient</th>
+              <th scope="col" class="px-6 py-3">Date Created</th>
+              <th scope="col" class="px-6 py-3">Choices</th>
+              <th scope="col" class="px-6 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for question in questions %}
+            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td class="px-6 py-4">{{ forloop.counter }}</td>
+              <td class="px-6 py-4"><div class="prose dark:prose-invert max-w-none">{{ question.question_text|truncatechars:160|safe }}</div></td>
+              <td class="px-6 py-4">
+                <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{{ question.difficulty_coefficient|default:question.custom_weight|default:'-' }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500">{% if question.pub_date %}{{ question.pub_date|date:'M d, Y' }}<div class="text-xs text-gray-400">{{ question.pub_date|time:'H:i' }}</div>{% endif %}</td>
+              <td class="px-6 py-4">
+                <ul class="space-y-1">
+                  {% for choice in question.choices.all %}
+                  <li class="flex items-start space-x-2 text-sm">
+                    <div class="flex-shrink-0 mt-0.5">{% if choice.is_correct %}<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>{% else %}<span class="w-4 h-4 inline-block"></span>{% endif %}</div>
+                    <div class="flex-1 text-gray-700 dark:text-gray-300">{{ choice.choice_text|truncatechars:120|safe }}</div>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center space-x-2">
+                  <a href="{% url 'teacher_question_update' question.id %}" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                  </a>
+                  <button type="button" onclick="confirmDelete('{{ question.id }}')" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800" title="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center">
+                <div class="flex flex-col items-center">
+                  <span class="text-gray-500 dark:text-gray-400">No questions yet.</span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4">
+        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Showing <span class="font-semibold text-gray-900 dark:text-white">{{ questions.start_index }}-{{ questions.end_index }}</span> of <span class="font-semibold text-gray-900 dark:text-white">{{ questions.paginator.count }}</span></span>
+        <div>
+          {% if questions.has_previous %}<a href="?page={{ questions.previous_page_number }}" class="px-3 py-1 border rounded">Previous</a>{% endif %}
+          {% if questions.has_next %}<a href="?page={{ questions.next_page_number }}" class="px-3 py-1 border rounded">Next</a>{% endif %}
+        </div>
+      </nav>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+<!-- Delete Confirmation Modal (teacher) -->
+<div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-md max-h-full">
+  <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+    <div class="p-4 md:p-5 text-center">
+    <svg class="mx-auto mb-4 text-gray-400 w-6 h-6 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+    </svg>
+    <p id="modalCategoryInfo" class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this Question?</p>
+    <form id="deleteForm" method="POST">
+      {% csrf_token %}
+      <button data-modal-toggle="deleteModal" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">No, cancel</button>
+      <button type="submit" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">Yes, I'm sure</button>
+    </form>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script>
+  function confirmDelete(questionId) {
+  const deleteForm = document.getElementById('deleteForm');
+  deleteForm.action = `/teacher/questions/${questionId}/delete/`;
+  const modalEl = document.getElementById('deleteModal');
+  if (window.flowbite && modalEl) {
+    const modal = new flowbite.Modal(modalEl, {});
+    modal.show();
+  } else {
+    modalEl.classList.remove('hidden');
+  }
+  }
+
+  function toggleFilters() {
+  const filtersPanel = document.getElementById('filtersPanel');
+  if (filtersPanel) filtersPanel.classList.toggle('hidden');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.querySelector('input[name="search"]');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.form.submit();
+    }
+    });
+  }
+  });
+</script>

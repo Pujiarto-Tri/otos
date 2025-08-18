@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Scores - {{ category.category_name }}{% endblock %}
+
+{% block content %}
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
+  <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden mb-6">
+      <div class="p-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Scores for {{ category.category_name }}</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Student submissions and scores</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+              <th class="px-6 py-3">Student</th>
+              <th class="px-6 py-3">Score</th>
+              <th class="px-6 py-3">Points</th>
+              <th class="px-6 py-3">Finished At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for test in tests %}
+            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td class="px-6 py-4">{{ test.user.get_full_name }}</td>
+              <td class="px-6 py-4">{{ test.score }}</td>
+              <td class="px-6 py-4">{{ test.points }}</td>
+              <td class="px-6 py-4">{{ test.finished_at }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center">
+                <div class="flex flex-col items-center">
+                  <span class="text-gray-500 dark:text-gray-400">No submissions yet.</span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

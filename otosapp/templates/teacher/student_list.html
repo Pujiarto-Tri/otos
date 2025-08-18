@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Performance{% endblock %}
+
+{% block content %}
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
+  <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden mb-6">
+      <div class="p-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Student Performance</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">See how students performed on your subtests.</p>
+        </div>
+        <div>
+          <a href="{% url 'teacher_category_create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-lg hover:bg-primary-800">Tambah Subtest</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for cat in categories %}
+      <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
+        <a href="{% url 'teacher_view_student_scores' cat.id %}" class="block p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ cat.category_name }}</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Questions: {{ cat.get_question_count }}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-gray-400">Avg score</span>
+              <div class="text-xl font-semibold">{{ cat.avg_score|default:'-' }}</div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+            <div>Students: <span class="font-medium">{{ cat.total_students }}</span></div>
+            <div>Submitted: <span class="font-medium">{{ cat.total_tests }}</span></div>
+          </div>
+        </a>
+      </div>
+      {% empty %}
+      <div class="col-span-full p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <p class="text-gray-600 dark:text-gray-300">You have not created any subtests yet. Create one from Manage Subtest.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -143,6 +143,15 @@ class Category(models.Model):
     time_limit = models.IntegerField(default=60, help_text="Time limit in minutes (default: 60 minutes)")
     scoring_method = models.CharField(max_length=10, choices=SCORING_METHODS, default='default')
     passing_score = models.FloatField(default=75.0, help_text="Minimum score required to pass (0-100)")
+    # Optional owner (teacher) who created/maintains this category
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='categories_created',
+        help_text='Teacher who created this category'
+    )
     
     def __str__(self):
         return self.category_name

@@ -29,6 +29,18 @@ urlpatterns = [
     path('admin/question/<int:question_id>/edit/', views.question_update, name='question_update'),
     path('admin/question/<int:question_id>/delete/', views.question_delete, name='question_delete'),
 
+    # Teacher routes
+    path('teacher/categories/', views.teacher_category_list, name='teacher_category_list'),
+    path('teacher/categories/create/', views.teacher_category_create, name='teacher_category_create'),
+    path('teacher/categories/<int:category_id>/edit/', views.teacher_category_update, name='teacher_category_update'),
+    path('teacher/categories/<int:category_id>/delete/', views.teacher_category_delete, name='teacher_category_delete'),
+    path('teacher/categories/<int:category_id>/questions/', views.teacher_question_list, name='teacher_question_list'),
+    path('teacher/categories/<int:category_id>/questions/create/', views.teacher_question_create, name='teacher_question_create'),
+    path('teacher/questions/<int:question_id>/edit/', views.teacher_question_update, name='teacher_question_update'),
+    path('teacher/questions/<int:question_id>/delete/', views.teacher_question_delete, name='teacher_question_delete'),
+    path('teacher/students/', views.teacher_student_list, name='teacher_student_list'),
+    path('teacher/categories/<int:category_id>/scores/', views.teacher_view_student_scores, name='teacher_view_student_scores'),
+
     path('students/tryouts/', views.tryout_list, name='tryout_list'),
     path('students/tryouts/<int:category_id>/take/<int:question>/', views.take_test, name='take_test'),
     path('students/tryouts/package/<int:package_id>/take/', views.take_package_test, name='take_package_test'),

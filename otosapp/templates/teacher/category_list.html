@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}My Subtests{% endblock %}
+
+{% block content %}
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
+    <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
+        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden mb-6">
+            <div class="p-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">My Subtests</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Manage subtests you've created</p>
+                </div>
+                <div>
+                    <a href="{% url 'teacher_category_create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-lg hover:bg-primary-800">Tambah Subtest</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th class="px-6 py-3">Subtest</th>
+                            <th class="px-6 py-3">Time Limit</th>
+                            <th class="px-6 py-3">Scoring Method</th>
+                            <th class="px-6 py-3">Total Questions</th>
+                            <th class="px-6 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ category.category_name }}</td>
+                            <td class="px-6 py-4">{{ category.time_limit }} min</td>
+                            <td class="px-6 py-4">{{ category.get_scoring_method_display }}</td>
+                            <td class="px-6 py-4">{{ category.question_set.count }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'teacher_question_list' category.id %}" class="flex items-center justify-center px-3 h-8 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800" title="Questions">Questions</a>
+                                    {% if category.scoring_method == 'utbk' %}
+                                    <a href="{% url 'update_utbk_coefficients' category.id %}" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-green-700 bg-green-100 border border-green-200 rounded-lg hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800" title="Update UTBK coefficients">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'teacher_category_update' category.id %}" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                        </svg>
+                                    </a>
+
+                                    <button type="button" onclick="confirmCategoryDelete('{{ category.id }}')" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800" title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-gray-500 dark:text-gray-400">No Subtests found.</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4">
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                    Showing
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ categories.start_index }}-{{ categories.end_index }}</span>
+                    of
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ categories.paginator.count }}</span>
+                </span>
+                <div>
+                    {% if categories.has_previous %}
+                        <a href="?page={{ categories.previous_page_number }}" class="px-3 py-1 border rounded">Previous</a>
+                    {% endif %}
+                    {% if categories.has_next %}
+                        <a href="?page={{ categories.next_page_number }}" class="px-3 py-1 border rounded">Next</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+<!-- Delete Confirmation Modal for Categories -->
+<div id="deleteModalCategory" 
+     tabindex="-1" 
+     aria-hidden="true" 
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div class="p-4 md:p-5 text-center">
+                <svg class="mx-auto mb-4 text-gray-400 w-6 h-6 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <p id="modalCategoryInfo" class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this Subtest?</p>
+                <form id="deleteFormInModal" method="POST">
+                    {% csrf_token %}
+                    <button data-modal-toggle="deleteModalCategory" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">No, cancel</button>
+                    <button type="submit" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">Yes, I'm sure</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFilters() {
+        const filtersPanel = document.getElementById('filtersPanel');
+        if (filtersPanel) filtersPanel.classList.toggle('hidden');
+    }
+
+    // Delete modal for categories (teacher)
+    function confirmCategoryDelete(categoryId) {
+        let deleteForm = document.getElementById('deleteFormCategory');
+        if (!deleteForm) {
+            // create a simple hidden form and append to body
+            deleteForm = document.createElement('form');
+            deleteForm.method = 'POST';
+            deleteForm.id = 'deleteFormCategory';
+            deleteForm.style.display = 'none';
+            // CSRF token input will be submitted by server-side template when used in modal; fallback omitted
+            document.body.appendChild(deleteForm);
+        }
+        deleteForm.action = `/teacher/categories/${categoryId}/delete/`;
+        // confirm with simple browser confirm if no modal library
+        if (window.flowbite) {
+            const modalEl = document.getElementById('deleteModalCategory');
+            const modal = new flowbite.Modal(modalEl, {});
+            modal.show();
+            // set the form inside modal to the action
+            const formInModal = document.getElementById('deleteFormInModal');
+            if (formInModal) formInModal.action = deleteForm.action;
+        } else {
+            if (confirm('Are you sure you want to delete this subtest?')) {
+                deleteForm.submit();
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.form.submit();
+                }
+            });
+        }
+    });
+</script>
