@@ -3,60 +3,96 @@
 {% block title %}Detail Hasil Test{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto p-4 sm:p-6">
-	<div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
-		<div class="flex items-start justify-between mb-4">
-			<div>
-				<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Detail Hasil Test</h1>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Hasil lengkap untuk test yang dikerjakan pada {{ test.date_taken|date:"d M Y H:i" }}</p>
-			</div>
-			<div class="text-right">
-				<div class="text-sm text-gray-500">Nilai: <span class="font-bold text-gray-900 dark:text-white">{{ test.score }}</span></div>
-				<div class="text-xs text-gray-400">Durasi: {{ test.duration|default:"-" }}</div>
-			</div>
-		</div>
+<div class="max-w-6xl mx-auto p-4 sm:p-6">
+	{# Provide page_title and page_subtitle to welcome_header via explicit branches (avoid inline expressions) #}
+	{% if test.tryout_package %}
+		{% with page_title=test.tryout_package.package_name page_subtitle=test.date_taken|date:"d M Y H:i" %}
+			{% include 'components/welcome_header.html' with page_title=page_title page_subtitle=page_subtitle hide_profile=True %}
+		{% endwith %}
+	{% elif category %}
+		{% with page_title=category.category_name page_subtitle=test.date_taken|date:"d M Y H:i" %}
+			{% include 'components/welcome_header.html' with page_title=page_title page_subtitle=page_subtitle hide_profile=True %}
+		{% endwith %}
+	{% endif %}
+			<script>
+			// Map 'packages' -> 'by_category', 'categories' -> 'by_question'
+			function showTab(tabName) {
+				const mapping = { packages: 'by_category', categories: 'by_question' };
+				const targetId = mapping[tabName];
+				const tabContents = document.querySelectorAll('.tab-content');
+				// hide all with soft transition
+				tabContents.forEach(content => {
+					content.classList.add('opacity-0', 'scale-98')
+					setTimeout(() => content.classList.add('hidden'), 180)
+					setTimeout(() => content.classList.remove('opacity-0', 'scale-98'), 300)
+				});
+				setTimeout(() => {
+					const el = document.getElementById(targetId+'');
+					if (!el) return;
+					// show target
+					el.classList.remove('hidden');
+					el.classList.add('opacity-0', 'scale-98');
+					setTimeout(() => el.classList.remove('opacity-0', 'scale-98'), 20);
+				}, 200);
 
-		<!-- Tabs: Summary | By Category | By Question -->
-		<div class="mb-6">
-			<nav class="flex space-x-2" aria-label="Tabs">
-				<a href="#summary" class="px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-200 text-sm font-medium">Ringkasan</a>
-				<a href="#by_category" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Per Kategori</a>
-				<a href="#by_question" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Per Soal</a>
-			</nav>
-		</div>
+				const tabs = document.querySelectorAll('#packages-tab, #categories-tab');
+				tabs.forEach(tab => {
+					const active = tab.id === tabName + '-tab';
+					tab.classList.toggle('text-white', active);
+					tab.classList.toggle('bg-blue-600', active);
+					tab.classList.toggle('text-gray-600', !active);
+					tab.classList.toggle('dark:text-gray-400', !active);
+				});
+			}
 
-		<div id="summary" class="space-y-4">
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-					<div class="text-xs text-gray-500">Jumlah Soal</div>
-					<div class="text-xl font-bold text-gray-900 dark:text-white">{{ test.total_questions }}</div>
-				</div>
-				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-					<div class="text-xs text-gray-500">Benar</div>
-					<div class="text-xl font-bold text-green-600">{{ test.correct }}</div>
-				</div>
-				<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-					<div class="text-xs text-gray-500">Salah / Kosong</div>
-					<div class="text-xl font-bold text-red-600">{{ test.incorrect_or_blank }}</div>
-				</div>
-			</div>
-
-			<div class="mt-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Perolehan per Kategori</h3>
-				<div class="space-y-3">
-					{% for stat in stats_by_category %}
-					<div class="flex items-center justify-between">
-						<div>
-							<div class="text-sm font-semibold text-gray-800 dark:text-white">{{ stat.category_name }}</div>
-							<div class="text-xs text-gray-500">Benar: {{ stat.correct }} — Salah: {{ stat.incorrect }} — Kosong: {{ stat.blank }}</div>
-						</div>
-						<div class="text-sm font-bold text-gray-900 dark:text-white">{{ stat.score }}</div>
+			// initialize default
+			document.addEventListener('DOMContentLoaded', () => showTab('packages'));
+			</script>
+				<div class="mt-4 flex justify-center mb-8">
+					<div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+						<button id="packages-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-white bg-blue-600" onclick="showTab('packages')">Per Subtest</button>
+						<button id="categories-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" onclick="showTab('categories')">Per Soal</button>
 					</div>
-					{% endfor %}
+				</div>
+			<!-- Single Results container: summary + placeholders for other sections -->
+			<div class="space-y-6 mb-6">
+				<!-- Category badges (consistent location under stat cards) -->
+		    <div class="mt-3 flex justify-center">
+			    <div class="flex flex-wrap gap-2 mt-1">
+						{% if test.tryout_package and test.categories.exists %}
+							{% for cat in test.categories.all %}
+								<span class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">{{ cat.category_name }}</span>
+							{% endfor %}
+						{% elif category %}
+							<span class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">{{ category.category_name }}</span>
+						{% endif %}
+					</div>
 				</div>
 			</div>
 
-			<div class="mt-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+
+			<!-- Recent tests placed below summary to use full width -->
+			<div class="mt-6">
+				{% include 'components/recent_tests.html' %}
+			</div>
+
+			<!-- Per Subtest section -->
+			<div id="by_category" role="tabpanel" aria-labelledby="tab-by_category" class="tab-content space-y-4 hidden transition-all duration-200 ease-out transform">
+				<div class="mt-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+					<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Per Subtest</h3>
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+						{% for stat in stats_by_category %}
+						<div class="p-4 bg-white dark:bg-gray-900 rounded-lg border">
+							<div class="text-xs text-gray-500">Benar: {{ stat.correct }} — Salah: {{ stat.incorrect }} — Kosong: {{ stat.blank }}</div>
+							<div class="text-sm font-bold text-gray-900 dark:text-white">{{ stat.score }}</div>
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+
+		<div id="by_question" role="tabpanel" aria-labelledby="tab-by_question" class="tab-content space-y-4 hidden transition-all duration-200 ease-out transform">
+			<div class="mt-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
 				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Per Nyatakan Per Soal</h3>
 				<div class="divide-y divide-gray-100 dark:divide-gray-700">
 					{% for q in questions %}
@@ -68,6 +104,20 @@
 						<div class="flex-1">
 							<div class="text-sm text-gray-700 dark:text-gray-200">{{ q.question_text|safe }}</div>
 							<div class="text-xs text-gray-500 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-white">{{ q.your_answer|default:"-" }}</span></div>
+								{% if not q.is_correct and q.correct_answer %}
+								<div class="text-xs text-green-700 dark:text-green-300 mt-1">Jawaban Benar: <span class="font-semibold">{{ q.correct_answer }}</span></div>
+								{% endif %}
+							
+							{% if q.all_choices %}
+							<ul class="mt-2 space-y-1 text-sm">
+								{% for ch in q.all_choices %}
+								<li class="p-2 rounded-md border {% if ch.label == q.correct_choice_label %}border-green-300 bg-green-50{% elif ch.label == q.your_choice_label %}border-indigo-300 bg-indigo-50{% else %}border-transparent{% endif %}">
+									<span class="font-semibold mr-2">{{ ch.label }}.</span>
+									<span class="text-gray-700 dark:text-gray-200">{{ ch.text|safe }}</span>
+								</li>
+								{% endfor %}
+							</ul>
+							{% endif %}
 						</div>
 						<div class="w-28 text-right">
 							{% if q.is_correct %}
@@ -84,10 +134,11 @@
 			</div>
 		</div>
 
-		<div class="mt-6 flex justify-between">
-			<a href="{% url 'test_results' %}" class="text-sm text-indigo-600 hover:underline">Kembali ke Hasil</a>
-			<a href="{% url 'tryout_list' %}" class="text-sm text-gray-600 hover:underline">Daftar Tryout</a>
-		</div>
+		{# bottom duplicated links removed; action buttons live near tabs #}
 	</div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- page-specific JS already initialized above; reserved for future scripts -->
 {% endblock %}

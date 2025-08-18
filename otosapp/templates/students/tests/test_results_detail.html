@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Hasil Test - {{ category.category_name|default:"Test" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <!-- Header Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Detail Hasil Test</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400">{{ category.category_name|default:"Test Kategori" }}</p>
+        </div>
+        
+        <!-- Score Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white text-center">
+                <div class="text-2xl font-bold">{{ test.score|floatformat:1 }}%</div>
+                <div class="text-sm opacity-90">Skor Akhir</div>
+            </div>
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white text-center">
+                <div class="text-2xl font-bold">{{ correct_count }}</div>
+                <div class="text-sm opacity-90">Jawaban Benar</div>
+            </div>
+            <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-4 text-white text-center">
+                <div class="text-2xl font-bold">{{ incorrect_count }}</div>
+                <div class="text-sm opacity-90">Jawaban Salah</div>
+            </div>
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white text-center">
+                <div class="text-2xl font-bold">{{ total_questions }}</div>
+                <div class="text-sm opacity-90">Total Soal</div>
+            </div>
+        </div>
+        
+        <!-- Pass/Fail Status -->
+        {% with status=test.get_pass_status %}
+        <div class="mb-6 text-center">
+            <div class="inline-flex items-center px-6 py-3 text-lg font-semibold text-white rounded-full
+                {% if status.color == 'green' %}
+                    bg-gradient-to-r from-green-500 to-emerald-600
+                {% else %}
+                    bg-gradient-to-r from-red-500 to-red-600
+                {% endif %}">
+                {% if status.color == 'green' %}
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% else %}
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% endif %}
+                {{ status.status }}
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Nilai minimum untuk lulus: {{ category.get_passing_score }}
+            </p>
+        </div>
+        {% endwith %}
+        
+        <!-- Results Detail Deprecated: moved to students/tryouts/test_results_detail.html -->
+        {% include 'students/tryouts/test_results_detail.html' %}
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+        <a href="{% url 'test_results' test.id %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Kembali ke Hasil Test
+        </a>
+        
+        <a href="{% url 'tryout_list' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-all shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v1H8V5z"></path>
+            </svg>
+            Tryout Lain
+        </a>
+        
+        <a href="{% url 'home' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Beranda
+        </a>
+    </div>
+</div>
+
+<style>
+.ckeditor-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+.ckeditor-content p {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.ckeditor-content ul, .ckeditor-content ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.ckeditor-content li {
+    margin-bottom: 4px;
+}
+
+.ckeditor-content strong {
+    font-weight: 600;
+}
+
+.ckeditor-content em {
+    font-style: italic;
+}
+
+.ckeditor-content blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 16px;
+    margin: 16px 0;
+    font-style: italic;
+    color: #6b7280;
+}
+
+.dark .ckeditor-content blockquote {
+    border-left-color: #4b5563;
+    color: #9ca3af;
+}
+</style>
+{% endblock %}

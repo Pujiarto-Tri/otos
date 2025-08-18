@@ -1,0 +1,567 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Riwayat Test - Exam System{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">📊 Riwayat Test</h1>
+                    <p class="text-xl text-white/90">Semua test yang pernah Anda kerjakan</p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-white/20 backdrop-blur-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Total: {{ total_tests }} test
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Rata-rata Skor</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_score|smart_float }}</p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Skor Tertinggi</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ highest_score|smart_float }}</p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Test Terakhir</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        {% if latest_test %}
+                            {{ latest_test.date_taken|date:"d M Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 mb-8 border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center space-x-3 mb-6">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            </svg>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Filter & Pencarian</h2>
+            {% if current_search or current_category or date_from or date_to %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                Filter Aktif
+            </span>
+            {% endif %}
+        </div>
+        
+        <form method="get" id="filterForm" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Search -->
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Test</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="search" 
+                               name="search" 
+                               value="{{ current_search|default:'' }}"
+                               placeholder="Nama subtest atau paket tryout UTBK..."
+                               class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
+                        <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Date From -->
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dari Tanggal</label>
+                    <input type="date" 
+                           id="date_from" 
+                           name="date_from" 
+                           value="{{ date_from|default:'' }}"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <!-- Date To -->
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sampai Tanggal</label>
+                    <input type="date" 
+                           id="date_to" 
+                           name="date_to" 
+                           value="{{ date_to|default:'' }}"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-3 pt-2">
+                <button type="submit" 
+                        class="inline-flex items-center px-6 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Terapkan Filter
+                </button>
+                <a href="{% url 'test_history' %}" 
+                   class="inline-flex items-center px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Reset Filter
+                </a>
+                <button type="button" 
+                        id="clearFilters"
+                        class="inline-flex items-center px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tests List -->
+    {% if page_obj %}
+    <div class="space-y-6">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Test</h2>
+                {% if current_search or current_category or date_from or date_to %}
+                <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    <span>Hasil filter</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ page_obj.paginator.count }} test ditemukan
+                </span>
+                {% if page_obj.paginator.count > 10 %}
+                <span class="text-xs text-gray-400 dark:text-gray-500">
+                    ({{ page_obj.paginator.num_pages }} halaman)
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="grid gap-6">
+            {% for test in page_obj %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <!-- Test Information -->
+                    <div class="flex items-start space-x-4 flex-1">
+                        <!-- Status Icon -->
+                        <div class="flex-shrink-0">
+                            {% with test.categories.first as category %}
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center
+                                {% if test.is_passed %}bg-gradient-to-br from-green-400 to-green-600
+                                {% else %}bg-gradient-to-br from-red-400 to-red-600{% endif %}">
+                                <svg class="w-6 h-6 text-white" 
+                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    {% if test.is_passed %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    {% else %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    {% endif %}
+                                </svg>
+                            </div>
+                            {% endwith %}
+                        </div>
+                        
+                        <div class="flex flex-col">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ test.name }}
+                            </div>
+                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span>{{ test.answers.count }} soal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Score & Actions Section -->
+                    <div class="mt-6 lg:mt-0 lg:ml-6 flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+                        <!-- Score Display -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 text-center mb-4 lg:mb-0">
+                            <div class="text-3xl font-bold
+                                {% if test.is_passed %}text-green-600 dark:text-green-400
+                                {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ test.score|smart_float }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skor Akhir</div>
+                            <div class="text-xs font-medium mt-1">
+                                {% with category=test.categories.first %}
+                                    {% if category and category.scoring_method == 'utbk' and test_university_info|get_item:test.id %}
+                                        {% with info=test_university_info|get_item:test.id %}
+                                            {% if info.target_achievement_status == 'all_met' %}
+                                                <span class="text-green-600 dark:text-green-400">Nilai memenuhi syarat universitas</span>
+                                            {% elif info.target_achievement_status == 'some_met' %}
+                                                <span class="text-yellow-600 dark:text-yellow-400">Sebagian target terpenuhi</span>
+                                            {% elif info.target_achievement_status == 'none_met' %}
+                                                <span class="text-red-600 dark:text-red-400">Nilai belum memenuhi target universitas</span>
+                                            {% else %}
+                                                <span class="text-gray-500 dark:text-gray-400">-</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with status=test.get_pass_status %}{{ status.status }}{% endwith %}
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            {# Pill Universitas Target (khusus UTBK) #}
+                            {% with category=test.categories.first %}
+                                {% if category and category.scoring_method == 'utbk' and test_university_info|get_item:test.id %}
+                                    {% with info=test_university_info|get_item:test.id %}
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            {% for rec in info.recommendations %}
+                                                {% if rec.target_type != 'suggested' %}
+                                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                                        {% if rec.meets_minimum %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                                        {% else %}bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100{% endif %}">
+                                                        {{ rec.university.name }}
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endwith %}
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col space-y-2">
+                            <a href="{% url 'test_results' test.id %}" 
+                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Lihat Hasil
+                            </a>
+                            <a href="{% url 'test_results_detail' test.id %}" 
+                               class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Detail Soal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 px-6 py-4 mt-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                Menampilkan <span class="font-medium">{{ page_obj.start_index }}-{{ page_obj.end_index }}</span> dari <span class="font-medium">{{ page_obj.paginator.count }}</span> test
+            </div>
+            
+            <nav class="flex items-center space-x-1">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if current_search %}&search={{ current_search|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors"
+                   title="Halaman Pertama">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&search={{ current_search|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors"
+                   title="Halaman Sebelumnya">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                {% endif %}
+                
+                <!-- Page numbers -->
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-lg">
+                            {{ num }}
+                        </span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if current_search %}&search={{ current_search|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                           class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors rounded-lg">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&search={{ current_search|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors"
+                   title="Halaman Selanjutnya">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if current_search %}&search={{ current_search|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-r-xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-white transition-colors"
+                   title="Halaman Terakhir">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-12 text-center border border-gray-100 dark:border-gray-700">
+        <div class="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-6">
+            {% if current_search or current_category or date_from or date_to %}
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            {% else %}
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            {% endif %}
+        </div>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            {% if current_search or current_category or date_from or date_to %}
+                Tidak Ada Hasil
+            {% else %}
+                Belum Ada Test
+            {% endif %}
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            {% if current_search or current_category or date_from or date_to %}
+                Tidak ada test yang sesuai dengan filter yang dipilih.
+                {% if current_search %}
+                <br><strong>Pencarian:</strong> "{{ current_search }}"
+                {% endif %}
+                {% if current_category_name %}
+                <br><strong>Subtest:</strong> {{ current_category_name }}
+                {% endif %}
+                {% if date_from or date_to %}
+                <br><strong>Rentang Tanggal:</strong> 
+                {% if date_from %}{{ date_from }}{% endif %}
+                {% if date_from and date_to %} - {% endif %}
+                {% if date_to %}{{ date_to }}{% endif %}
+                {% endif %}
+            {% else %}
+                Anda belum mengerjakan test apa pun. Mulai perjalanan belajar Anda dengan test pertama!
+            {% endif %}
+        </p>
+        
+        {% if current_search or current_category or date_from or date_to %}
+        <!-- Filter suggestions -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6 max-w-lg mx-auto">
+            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Saran:</h4>
+            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                {% if current_search %}
+                <li>• Coba kata kunci yang lebih umum</li>
+                <li>• Periksa ejaan pencarian</li>
+                {% endif %}
+                {% if current_category %}
+                <li>• Pilih subtest yang berbeda atau "Semua Subtest"</li>
+                {% endif %}
+                {% if date_from or date_to %}
+                <li>• Perluas rentang tanggal</li>
+                {% endif %}
+                <li>• Hapus beberapa filter untuk hasil yang lebih luas</li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            {% if current_search or current_category or date_from or date_to %}
+            <a href="{% url 'test_history' %}" 
+               class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Tampilkan Semua Test
+            </a>
+            {% endif %}
+            <a href="{% url 'tryout_list' %}" 
+               class="inline-flex items-center px-8 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                {% if current_search or current_category or date_from or date_to %}
+                Coba Test Baru
+                {% else %}
+                Mulai Test Pertama
+                {% endif %}
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const searchInput = document.getElementById('search');
+    const categorySelect = document.getElementById('category');
+    const dateFromInput = document.getElementById('date_from');
+    const dateToInput = document.getElementById('date_to');
+    
+    // Clear all filters
+    clearFiltersBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        categorySelect.value = '';
+        dateFromInput.value = '';
+        dateToInput.value = '';
+        
+        // Auto submit after clearing
+        filterForm.submit();
+    });
+    
+    // Real-time search with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (this.value.length >= 3 || this.value.length === 0) {
+                filterForm.submit();
+            }
+        }, 500); // 500ms delay
+    });
+    
+    // Auto-submit on category change
+    categorySelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+    
+    // Auto-submit on date change
+    dateFromInput.addEventListener('change', function() {
+        // Validate date range
+        if (dateToInput.value && this.value > dateToInput.value) {
+            alert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir');
+            this.value = '';
+            return;
+        }
+        filterForm.submit();
+    });
+    
+    dateToInput.addEventListener('change', function() {
+        // Validate date range
+        if (dateFromInput.value && this.value < dateFromInput.value) {
+            alert('Tanggal akhir tidak boleh lebih kecil dari tanggal mulai');
+            this.value = '';
+            return;
+        }
+        filterForm.submit();
+    });
+    
+    // Show loading state during form submission
+    filterForm.addEventListener('submit', function() {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Memfilter...
+        `;
+        
+        // Reset button after 3 seconds (fallback)
+        setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }, 3000);
+    });
+    
+    // Highlight active filters
+    function highlightActiveFilters() {
+        const filters = [searchInput, categorySelect, dateFromInput, dateToInput];
+        filters.forEach(filter => {
+            if (filter.value && filter.value.trim() !== '') {
+                filter.classList.add('ring-2', 'ring-blue-500', 'border-blue-500');
+            } else {
+                filter.classList.remove('ring-2', 'ring-blue-500', 'border-blue-500');
+            }
+        });
+    }
+    
+    // Initial highlight check
+    highlightActiveFilters();
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + K to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+        
+        // Escape to clear search
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.value = '';
+            searchInput.blur();
+            filterForm.submit();
+        }
+    });
+    
+    // Add visual feedback for empty states
+    const testsList = document.querySelector('.grid.gap-6');
+    if (testsList && testsList.children.length === 0) {
+        // Add some visual enhancement to empty state
+        console.log('No tests found with current filters');
+    }
+});
+</script>
+{% endblock %}

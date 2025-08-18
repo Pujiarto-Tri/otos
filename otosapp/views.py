@@ -1493,73 +1493,127 @@ def test_results_detail(request, test_id):
     if test.answers.exists():
         test.calculate_score()
     
-    # Get all questions and answers with detailed information
-    answers = test.answers.select_related('question', 'selected_choice').prefetch_related('question__choices')
-    
-    # Create detailed results for each question
-    question_results = []
+    # Build full question list for this test (include unanswered questions)
+    question_list = []
+    # Determine source of questions: package or categories
+    if test.tryout_package:
+        package = test.tryout_package
+        all_questions = []
+        for pc in package.tryoutpackagecategory_set.all().order_by('order'):
+            qs = list(Question.objects.filter(category=pc.category).order_by('id'))
+            all_questions.extend(qs)
+    else:
+        # Collect questions from all categories linked to the test
+        all_questions = []
+        for cat in test.categories.all():
+            qs = list(Question.objects.filter(category=cat).order_by('id'))
+            all_questions.extend(qs)
+
+    # Prepare per-category aggregation
+    stats_by_category = {}
+
     correct_count = 0
-    total_score_earned = 0
-    total_possible_score = 0
-    
-    for answer in answers:
-        question = answer.question
-        selected_choice = answer.selected_choice
-        correct_choice = question.choices.filter(is_correct=True).first()
-        is_correct = selected_choice.is_correct
-        
+    total_questions = len(all_questions)
+
+    # Iterate full question list and include answers if present
+
+    for q in all_questions:
+        ans = test.answers.filter(question=q).select_related('selected_choice').first()
+        selected_choice = ans.selected_choice if ans else None
+        correct_choice = q.choices.filter(is_correct=True).first()
+        is_correct = (selected_choice.is_correct) if selected_choice else False
+
         if is_correct:
             correct_count += 1
-        
-        # Calculate score for this question based on scoring method
-        question_score = 0
-        max_question_score = 0
-        
-        if category and category.scoring_method == 'custom':
-            max_question_score = question.custom_weight
-            if is_correct:
-                question_score = question.custom_weight
-        elif category and category.scoring_method == 'utbk':
-            max_question_score = question.difficulty_coefficient
-            if is_correct:
-                question_score = question.difficulty_coefficient
-        else:  # default scoring
-            max_question_score = 100 / answers.count() if answers.count() > 0 else 0
-            if is_correct:
-                question_score = max_question_score
-        
-        total_score_earned += question_score
-        total_possible_score += max_question_score
-        
-        question_results.append({
-            'question': question,
-            'selected_choice': selected_choice,
-            'correct_choice': correct_choice,
+
+        # Build labeled choices (A, B, C...)
+        all_choices = []
+        choices_qs = list(q.choices.all().order_by('id'))
+        for idx, ch in enumerate(choices_qs):
+            label = chr(65 + idx)  # A, B, C, ...
+            all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
+
+        # Determine labels for selected and correct choices
+        your_answer_label = None
+        correct_answer_label = None
+        if selected_choice:
+            for c in all_choices:
+                if c['id'] == selected_choice.id:
+                    your_answer_label = c['label']
+                    break
+        if correct_choice:
+            for c in all_choices:
+                if c['id'] == correct_choice.id:
+                    correct_answer_label = c['label']
+                    break
+
+        # Append to question_list in the shape template expects
+        question_list.append({
+            'question_text': q.question_text,
+            'your_answer': selected_choice.choice_text if selected_choice else None,
             'is_correct': is_correct,
-            'question_score': question_score,
-            'max_question_score': max_question_score,
-            'all_choices': question.choices.all()
+            'correct_answer': correct_choice.choice_text if correct_choice else None,
+            'question_obj': q,
+            'all_choices': all_choices,
+            'your_choice_label': your_answer_label,
+            'correct_choice_label': correct_answer_label,
         })
-    
-    # Calculate summary statistics
-    total_questions = len(question_results)
+
+        # Aggregate per-category stats
+        cat_name = q.category.category_name if q.category else 'Umum'
+        if cat_name not in stats_by_category:
+            stats_by_category[cat_name] = {'category_name': cat_name, 'correct': 0, 'incorrect': 0, 'blank': 0, 'score': 0}
+
+        if selected_choice is None:
+            stats_by_category[cat_name]['blank'] += 1
+        elif is_correct:
+            stats_by_category[cat_name]['correct'] += 1
+        else:
+            stats_by_category[cat_name]['incorrect'] += 1
+
+    # Convert stats_by_category to list and compute simple score per category
+    stats_by_category_list = []
+    for cat_stat in stats_by_category.values():
+        total_cat = cat_stat['correct'] + cat_stat['incorrect'] + cat_stat['blank']
+        # simple percent score: correct / total * 100
+        cat_stat['score'] = round((cat_stat['correct'] / total_cat * 100) if total_cat > 0 else 0, 1)
+        stats_by_category_list.append(cat_stat)
+
     incorrect_count = total_questions - correct_count
     accuracy_percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
-    
-    # Get scoring method explanation
-    scoring_explanation = get_scoring_explanation(category) if category else ""
-    
+
+    # Expose summary fields on the test object so the template (which references test.total_questions etc.) works
+    try:
+        test.total_questions = total_questions
+        test.correct = correct_count
+        test.incorrect_or_blank = incorrect_count
+    except Exception:
+        pass
+
+    # Compute human-readable duration if possible
+    try:
+        if getattr(test, 'start_time', None) and getattr(test, 'end_time', None):
+            delta = test.end_time - test.start_time
+            minutes, seconds = divmod(int(delta.total_seconds()), 60)
+            hours, minutes = divmod(minutes, 60)
+            if hours > 0:
+                test.duration = f"{hours}h {minutes}m"
+            else:
+                test.duration = f"{minutes}m {seconds}s"
+        else:
+            test.duration = None
+    except Exception:
+        test.duration = None
+
     context = {
         'test': test,
         'category': category,
-        'question_results': question_results,
+        'questions': question_list,
+        'stats_by_category': stats_by_category_list,
         'total_questions': total_questions,
         'correct_count': correct_count,
         'incorrect_count': incorrect_count,
         'accuracy_percentage': accuracy_percentage,
-        'total_score_earned': total_score_earned,
-        'total_possible_score': total_possible_score,
-        'scoring_explanation': scoring_explanation,
     }
     
     return render(request, 'students/tryouts/test_results_detail.html', context)
@@ -3660,6 +3714,9 @@ def take_package_test_question(request, package_id, question):
         # Handle AJAX requests for saving answers
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
+        # Debug logging: record incoming POST attempts for troubleshooting
+        print(f"[DEBUG] take_package_test_question POST - user={getattr(request.user, 'email', request.user)} package_id={package_id} question_index={question} choice_id={choice_id} is_ajax={is_ajax} test_id={getattr(test, 'id', None)}")
+
         if choice_id:
             choice = get_object_or_404(Choice, id=choice_id, question=current_question)
             
@@ -3693,7 +3750,13 @@ def take_package_test_question(request, package_id, question):
                     selected_choice=choice
                 )
                 created = True
-                
+
+            # Debug logging: report result of save
+            try:
+                print(f"[DEBUG] Answer saved - test_id={test.id} question_id={current_question.id} answer_id={answer.id} created={created} selected_choice={getattr(answer.selected_choice, 'id', None)}")
+            except Exception as _e:
+                print(f"[DEBUG] Answer save - exception while logging: {_e}")
+
             # If this is AJAX, return JSON response
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer saved'})
