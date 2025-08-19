@@ -3,6 +3,11 @@
 {% block title %}Detail Hasil Test{% endblock %}
 
 {% block content %}
+<style>
+/* Ensure CKEditor block tags inside choice text don't force line breaks */
+.choice-text p, .choice-text div { display: inline; margin: 0; }
+.choice-text p + p { margin-left: 0; }
+</style>
 <div class="max-w-6xl mx-auto p-4 sm:p-6">
 	{# Provide page_title and page_subtitle to welcome_header via explicit branches (avoid inline expressions) #}
 	{% if test.tryout_package %}
@@ -120,9 +125,9 @@
 							</div>
 							<div class="flex-1">
 								<div class="text-sm text-gray-700 dark:text-gray-200">{{ q.question_text|safe }}</div>
-								<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ q.your_answer|default:"-" }}</span></div>
+								<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Jawaban Anda: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ q.your_answer|default:"-"|safe }}</span></div>
 									{% if not q.is_correct and q.correct_answer %}
-									<div class="text-xs text-green-700 dark:text-green-300 mt-1">Jawaban Benar: <span class="font-semibold">{{ q.correct_answer }}</span></div>
+									<div class="text-xs text-green-700 dark:text-green-300 mt-1">Jawaban Benar: <span class="font-semibold">{{ q.correct_answer|safe }}</span></div>
 									{% endif %}
 
 								{% if q.all_choices %}
@@ -130,7 +135,7 @@
 									{% for ch in q.all_choices %}
 									<li class="p-3 rounded-md {% if ch.label == q.correct_choice_label %}border-2 border-green-400 bg-green-50/40 dark:bg-green-900/30 dark:border-green-600{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}border-2 border-red-400 bg-red-50/40 dark:bg-red-900/30 dark:border-red-600{% elif ch.label == q.your_choice_label %}border-2 border-indigo-300 bg-indigo-50/40 dark:bg-indigo-900/30 dark:border-indigo-600{% else %}border border-transparent bg-transparent{% endif %}">
 										<span class="font-semibold mr-2 {% if ch.label == q.correct_choice_label %}text-green-800 dark:text-green-200{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}text-red-800 dark:text-red-200{% else %}text-gray-800 dark:text-gray-100{% endif %}">{{ ch.label }}.</span>
-										<span class="{% if ch.label == q.correct_choice_label %}text-green-700 dark:text-green-200{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}text-red-700 dark:text-red-200{% else %}text-gray-700 dark:text-gray-200{% endif %}">{{ ch.text|safe }}</span>
+										<span class="choice-text {% if ch.label == q.correct_choice_label %}text-green-700 dark:text-green-200{% elif ch.label == q.your_choice_label and ch.label != q.correct_choice_label %}text-red-700 dark:text-red-200{% else %}text-gray-700 dark:text-gray-200{% endif %}">{{ ch.text|safe }}</span>
 									</li>
 									{% endfor %}
 								</ul>

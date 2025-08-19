@@ -11,6 +11,19 @@
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Scores for {{ category.category_name }}</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Student submissions and scores</p>
         </div>
+        <form method="get" class="flex items-center gap-2">
+          <label class="text-sm text-gray-600 dark:text-gray-300">Sort:</label>
+          <select name="sort" class="rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+            <option value="date" {% if request.GET.sort == 'date' or not request.GET.sort %}selected{% endif %}>Date</option>
+            <option value="score" {% if request.GET.sort == 'score' %}selected{% endif %}>Score</option>
+            <option value="correct" {% if request.GET.sort == 'correct' %}selected{% endif %}>Most Correct</option>
+          </select>
+          <select name="order" class="rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+            <option value="desc" {% if request.GET.order == 'desc' or not request.GET.order %}selected{% endif %}>Desc</option>
+            <option value="asc" {% if request.GET.order == 'asc' %}selected{% endif %}>Asc</option>
+          </select>
+          <button type="submit" class="ml-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">Apply</button>
+        </form>
       </div>
     </div>
 
@@ -21,17 +34,39 @@
             <tr>
               <th class="px-6 py-3">Student</th>
               <th class="px-6 py-3">Score</th>
-              <th class="px-6 py-3">Points</th>
-              <th class="px-6 py-3">Finished At</th>
+              <th class="px-6 py-3">Jawaban</th>
+              <th class="px-6 py-3">Benar (%)</th>
+              <th class="px-6 py-3">Selesai</th>
+              <th class="px-6 py-3">Actions</th>
+             
             </tr>
           </thead>
           <tbody>
             {% for test in tests %}
             <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <td class="px-6 py-4">{{ test.user.get_full_name }}</td>
-              <td class="px-6 py-4">{{ test.score }}</td>
-              <td class="px-6 py-4">{{ test.points }}</td>
-              <td class="px-6 py-4">{{ test.finished_at }}</td>
+              <td class="px-6 py-4">
+                {% if test.student.get_full_name %}
+                  {{ test.student.get_full_name }}
+                {% elif test.student.email %}
+                  {{ test.student.email }}
+                {% elif test.student.phone_number %}
+                  {{ test.student.phone_number }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="px-6 py-4">{{ test.score|floatformat:1 }}</td>
+              <td class="px-6 py-4">
+                <div class="flex gap-2 items-center">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">Benar: {{ test.correct_count }}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">Salah: {{ test.wrong_count }}</span>
+                </div>
+              </td>
+                <td class="px-6 py-4">{{ test.percent_correct }}%</td>
+                <td class="px-6 py-4">{{ test.date_taken|date:"Y-m-d H:i" }}</td>
+              <td class="px-6 py-4">
+                <a href="{% url 'teacher_test_review' category.id test.id %}" class="text-sm text-blue-600 hover:underline">Review</a>
+              </td>
             </tr>
             {% empty %}
             <tr>

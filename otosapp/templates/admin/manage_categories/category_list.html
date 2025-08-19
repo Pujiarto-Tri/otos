@@ -15,6 +15,8 @@
                         <div>
                             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Subtest Management</h1>
                             <div class="flex items-center space-x-4 mt-2">
+                <!-- Tom Select CSS -->
+                <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.default.min.css" rel="stylesheet">
                                 <span class="text-sm text-gray-500 dark:text-gray-400">Manage Subtests</span>
                             </div>
                         </div>
@@ -121,6 +123,7 @@
                             <th class="px-6 py-3">Scoring Method</th>
                             <th class="px-6 py-3">Scoring Status</th>
                             <th class="px-6 py-3">Total Questions</th>
+                            <th class="px-6 py-3">Teachers</th>
                             <th class="px-6 py-3">Action</th>
                         </tr>
                     </thead>
@@ -170,6 +173,17 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">{{ category.question_set.count }}</td>
+                            <td class="px-6 py-4">
+                                {% if category.teachers.exists %}
+                                    <div class="text-sm text-gray-700 dark:text-gray-300">
+                                        {% for t in category.teachers.all %}
+                                            {{ t.get_full_name|default:t.email }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                {% endif %}
+                            </td>
                             <td class="px-6 py-4 flex items-center">
                                 <div class="flex items-center space-x-2">
                                     {% if category.scoring_method == 'utbk' %}
@@ -179,7 +193,7 @@
                                         </svg>
                                     </a>
                                     {% endif %}
-                                    <button type="button" data-modal-target="updateCategoryModal" data-modal-toggle="updateCategoryModal" onclick="openUpdateModal('{{ category.id }}', '{{ category.category_name }}', '{{ category.time_limit }}', '{{ category.scoring_method }}', '{{ category.passing_score }}')" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
+                                    <button type="button" data-modal-target="updateCategoryModal" data-modal-toggle="updateCategoryModal" onclick="openUpdateModal('{{ category.id }}', '{{ category.category_name }}', '{{ category.time_limit }}', '{{ category.scoring_method }}', '{{ category.passing_score }}', '{% for t in category.teachers.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}')" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                         </svg>
@@ -194,7 +208,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <span class="text-gray-500 dark:text-gray-400">No Category found.</span>
                                 </div>
@@ -384,6 +398,9 @@
         const timeLimitInput = form.querySelector('[name="time_limit"]');
         const scoringMethodSelect = form.querySelector('[name="scoring_method"]');
         const passingScoreInput = form.querySelector('[name="passing_score"]');
+    const teachersInput = form.querySelector('[name="teachers"]');
+    // teachers param is passed as a comma-separated list of teacher IDs
+    const teachersParam = arguments[5] || '';
         
         // Set the form action URL dynamically
         form.action = `/admin/categories/${categoryId}/edit/`;
@@ -399,6 +416,25 @@
         if (passingScoreInput) {
             passingScoreInput.value = passingScore;
         }
+
+            // Preselect teachers if provided (expects comma-separated teacher IDs)
+            if (teachersInput) {
+                // If Tom Select instance exists, prefer its API to set selected values
+                const teacherValues = teachersParam ? teachersParam.split(',').map(s => s.trim()).filter(Boolean) : [];
+                if (teachersInput.tomselect && typeof teachersInput.tomselect.setValue === 'function') {
+                    teachersInput.tomselect.setValue(teacherValues);
+                } else {
+                    // Fallback: mark option.selected manually
+                    for (const option of teachersInput.options) option.selected = false;
+                    if (teacherValues.length) {
+                        for (const option of teachersInput.options) {
+                            if (teacherValues.indexOf(option.value) !== -1) {
+                                option.selected = true;
+                            }
+                        }
+                    }
+                }
+            }
 
         // Show modal
         const modalInstance = new Modal(modal);
@@ -420,9 +456,35 @@
         const updateForm = document.getElementById('updateCategoryForm');
         updateForm.addEventListener('submit', function(event) {
             event.preventDefault();
-    
-            const formData = new FormData(this);
-    
+
+            const formEl = this;
+            let formData = new FormData(formEl);
+
+            // Ensure teachers M2M values are sent as repeated keys (one per selected id)
+            const teachersSelect = formEl.querySelector('[name="teachers"]');
+            if (teachersSelect) {
+                // Remove existing teachers entry(ies)
+                formData.delete('teachers');
+
+                let values = [];
+                if (teachersSelect.tomselect && typeof teachersSelect.tomselect.getValue === 'function') {
+                    values = teachersSelect.tomselect.getValue();
+                } else {
+                    // Collect selected option values
+                    for (const opt of teachersSelect.options) if (opt.selected) values.push(opt.value);
+                }
+
+                // If Tom Select returns comma-separated string, split it
+                if (values && typeof values === 'string') {
+                    values = values.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                // Append each selected teacher as repeated 'teachers' entries
+                if (Array.isArray(values)) {
+                    for (const v of values) formData.append('teachers', v);
+                }
+            }
+
             fetch(this.action, {
                 method: 'POST',
                 body: formData,
@@ -444,6 +506,30 @@
             });
         });
     });
+
+    // Initialize Tom Select on teachers selects (create & update forms)
+    (function initTomSelect() {
+        const selectors = document.querySelectorAll('select[name="teachers"]');
+        if (!selectors.length) return;
+        // Load Tom Select JS
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js';
+        script.onload = () => {
+            selectors.forEach(sel => {
+                if (!sel.tomselect) {
+                    sel.tomselect = new TomSelect(sel, {
+                        persist: false,
+                        create: false,
+                        plugins: ['remove_button'],
+                        hideSelected: true,
+                        maxItems: null,
+                        placeholder: 'Select teachers...'
+                    });
+                }
+            });
+        };
+        document.head.appendChild(script);
+    })();
 </script>
 
 

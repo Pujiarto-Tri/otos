@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Performance{% endblock %}
+
+{% block content %}
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 relative shadow-sm sm:rounded-lg overflow-hidden mb-6 border border-gray-100 dark:border-gray-700">
+      <div class="p-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Student Performance</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">See how students performed on your subtests.</p>
+        </div>
+        <div>
+          <a href="{% url 'teacher_category_create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-lg hover:bg-primary-800">Tambah Subtest</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for cat in categories %}
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-2xl transform transition-transform duration-200 hover:-translate-y-1 group">
+        <a href="{% url 'teacher_view_student_scores' cat.id %}" class="block p-6">
+          <!-- Header with icon and title -->
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <!-- Heroicon: academic-cap -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l6.16-3.422A12.083 12.083 0 0118 20.01L12 18v-4z"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white leading-tight">{{ cat.category_name }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Subtest</p>
+            </div>
+          </div>
+
+          <!-- Stats grid -->
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ cat.get_question_count }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Soal</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ cat.total_students }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Students</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ cat.total_tests }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Submitted</div>
+            </div>
+          </div>
+
+          <!-- Average score and average completion time -->
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div class="flex items-center justify-between space-x-4">
+              <div class="flex-1">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Score</div>
+                <div class="mt-1 inline-flex items-center">
+                  <div class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700">
+                    <span class="text-xl font-bold text-gray-900 dark:text-white">{{ cat.avg_score|default_if_none:'-' }}</span>
+                  </div>
+                  {% if cat.has_avg_score %}
+                  <div class="ml-2 w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="flex-0 text-right">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Time</div>
+                <div class="mt-1">
+                  <span class="text-lg font-semibold text-gray-900 dark:text-white">{{ cat.avg_completion_minutes|default_if_none:'-' }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">&nbsp;min</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% empty %}
+      <div class="col-span-full p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <p class="text-gray-600 dark:text-gray-300">You have not created any subtests yet. Create one from Manage Subtest.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -17,12 +17,12 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Question Type</label>
-              {{ form.question_type }}
+              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+              {{ form.category }}
             </div>
             <div>
-              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Score</label>
-              {{ form.score }}
+              <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Custom Weight</label>
+              {{ form.custom_weight }}
             </div>
           </div>
 
@@ -30,11 +30,19 @@
             <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Choices</h3>
             <!-- Management form -->
             {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+              <div class="text-sm text-red-600">{{ formset.non_form_errors }}</div>
+            {% endif %}
 
             <!-- Container for existing forms -->
             <div id="choicesContainer" class="space-y-2">
               {% for f in formset %}
                 <div class="choice-form p-2 border rounded bg-gray-50 dark:bg-gray-700 flex items-center gap-4" data-index="{{ forloop.counter0 }}">
+                  {# Hidden fields (id, DELETE, etc) must be rendered so the formset can match existing instances on POST #}
+                  {% for hidden in f.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
+
                   <div class="flex-1 w-full">
                     {{ f.choice_text }}
                     {% if f.choice_text.errors %}

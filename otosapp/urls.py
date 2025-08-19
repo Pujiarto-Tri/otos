@@ -40,6 +40,7 @@ urlpatterns = [
     path('teacher/questions/<int:question_id>/delete/', views.teacher_question_delete, name='teacher_question_delete'),
     path('teacher/students/', views.teacher_student_list, name='teacher_student_list'),
     path('teacher/categories/<int:category_id>/scores/', views.teacher_view_student_scores, name='teacher_view_student_scores'),
+    path('teacher/categories/<int:category_id>/scores/<int:test_id>/review/', views.teacher_test_review, name='teacher_test_review'),
 
     path('students/tryouts/', views.tryout_list, name='tryout_list'),
     path('students/tryouts/<int:category_id>/take/<int:question>/', views.take_test, name='take_test'),
@@ -98,6 +99,8 @@ urlpatterns = [
     path('admin/packages/<int:package_id>/edit/', views.admin_package_update, name='admin_package_update'),
     path('admin/packages/<int:package_id>/delete/', views.admin_package_delete, name='admin_package_delete'),
     path('admin/packages/<int:package_id>/detail/', views.admin_package_detail, name='admin_package_detail'),
+    # API for admin UI
+    path('api/category/<int:category_id>/question-count/', views.api_category_question_count, name='api_category_question_count'),
     
     # Student University Target URLs
     path('students/university/target/', views.student_university_target, name='student_university_target'),

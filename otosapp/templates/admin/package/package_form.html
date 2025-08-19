@@ -126,13 +126,16 @@
             <!-- Category Configuration -->
             <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Konfigurasi Kategori</h3>
-                    <button type="button" id="add-category" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Konfigurasi Subtest</h3>
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="add-category" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
-                        Tambah Kategori
-                    </button>
+                        Tambah Subtest
+                        </button>
+
+                    </div>
                 </div>
                 
                 <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
@@ -142,6 +145,13 @@
                         <li>• Pastikan setiap kategori memiliki cukup soal sesuai jumlah yang diminta</li>
                         <li>• Urutan kategori menentukan urutan tampil saat tryout</li>
                     </ul>
+                </div>
+                <!-- Auto-fill overwrite toggle -->
+                <div class="mb-4">
+                    <label class="inline-flex items-center text-sm text-gray-700 dark:text-gray-300">
+                        <input id="auto-fill-overwrite" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Selalu timpa jumlah soal saat memilih subtest</span>
+                    </label>
                 </div>
 
                 {{ formset.management_form }}
@@ -154,7 +164,7 @@
                         {% endif %}
                         
                         <div class="flex justify-between items-center mb-3">
-                            <h4 class="text-md font-medium text-gray-900 dark:text-white">Kategori #{{ forloop.counter }}</h4>
+                            <h4 class="text-md font-medium text-gray-900 dark:text-white">Subtest</h4>
                             {% if not forloop.first %}
                             <button type="button" class="delete-category text-red-600 hover:text-red-800 dark:text-red-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,6 +190,15 @@
                                     {{ category_form.question_count.label }}
                                 </label>
                                 {{ category_form.question_count }}
+                                <span class="qc-status inline-flex items-center ml-2 text-sm text-gray-500" style="min-width:2.5rem">
+                                    <div class="qc-spinner hidden mr-1" role="status" aria-hidden="true">
+                                        <svg class="w-4 h-4 text-gray-400 animate-spin dark:text-gray-200" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.0816 50.5908C9.0816 73.1895 27.4013 91.5092 50 91.5092C72.5987 91.5092 90.9184 73.1895 90.9184 50.5908C90.9184 27.9921 72.5987 9.67236 50 9.67236C27.4013 9.67236 9.0816 27.9921 9.0816 50.5908Z" fill="currentColor"/>
+                                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7232 75.2124 7.41289C69.5422 4.10256 63.2754 1.94025 56.7688 1.05119C51.7666 0.36701 46.6976 0.446843 41.7345 1.27873C39.3151 1.69328 37.861 4.19778 38.4981 6.62326C39.1352 9.04874 41.623 10.4717 44.0503 10.1071C47.8511 9.56066 51.7191 9.52616 55.5402 10.0073C60.8645 10.6587 65.9926 12.6238 70.6331 15.7926C75.2736 18.9614 79.3347 23.2528 82.5849 28.4031C84.9175 31.8856 88.1799 34.3365 91.675 35.5669C93.249 36.1214 94.4222 37.8603 93.9676 39.0409Z" fill="#1e40af"/>
+                                        </svg>
+                                    </div>
+                                    <span class="qc-text"></span>
+                                </span>
                                 {% if category_form.question_count.errors %}
                                 <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ category_form.question_count.errors.0 }}</div>
                                 {% endif %}
@@ -211,6 +230,59 @@
                         {% endif %}
                     </div>
                     {% endfor %}
+                </div>
+
+                {# Hidden empty form template for client-side adding #}
+                <div id="empty-category-form" style="display:none">
+                    <div class="category-form p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        {{ formset.empty_form.id }}
+                        <div class="hidden">{{ formset.empty_form.DELETE }}</div>
+
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-white">Subtest</h4>
+                            <button type="button" class="delete-category text-red-600 hover:text-red-800 dark:text-red-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ formset.empty_form.category.label }}
+                                </label>
+                                {{ formset.empty_form.category }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ formset.empty_form.question_count.label }}
+                                </label>
+                                {{ formset.empty_form.question_count }}
+                                <span class="qc-status inline-flex items-center ml-2 text-sm text-gray-500" style="min-width:2.5rem">
+                                    <div class="qc-spinner hidden mr-1" role="status" aria-hidden="true">
+                                        <svg class="w-4 h-4 text-gray-400 animate-spin dark:text-gray-200" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.0816 50.5908C9.0816 73.1895 27.4013 91.5092 50 91.5092C72.5987 91.5092 90.9184 73.1895 90.9184 50.5908C90.9184 27.9921 72.5987 9.67236 50 9.67236C27.4013 9.67236 9.0816 27.9921 9.0816 50.5908Z" fill="currentColor"/>
+                                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7232 75.2124 7.41289C69.5422 4.10256 63.2754 1.94025 56.7688 1.05119C51.7666 0.36701 46.6976 0.446843 41.7345 1.27873C39.3151 1.69328 37.861 4.19778 38.4981 6.62326C39.1352 9.04874 41.623 10.4717 44.0503 10.1071C47.8511 9.56066 51.7191 9.52616 55.5402 10.0073C60.8645 10.6587 65.9926 12.6238 70.6331 15.7926C75.2736 18.9614 79.3347 23.2528 82.5849 28.4031C84.9175 31.8856 88.1799 34.3365 91.675 35.5669C93.249 36.1214 94.4222 37.8603 93.9676 39.0409Z" fill="#1e40af"/>
+                                        </svg>
+                                    </div>
+                                    <span class="qc-text"></span>
+                                </span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ formset.empty_form.max_score.label }}
+                                </label>
+                                {{ formset.empty_form.max_score }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ formset.empty_form.order.label }}
+                                </label>
+                                {{ formset.empty_form.order }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Score Summary -->
@@ -244,7 +316,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function updateScoreTotal() {
+    // Persist overwrite preference in localStorage
+    try {
+        const overwriteCheckbox = document.getElementById('auto-fill-overwrite');
+        if(overwriteCheckbox){
+            const saved = localStorage.getItem('admin_package_auto_fill_overwrite');
+            if(saved === '1') overwriteCheckbox.checked = true;
+            overwriteCheckbox.addEventListener('change', function(){
+                try{ localStorage.setItem('admin_package_auto_fill_overwrite', this.checked ? '1' : '0'); } catch(e){}
+            });
+        }
+    } catch(e) { console.warn('localStorage init failed', e); }
+    window.updateScoreTotal = function() {
         let total = 0;
         document.querySelectorAll('input[name$="-max_score"]').forEach(function(input) {
             const value = parseFloat(input.value) || 0;
@@ -293,14 +376,166 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Add category functionality (simplified - you might need to implement proper formset handling)
-    document.getElementById('add-category').addEventListener('click', function() {
-        // This would need proper Django formset handling
-        alert('Silakan refresh halaman dan tambah kategori baru');
-    });
+    // Add category button behavior is implemented in the formset script below.
+    // The earlier placeholder alert was removed to avoid forcing a page refresh.
     
     // Initial score calculation
     updateScoreTotal();
+});
+</script>
+<script>
+// Formset add/remove logic
+document.addEventListener('DOMContentLoaded', function(){
+    const addBtn = document.getElementById('add-category');
+    const container = document.getElementById('category-forms');
+    const emptyTemplate = document.getElementById('empty-category-form');
+    const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+    function getTotalForms(){
+        return parseInt(totalFormsInput ? totalFormsInput.value : '0', 10);
+    }
+
+    function setTotalForms(v){
+        if(totalFormsInput) totalFormsInput.value = String(v);
+    }
+
+    function renumber(container){
+        // Keep TOTAL_FORMS equal to total number of form DOM elements (including ones marked for deletion)
+        const allForms = Array.from(container.querySelectorAll('.category-form'));
+
+        // Update name/id/for attributes for all forms so Django form indices remain consistent
+        allForms.forEach((form, index) => {
+            form.querySelectorAll('input, select, textarea, label').forEach(el => {
+                if (el.name) el.name = el.name.replace(/-\d+-/g, '-' + index + '-').replace(/__prefix__/g, index);
+                if (el.id) el.id = el.id.replace(/-\d+-/g, '-' + index + '-').replace(/__prefix__/g, index);
+                if (el.getAttribute && el.getAttribute('for')) el.setAttribute('for', el.getAttribute('for').replace(/-\d+-/g, '-' + index + '-').replace(/__prefix__/g, index));
+            });
+        });
+
+        // For user-visible labeling, use a static 'Subtest' label; if a form is marked for deletion, show it as deleted
+    let visibleIndex = 0;
+    allForms.forEach((form) => {
+            const deleteInput = form.querySelector('input[name$="-DELETE"]');
+            const isDeleted = deleteInput && deleteInput.checked;
+            const heading = form.querySelector('h4');
+                if (!isDeleted) {
+                    visibleIndex += 1;
+                    if (heading) heading.textContent = 'Subtest';
+                } else {
+                    if (heading) heading.textContent = 'Subtest (dihapus)';
+                }
+            });
+
+            setTotalForms(allForms.length);
+    }
+
+        // Delegate change on category select to auto-fill question_count via AJAX
+        // Works for existing and dynamically added rows because it's delegated on the container
+        function handleCategoryChangeEvent(e){
+            const target = e.target;
+            if(!target || target.tagName.toLowerCase() !== 'select') return;
+            if(!target.name || !target.name.endsWith('-category')) return;
+
+            const value = target.value;
+            const formDiv = target.closest('.category-form');
+            if(!formDiv) return;
+
+        const questionInput = formDiv.querySelector('input[name$="-question_count"]');
+        const statusSpan = formDiv.querySelector('.qc-status');
+            if(!questionInput) return;
+
+            // Only auto-fill if the input is empty or zero
+        const currentVal = questionInput.value && questionInput.value.trim() !== '' ? parseInt(questionInput.value, 10) : 0;
+        // Read global overwrite setting; if checked, always overwrite
+        const overwrite = !!document.getElementById('auto-fill-overwrite') && document.getElementById('auto-fill-overwrite').checked;
+        if(currentVal > 0 && !overwrite) return; // don't override an explicitly set value unless overwrite is enabled
+
+            if(!value){
+                // no category selected -> clear
+                questionInput.value = '';
+                return;
+            }
+
+            // Fetch question count from API and show status
+            const url = '/api/category/' + encodeURIComponent(value) + '/question-count/';
+            if(statusSpan){
+                const spinner = statusSpan.querySelector('.qc-spinner');
+                const textElm = statusSpan.querySelector('.qc-text');
+                if(spinner) spinner.classList.remove('hidden');
+                if(textElm){ textElm.textContent = ''; textElm.className = 'qc-text'; }
+                fetch(url, { method: 'GET', credentials: 'same-origin' })
+                    .then(response => {
+                        if(!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if(spinner) spinner.classList.add('hidden');
+                        if(data && typeof data.count !== 'undefined'){
+                            questionInput.value = String(data.count);
+                            if(textElm){ textElm.textContent = ''; }
+                        } else {
+                            if(textElm){ textElm.textContent = '—'; textElm.classList.add('text-yellow-600'); }
+                        }
+                    })
+                    .catch(err => {
+                        if(spinner) spinner.classList.add('hidden');
+                        if(textElm){ textElm.textContent = '×'; textElm.classList.add('text-red-600'); }
+                        console.warn('Failed to fetch question count:', err);
+                    });
+                return; // fetch handled
+            }
+
+            // If no statusSpan (shouldn't happen), fallback to plain fetch
+            fetch(url, { method: 'GET', credentials: 'same-origin' })
+                .then(response => {
+                    if(!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if(data && typeof data.count !== 'undefined'){
+                        questionInput.value = String(data.count);
+                    }
+                })
+                .catch(err => {
+                    console.warn('Failed to fetch question count:', err);
+                });
+        }
+
+    if(addBtn && emptyTemplate && container && totalFormsInput){
+        addBtn.addEventListener('click', function(){
+            const idx = getTotalForms();
+            const clone = emptyTemplate.firstElementChild.cloneNode(true);
+            // replace __prefix__ markers in cloned HTML
+            clone.innerHTML = clone.innerHTML.replace(/__prefix__/g, idx);
+            // Append
+            container.appendChild(clone);
+            renumber(container);
+            updateScoreTotal();
+        });
+
+        // Delegated listener for category select changes to auto-fill question_count
+        container.addEventListener('change', function(e){
+            handleCategoryChangeEvent(e);
+        });
+
+        // delegate delete
+        container.addEventListener('click', function(e){
+            const btn = e.target.closest('.delete-category');
+            if(!btn) return;
+            const formDiv = btn.closest('.category-form');
+            if(!formDiv) return;
+            // If this form has a DELETE checkbox, check it and hide
+            const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
+            if(deleteInput){
+                deleteInput.checked = true;
+                formDiv.style.display = 'none';
+            } else {
+                formDiv.remove();
+                renumber(container);
+            }
+            updateScoreTotal();
+        });
+    }
 });
 </script>
 {% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Review - {{ category.category_name }} - {{ test.student.get_full_name|default:test.student.email }}{% endblock %}
+
+{% block content %}
+<section class="bg-white dark:bg-slate-900 min-h-screen py-6 text-slate-900 dark:text-white">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+
+    <!-- Header card -->
+    <div class="bg-white/90 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl p-6 mb-6 flex items-start justify-between gap-4">
+      <div class="flex-1">
+        <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Review Jawaban: {{ test.student.get_full_name|default:test.student.email }}</h2>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Kategori: <span class="font-medium text-slate-900 dark:text-white">{{ category.category_name }}</span> — Score: <span class="font-medium text-slate-900 dark:text-white">{{ test.score|floatformat:1 }}</span></p>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Tanggal: {{ test.date_taken|date:"Y-m-d H:i" }}</p>
+      </div>
+
+      <div class="flex flex-col items-end gap-2">
+        <div class="text-sm text-slate-600 dark:text-slate-300">Benar</div>
+        <div class="inline-flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-slate-900 dark:text-white">{{ correct_count }}</span>
+          <span class="text-sm text-slate-500 dark:text-slate-400">/ {{ total_questions }}</span>
+          <span class="ml-3 inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100">{{ percent_correct }}%</span>
+        </div>
+      </div>
+    </div>
+    <!-- Legend -->
+    <div class="mb-6 flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"> 
+          <!-- check icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L7 12.172 4.707 9.879a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l9-9z" clip-rule="evenodd" />
+          </svg>
+        </span>
+        <span class="text-sm text-slate-700 dark:text-slate-300">Benar</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"> 
+          <!-- cross icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 8.586l4.95-4.95a1 1 0 111.414 1.414L11.414 10l4.95 4.95a1 1 0 01-1.414 1.414L10 11.414l-4.95 4.95a1 1 0 01-1.414-1.414L8.586 10 3.636 5.05A1 1 0 015.05 3.636L10 8.586z" clip-rule="evenodd" />
+          </svg>
+        </span>
+        <span class="text-sm text-slate-700 dark:text-slate-300">Salah</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-200"> 
+          <!-- user/checkmark combined small dot for student answer -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 3a2 2 0 100 4 2 2 0 000-4zM4 13a6 6 0 1112 0v1H4v-1z" />
+          </svg>
+        </span>
+        <span class="text-sm text-slate-700 dark:text-slate-300">Jawaban Siswa</span>
+      </div>
+    </div>
+
+    <!-- Questions list -->
+    <div class="space-y-6">
+      {% for q in questions %}
+  <article class="bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg p-5">
+        <header class="flex items-start justify-between">
+          <div>
+    <div class="text-sm text-slate-600 dark:text-slate-300">Soal {{ forloop.counter }}</div>
+    <h3 class="mt-1 text-base text-slate-900 dark:text-white font-semibold">{{ q.question_text|safe }}</h3>
+          </div>
+          <div class="text-right">
+            {% if q.is_correct %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-sm font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L7 12.172 4.707 9.879a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l9-9z" clip-rule="evenodd" />
+                </svg>
+                Benar
+              </span>
+            {% elif q.your_answer %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300 text-sm font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 8.586l4.95-4.95a1 1 0 111.414 1.414L11.414 10l4.95 4.95a1 1 0 01-1.414 1.414L10 11.414l-4.95 4.95a1 1 0 01-1.414-1.414L8.586 10 3.636 5.05A1 1 0 015.05 3.636L10 8.586z" clip-rule="evenodd" />
+                </svg>
+                Salah
+              </span>
+            {% else %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 text-sm">Kosong</span>
+            {% endif %}
+          </div>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="col-span-1 md:col-span-4">
+            <ul class="space-y-2">
+              {% for c in q.all_choices %}
+              <li class="flex items-center justify-between gap-3 p-3 rounded-md w-full transition-shadow {% if c.is_correct %}bg-emerald-50 border-2 border-emerald-400 text-emerald-800 shadow-sm dark:bg-emerald-900/20 dark:border-emerald-500 dark:text-emerald-300 dark:shadow-lg{% elif q.your_choice_label == c.label and not c.is_correct %}bg-red-50 border-2 border-red-400 text-red-800 shadow-sm dark:bg-red-900/20 dark:border-red-500 dark:text-red-300 dark:shadow-lg{% else %}bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200{% endif %}">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-200 text-sm font-semibold">{{ c.label }}</div>
+                  <div class="prose prose-sm text-slate-800 dark:prose-invert dark:text-slate-200">{{ c.text|safe }}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  {% if c.is_correct %}
+                    <span class="text-emerald-700 dark:text-emerald-300 text-sm font-medium">Benar</span>
+                  {% endif %}
+                  {% if q.your_choice_label == c.label %}
+                    <span class="text-blue-700 dark:text-blue-300 text-sm font-medium">Jawaban Siswa</span>
+                  {% endif %}
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="col-span-1 md:col-span-1">
+            <!-- optional: extra info or explanation area -->
+            <div class="text-sm text-slate-300">Status: 
+              {% if q.is_correct %}
+                <span class="text-emerald-300 font-medium">Benar</span>
+              {% elif q.your_answer %}
+                <span class="text-red-300 font-medium">Salah</span>
+              {% else %}
+                <span class="text-slate-400">Kosong</span>
+              {% endif %}
+            </div>
+            {% if q.your_answer %}
+            <div class="mt-4 text-sm text-slate-300">
+              <div class="font-medium text-slate-200">Jawaban Siswa</div>
+              <div class="mt-1 prose prose-sm dark:prose-invert">{{ q.your_answer|safe }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </article>
+      {% empty %}
+      <div class="text-center text-slate-400">Tidak ada soal untuk kategori ini pada test ini.</div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

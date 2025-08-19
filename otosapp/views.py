@@ -1,5 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Count, Avg, Max, Q, Sum
+from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
 from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
@@ -164,6 +164,154 @@ def home(request):
                 'student_university_target': student_university_target
             })
         
+        # Data untuk teacher dashboard (statistik siswa & tren skor)
+        elif request.user.is_teacher():
+            # Categories the teacher is responsible for
+            teacher_categories = Category.objects.filter(Q(created_by=request.user) | Q(teachers=request.user)).distinct()
+
+            # Tests related to these categories (submitted)
+            tests_qs = Test.objects.filter(is_submitted=True, categories__in=teacher_categories).select_related('student').distinct()
+
+            # Number of distinct students who have submitted tests in teacher categories
+            tested_count = tests_qs.values('student').distinct().count()
+
+            # Determine passed/failed based on each student's latest submitted test for these categories
+            passed_count = 0
+            # Iterate students (could be optimized if needed)
+            student_ids = tests_qs.values_list('student', flat=True).distinct()
+            for sid in student_ids:
+                latest = Test.objects.filter(student_id=sid, is_submitted=True, categories__in=teacher_categories).order_by('-date_taken').first()
+                if latest and latest.is_passed():
+                    passed_count += 1
+
+            failed_count = max(0, tested_count - passed_count)
+            pass_rate = round((passed_count / tested_count) * 100, 1) if tested_count else 0
+
+            # Build teacher_stats for charts: aggregate per-category scores into series
+            now = timezone.now()
+
+            def build_per_category_chart(days, by_month=False):
+                # Returns {'categories': [labels], 'series': [{'name': cat_name, 'data': [vals]}]}
+                categories_labels = []
+                series = []
+
+                if not by_month:
+                    # daily labels oldest->newest
+                    days_list = [(now.date() - timedelta(days=i)) for i in range(days-1, -1, -1)]
+                    categories_labels = [d.strftime('%d %b') for d in days_list]
+
+                    for cat in teacher_categories:
+                        data = []
+                        for d in days_list:
+                            day_start = timezone.make_aware(datetime.combine(d, datetime.min.time())) if timezone.is_naive(datetime.now()) else datetime.combine(d, datetime.min.time()).replace(tzinfo=now.tzinfo)
+                            day_end = day_start + timedelta(days=1)
+                            tests = Test.objects.filter(is_submitted=True, date_taken__gte=day_start, date_taken__lt=day_end).distinct()
+                            tests = tests.filter(categories=cat)
+                            total = 0.0
+                            count = 0
+                            for test in tests:
+                                # compute this test's contribution for this category
+                                if test.tryout_package:
+                                    pkg_cat = test.tryout_package.tryoutpackagecategory_set.filter(category=cat).first()
+                                    if pkg_cat:
+                                        category_answers = test.answers.filter(question__category=cat)
+                                        if category_answers.exists():
+                                            correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                                            total_questions = category_answers.count()
+                                            category_score_percentage = (correct_answers / total_questions) if total_questions else 0
+                                            contrib = category_score_percentage * pkg_cat.max_score
+                                            total += contrib
+                                            count += 1
+                                else:
+                                    # Non-package test: use test.score (already per-category)
+                                    total += test.score
+                                    count += 1
+                            avg = (total / count) if count else 0
+                            data.append(round(avg, 1))
+                        series.append({'name': cat.category_name, 'data': data})
+
+                    return {'categories': categories_labels, 'series': series}
+                else:
+                    # monthly aggregation (group by month)
+                    months = []
+                    # approximate months by 30-day steps
+                    for i in range(max(1, int(days/30))-1, -1, -1):
+                        dt = (now - timedelta(days=i*30)).date().replace(day=1)
+                        months.append(dt)
+                    categories_labels = [m.strftime('%b %Y') for m in months]
+
+                    for cat in teacher_categories:
+                        data = []
+                        for m in months:
+                            month_start = timezone.make_aware(datetime.combine(m, datetime.min.time())) if timezone.is_naive(datetime.now()) else datetime.combine(m, datetime.min.time()).replace(tzinfo=now.tzinfo)
+                            month_end = month_start + timedelta(days=30)
+                            tests = Test.objects.filter(is_submitted=True, date_taken__gte=month_start, date_taken__lt=month_end).distinct()
+                            tests = tests.filter(categories=cat)
+                            total = 0.0
+                            count = 0
+                            for test in tests:
+                                if test.tryout_package:
+                                    pkg_cat = test.tryout_package.tryoutpackagecategory_set.filter(category=cat).first()
+                                    if pkg_cat:
+                                        category_answers = test.answers.filter(question__category=cat)
+                                        if category_answers.exists():
+                                            correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                                            total_questions = category_answers.count()
+                                            category_score_percentage = (correct_answers / total_questions) if total_questions else 0
+                                            contrib = category_score_percentage * pkg_cat.max_score
+                                            total += contrib
+                                            count += 1
+                                else:
+                                    total += test.score
+                                    count += 1
+                            avg = (total / count) if count else 0
+                            data.append(round(avg, 1))
+                        series.append({'name': cat.category_name, 'data': data})
+
+                    return {'categories': categories_labels, 'series': series}
+
+            scores_7d_chart = build_per_category_chart(7)
+            scores_30d_chart = build_per_category_chart(30)
+            scores_90d_chart = build_per_category_chart(90, by_month=True)
+            scores_180d_chart = build_per_category_chart(180, by_month=True)
+
+            # daily_summary: sum of per-category averages for each day (last 7 days)
+            daily_summary = []
+            chart7 = scores_7d_chart
+            if chart7 and chart7.get('categories') and chart7.get('series'):
+                # for each day index, sum series[i]
+                for idx, label in enumerate(chart7['categories']):
+                    total_score = 0
+                    for s in chart7['series']:
+                        vals = s.get('data', [])
+                        total_score += vals[idx] if idx < len(vals) else 0
+                    daily_summary.append({'date': label, 'total_score': round(total_score, 1)})
+
+            # Ensure at least two points for growth calculation
+            if len(daily_summary) >= 2:
+                last_total = daily_summary[-1]['total_score']
+                prev_total = daily_summary[-2]['total_score']
+                growth_percent = round(((last_total - prev_total) / prev_total * 100), 1) if prev_total else 0
+            else:
+                growth_percent = 0
+
+            teacher_stats = {
+                'scores_7d_chart': scores_7d_chart,
+                'scores_30d_chart': scores_30d_chart,
+                'scores_90d_chart': scores_90d_chart,
+                'scores_180d_chart': scores_180d_chart,
+                'daily_summary': daily_summary,
+                'growth_percent': growth_percent,
+            }
+
+            context.update({
+                'tested_count': tested_count,
+                'passed_count': passed_count,
+                'failed_count': failed_count,
+                'pass_rate': pass_rate,
+                'teacher_stats': teacher_stats,
+            })
+
         # Data untuk admin dashboard dengan statistik lengkap
         if request.user.is_superuser or request.user.is_admin():
             # from django.utils import timezone  # Sudah di-import di atas
@@ -260,7 +408,6 @@ def home(request):
             sales_180d = filter_by_days(180)
 
             # Data harian/bulanan untuk chart filter
-            from django.db.models.functions import TruncDay, TruncMonth
             
             # 7 days chart data
             sales_7d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=7))
@@ -413,7 +560,6 @@ def home(request):
             sales_180d = filter_by_days(180)
 
             # Data harian/bulanan untuk chart filter
-            from django.db.models.functions import TruncDay, TruncMonth
             
             # 7 days chart data
             sales_7d_qs = PaymentProof.objects.filter(status='approved', verified_at__gte=timezone.now() - timedelta(days=7))
@@ -541,6 +687,16 @@ def teacher_category_create(request):
             category = form.save(commit=False)
             category.created_by = request.user
             category.save()
+            # Save M2M teachers and auto-assign the creator as a teacher
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
+            try:
+                # Ensure the creator is assigned as a teacher for their own category
+                category.teachers.add(request.user)
+            except Exception:
+                pass
             messages.success(request, 'Kategori berhasil dibuat.')
             return redirect('teacher_category_list')
         else:
@@ -575,13 +731,17 @@ def teacher_category_create(request):
 def teacher_category_update(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     # only allow owner or admin
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     if request.method == 'POST':
         form = CategoryUpdateForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
             messages.success(request, 'Kategori berhasil diperbarui.')
             return redirect('teacher_category_list')
     else:
@@ -594,7 +754,7 @@ def teacher_category_update(request, category_id):
 @admin_or_teacher_required
 def teacher_category_delete(request, category_id):
     category = get_object_or_404(Category, id=category_id)
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     if request.method == 'POST':
@@ -609,7 +769,7 @@ def teacher_category_delete(request, category_id):
 @admin_or_teacher_required
 def teacher_question_list(request, category_id):
     category = get_object_or_404(Category, id=category_id)
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     questions = Question.objects.filter(category=category).order_by('-pub_date')
@@ -629,7 +789,7 @@ def teacher_question_list(request, category_id):
 @admin_or_teacher_required
 def teacher_question_create(request, category_id):
     category = get_object_or_404(Category, id=category_id)
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     if request.method == 'POST':
@@ -682,7 +842,7 @@ def teacher_question_create(request, category_id):
 def teacher_question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     category = question.category
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     if request.method == 'POST':
@@ -693,11 +853,29 @@ def teacher_question_update(request, question_id):
             formset.save()
             messages.success(request, 'Soal diperbarui.')
             return redirect('teacher_question_list', category_id=category.id)
+        else:
+            # Debug: show why update failed
+            try:
+                form_json = form.errors.as_json()
+            except Exception:
+                form_json = str(form.errors)
+            try:
+                formset_errors = formset.errors
+                formset_non = formset.non_form_errors()
+            except Exception:
+                formset_errors = str(formset.errors)
+                formset_non = str(formset.non_form_errors())
+            print('\n[DEBUG] teacher_question_update validation failed')
+            print('Form errors (json):', form_json)
+            print('Form errors (text):', form.errors.as_text())
+            print('Formset errors:', formset_errors)
+            print('Formset non-field errors:', formset_non)
+            messages.error(request, 'Form validation failed: ' + (form.errors.as_text() or str(formset_errors)))
     else:
         form = QuestionUpdateForm(instance=question)
         formset = ChoiceFormSet(instance=question)
 
-    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category})
+    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category, 'question': question})
 
 
 @login_required
@@ -705,7 +883,7 @@ def teacher_question_update(request, question_id):
 def teacher_question_delete(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     category = question.category
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     if request.method == 'POST':
@@ -725,9 +903,30 @@ def teacher_view_student_scores(request, category_id):
         raise PermissionDenied
 
     # Get submitted tests that include this category
-    tests = Test.objects.filter(categories=category, is_submitted=True).select_related('student').order_by('-date_taken')
+    tests_qs = Test.objects.filter(categories=category, is_submitted=True).select_related('student')
 
-    paginator = Paginator(tests, 15)
+    # Annotate correct and wrong counts per test for this category so we can sort by them
+    tests_qs = tests_qs.annotate(
+        correct_count_ann=Count('answers', filter=Q(answers__question__category=category, answers__selected_choice__is_correct=True)),
+        wrong_count_ann=Count('answers', filter=Q(answers__question__category=category, answers__selected_choice__is_correct=False)),
+    )
+
+    # Sorting support via query params: ?sort=score|correct&order=asc|desc
+    sort = request.GET.get('sort', 'date')
+    order = request.GET.get('order', 'desc')
+    if sort == 'score':
+        sort_field = 'score'
+    elif sort == 'correct':
+        sort_field = 'correct_count_ann'
+    else:
+        sort_field = 'date_taken'
+
+    if order == 'asc':
+        tests_qs = tests_qs.order_by(sort_field)
+    else:
+        tests_qs = tests_qs.order_by('-' + sort_field)
+
+    paginator = Paginator(tests_qs, 15)
     page = request.GET.get('page')
     try:
         tests_page = paginator.page(page)
@@ -736,7 +935,124 @@ def teacher_view_student_scores(request, category_id):
     except EmptyPage:
         tests_page = paginator.page(paginator.num_pages)
 
+    # For each test on the current page, compute number of correct and wrong answers
+    # but only counting answers that belong to this category (a test can include multiple categories)
+    for test in tests_page:
+        # Prefer annotated counts when available (on the queryset), otherwise compute fallback
+        test.correct_count = getattr(test, 'correct_count_ann', None)
+        test.wrong_count = getattr(test, 'wrong_count_ann', None)
+        if test.correct_count is None:
+            test.correct_count = Answer.objects.filter(test=test, question__category=category, selected_choice__is_correct=True).count()
+        if test.wrong_count is None:
+            test.wrong_count = Answer.objects.filter(test=test, question__category=category, selected_choice__is_correct=False).count()
+        # Percentage correct for this category (based on answered questions in this category)
+        total_answered = (test.correct_count or 0) + (test.wrong_count or 0)
+        if total_answered > 0:
+            try:
+                test.percent_correct = round((test.correct_count / total_answered) * 100, 1)
+            except Exception:
+                test.percent_correct = 0.0
+        else:
+            test.percent_correct = 0.0
+
     return render(request, 'teacher/student_scores.html', {'tests': tests_page, 'category': category})
+
+
+@login_required
+@admin_or_teacher_required
+def teacher_test_review(request, category_id, test_id):
+    """Dedicated teacher review page showing only the questions/answers for a specific
+    category (subtest) within a student's test. Accessible only to admins or teachers
+    assigned to the category (created_by or in category.teachers).
+    """
+    category = get_object_or_404(Category, id=category_id)
+    test = get_object_or_404(Test, id=test_id)
+
+    # Guard: ensure the category is actually part of this test (either linked directly
+    # via test.categories or included in the tryout_package composition). If not, return 404.
+    category_in_test = False
+    if test.categories.filter(pk=category.pk).exists():
+        category_in_test = True
+    elif test.tryout_package and test.tryout_package.categories.filter(pk=category.pk).exists():
+        category_in_test = True
+
+    if not category_in_test:
+        raise Http404('Category not found in this test')
+
+    # Permission: allow admins or teachers assigned to this category
+    is_owner_teacher = False
+    if category.created_by and category.created_by == request.user:
+        is_owner_teacher = True
+    if category.teachers.filter(pk=request.user.pk).exists():
+        is_owner_teacher = True
+
+    if not (request.user.is_superuser or request.user.is_admin() or is_owner_teacher):
+        raise PermissionDenied
+
+    # Collect questions that belong to this category and assemble answer data
+    question_list = []
+
+    if test.tryout_package:
+        # package: limit to questions from this category within the package ordering
+        questions_qs = Question.objects.filter(category=category).order_by('id')
+    else:
+        # non-package: test.categories should include category; still filter
+        questions_qs = Question.objects.filter(category=category).order_by('id')
+
+    total_questions = questions_qs.count()
+    correct_count = 0
+
+    for q in questions_qs:
+        ans = test.answers.filter(question=q).select_related('selected_choice').first()
+        selected_choice = ans.selected_choice if ans else None
+        correct_choice = q.choices.filter(is_correct=True).first()
+        is_correct = (selected_choice.is_correct) if selected_choice else False
+        if is_correct:
+            correct_count += 1
+
+        # Build labeled choices (A, B, C...)
+        all_choices = []
+        choices_qs = list(q.choices.all().order_by('id'))
+        for idx, ch in enumerate(choices_qs):
+            label = chr(65 + idx)
+            all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
+
+        your_answer_label = None
+        correct_answer_label = None
+        if selected_choice:
+            for c in all_choices:
+                if c['id'] == selected_choice.id:
+                    your_answer_label = c['label']
+                    break
+        if correct_choice:
+            for c in all_choices:
+                if c['id'] == correct_choice.id:
+                    correct_answer_label = c['label']
+                    break
+
+        question_list.append({
+            'question_text': q.question_text,
+            'your_answer': selected_choice.choice_text if selected_choice else None,
+            'is_correct': is_correct,
+            'correct_answer': correct_choice.choice_text if correct_choice else None,
+            'question_obj': q,
+            'all_choices': all_choices,
+            'your_choice_label': your_answer_label,
+            'correct_choice_label': correct_answer_label,
+        })
+
+    percent_correct = round((correct_count / total_questions) * 100, 1) if total_questions > 0 else 0.0
+
+    context = {
+        'test': test,
+        'category': category,
+        'questions': question_list,
+        'total_questions': total_questions,
+        'correct_count': correct_count,
+        'percent_correct': percent_correct,
+    }
+
+    return render(request, 'teacher/test_review_detail.html', context)
 
 
 @login_required
@@ -755,8 +1071,12 @@ def teacher_student_list(request):
         cat.total_students = stats['total_students']
         cat.total_tests = stats['total_tests']
         cat.avg_score = stats['average_score']
+        # Attach average completion time (minutes) if available
+        cat.avg_completion_minutes = stats.get('average_completion_minutes')
+        # Flag to indicate an average score exists (could be 0)
+        cat.has_avg_score = stats.get('average_score') is not None
 
-    return render(request, 'teacher/student_list.html', {'categories': categories})
+    return render(request, 'teacher/student_performance.html', {'categories': categories})
 
 
 def register(request):
@@ -855,7 +1175,18 @@ def category_create(request):
     if request.method == 'POST':
         form = CategoryCreationForm(request.POST)
         if form.is_valid():
-            form.save() 
+            # Save instance, set creator, and ensure M2M saved
+            category = form.save(commit=False)
+            try:
+                category.created_by = request.user
+            except Exception:
+                pass
+            category.save()
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
+            messages.success(request, 'Kategori berhasil dibuat.')
             return redirect('category_list')
     else:
         form = CategoryCreationForm()
@@ -920,6 +1251,10 @@ def category_update(request, category_id):
         if form.is_valid():
             old_scoring_method = Category.objects.get(id=category_id).scoring_method
             new_category = form.save()
+            try:
+                form.save_m2m()
+            except Exception:
+                pass
             
             # Check custom scoring validation
             if new_category.scoring_method == 'custom':
@@ -1739,10 +2074,39 @@ def test_results(request, test_id):
     return render(request, 'students/tryouts/test_results.html', context)
 
 @login_required
-@active_subscription_required
 def test_results_detail(request, test_id):
-    """Detailed test results showing each question, correct/incorrect answers, and scoring explanation"""
-    test = get_object_or_404(Test, id=test_id, student=request.user)
+    """Detailed test results showing each question, correct/incorrect answers, and scoring explanation
+
+    Note: we intentionally do not apply `active_subscription_required` here because teachers
+    and admins should be able to review student submissions even if they don't have a
+    student subscription. We enforce subscription checks only for students/visitors.
+    """
+    # If the requester is a student or visitor, enforce subscription rules (same as decorator)
+    if request.user.is_authenticated and (request.user.is_student() or request.user.is_visitor()):
+        if not request.user.can_access_tryouts():
+            subscription_status = request.user.get_subscription_status()
+            if request.user.is_visitor():
+                from django.contrib import messages
+                messages.warning(request, 'Silakan berlangganan terlebih dahulu untuk mengakses fitur tryout.')
+                from django.shortcuts import redirect
+                return redirect('subscription_packages')
+            elif request.user.is_student() and not request.user.has_active_subscription():
+                from django.contrib import messages
+                from django.shortcuts import redirect
+                if subscription_status['status'] == 'deactivated':
+                    messages.warning(request, 'Langganan Anda telah dinonaktifkan oleh admin. Silakan hubungi admin atau berlangganan kembali.')
+                elif subscription_status['status'] == 'expired':
+                    messages.warning(request, 'Langganan Anda telah berakhir. Silakan perpanjang untuk melanjutkan.')
+                else:
+                    messages.warning(request, 'Langganan Anda tidak aktif. Silakan berlangganan untuk melanjutkan.')
+                return redirect('subscription_packages')
+            else:
+                from django.contrib import messages
+                from django.shortcuts import redirect
+                messages.error(request, 'Akses ditolak.')
+                return redirect('home')
+    # Load the test first (do not restrict by student here so teachers/admins can view)
+    test = get_object_or_404(Test, id=test_id)
     
     # Get category from test.categories
     category = test.categories.first()
@@ -1750,6 +2114,23 @@ def test_results_detail(request, test_id):
         first_answer = test.answers.first()
         category = first_answer.question.category if first_answer else None
     
+    # Permission check: allow the student themself, admins, or the teacher who created the category(ies)
+    # If none match, deny access
+    try:
+        is_owner_teacher = False
+        for c in test.categories.all():
+            if c.created_by and c.created_by == request.user:
+                is_owner_teacher = True
+                break
+            if c.teachers.filter(pk=request.user.pk).exists():
+                is_owner_teacher = True
+                break
+    except Exception:
+        is_owner_teacher = False
+
+    if not (request.user == test.student or request.user.is_superuser or request.user.is_admin() or is_owner_teacher):
+        raise PermissionDenied
+
     # Calculate score if not already calculated
     if test.answers.exists():
         test.calculate_score()
@@ -3806,6 +4187,16 @@ def admin_package_delete(request, package_id):
     }
     
     return render(request, 'admin/package/package_confirm_delete.html', context)
+
+
+@admin_or_operator_required
+def api_category_question_count(request, category_id):
+    """Return JSON with question count for a category (for AJAX)"""
+    try:
+        category = Category.objects.get(id=category_id)
+        return JsonResponse({'count': category.get_question_count()})
+    except Category.DoesNotExist:
+        return JsonResponse({'count': 0}, status=404)
 
 @admin_or_operator_required
 def admin_package_detail(request, package_id):

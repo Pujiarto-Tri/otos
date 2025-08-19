@@ -152,6 +152,13 @@ class Category(models.Model):
         related_name='categories_created',
         help_text='Teacher who created this category'
     )
+    # Multiple teachers can be assigned to a category
+    teachers = models.ManyToManyField(
+        User,
+        related_name='teaching_categories',
+        blank=True,
+        help_text='Additional teachers assigned to this category'
+    )
     
     def __str__(self):
         return self.category_name
@@ -227,17 +234,66 @@ class Category(models.Model):
         failed_tests = total_tests - passed_tests
         pass_rate = round((passed_tests / total_tests) * 100, 1)
         
-        # Calculate average score
-        total_score = sum(test.score for test in completed_tests)
+        # Calculate average score per this category
+        total_score = 0
+        for test in completed_tests:
+            # If test is a package test, compute this category's contribution
+            if test.tryout_package:
+                pkg_cat = test.tryout_package.tryoutpackagecategory_set.filter(category=self).first()
+                if not pkg_cat:
+                    # Category not part of the package for this test — try to compute from answers if any
+                    category_answers = test.answers.filter(question__category=self)
+                    if category_answers.exists():
+                        correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                        total_questions = category_answers.count()
+                        if total_questions:
+                            # Fallback: scale to 100 (or to package unit if unknown) — use percentage * 100
+                            total_score += (correct_answers / total_questions) * 100
+                    # otherwise skip
+                    continue
+
+                # Compute contribution based on the answers for this category
+                category_answers = test.answers.filter(question__category=self)
+                if category_answers.exists():
+                    correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                    total_questions = category_answers.count()
+                    category_score_percentage = (correct_answers / total_questions) if total_questions else 0
+                    category_contribution = category_score_percentage * pkg_cat.max_score
+                    total_score += category_contribution
+                else:
+                    # No answers for this category in this package test — treat as 0
+                    total_score += 0
+            else:
+                # Non-package test: score field already represents this category
+                total_score += test.score
+
         average_score = round(total_score / total_tests, 1)
-        
+
+        # Calculate average completion time (in minutes) for submitted tests
+        durations_seconds = []
+        for t in completed_tests:
+            if t.start_time and t.end_time:
+                try:
+                    delta = t.end_time - t.start_time
+                    seconds = delta.total_seconds()
+                    if seconds and seconds > 0:
+                        durations_seconds.append(seconds)
+                except Exception:
+                    # Skip any problematic timestamps
+                    continue
+
+        average_completion_minutes = None
+        if durations_seconds:
+            average_completion_minutes = round((sum(durations_seconds) / len(durations_seconds)) / 60, 1)
+
         return {
             'total_tests': total_tests,
             'total_students': total_students,
             'passed_tests': passed_tests,
             'failed_tests': failed_tests,
             'pass_rate': pass_rate,
-            'average_score': average_score
+            'average_score': average_score,
+            'average_completion_minutes': average_completion_minutes
         }
     
     def get_passing_score(self):

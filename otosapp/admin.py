@@ -21,9 +21,9 @@ class CustomUserAdmin(UserAdmin):
     )
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('category_name', 'time_limit', 'scoring_method', 'scoring_status')
+    list_display = ('category_name', 'time_limit', 'scoring_method', 'scoring_status', 'teachers_list')
     list_filter = ('scoring_method',)
-    search_fields = ('category_name',)
+    search_fields = ('category_name', 'teachers__email', 'teachers__username')
     
     def scoring_status(self, obj):
         if obj.scoring_method == 'custom':
@@ -34,6 +34,11 @@ class CategoryAdmin(admin.ModelAdmin):
                 return format_html('<span style="color: red;">⚠ Incomplete ({}/100)</span>', total_points)
         return format_html('<span style="color: blue;">Auto-calculated</span>')
     scoring_status.short_description = 'Scoring Status'
+
+    def teachers_list(self, obj):
+        names = [t.get_full_name() or t.email for t in obj.teachers.all()]
+        return ", ".join(names)
+    teachers_list.short_description = 'Teachers'
 
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ('question_text_short', 'category', 'custom_weight', 'difficulty_coefficient', 'pub_date')

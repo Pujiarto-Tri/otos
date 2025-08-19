@@ -191,7 +191,7 @@ class UserUpdateForm(forms.ModelForm):
 class CategoryCreationForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ('category_name', 'time_limit', 'scoring_method', 'passing_score')
+        fields = ('category_name', 'time_limit', 'scoring_method', 'passing_score', 'teachers')
         widgets = {
             'category_name': forms.TextInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
@@ -213,7 +213,21 @@ class CategoryCreationForm(forms.ModelForm):
                 'max': '100',
                 'step': '0.1'
             }),
-        } 
+        }
+
+    teachers = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(role__role_name='Teacher'),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+        }),
+        help_text='Assign teachers to this category (optional)'
+    )
+    # Display full name + email in choice labels for clearer Tom Select dropdown
+    try:
+        teachers.label_from_instance = lambda u: f"{u.get_full_name() or u.email} ({u.email})"
+    except Exception:
+        pass
 
     def save(self, commit=True):
         category = super().save(commit=False)
@@ -262,10 +276,25 @@ class CategoryUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Category
-        fields = ['category_name', 'time_limit', 'scoring_method', 'passing_score']
+        fields = ['category_name', 'time_limit', 'scoring_method', 'passing_score', 'teachers']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Teachers multi-select (show current teachers if instance provided)
+        self.fields['teachers'] = forms.ModelMultipleChoiceField(
+            queryset=User.objects.filter(role__role_name='Teacher'),
+            required=False,
+            widget=forms.SelectMultiple(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+            }),
+            help_text='Assign teachers to this category (optional)'
+        )
+        # show full name + email in select option labels
+        try:
+            self.fields['teachers'].label_from_instance = lambda u: f"{u.get_full_name() or u.email} ({u.email})"
+        except Exception:
+            pass
 
         # Add help text for fields
         self.fields['category_name'].help_text = "Category will be used for categorizing questions"
