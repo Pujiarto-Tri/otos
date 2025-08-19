@@ -902,13 +902,44 @@ def teacher_view_student_scores(request, category_id):
     if not (request.user.is_admin() or category.created_by == request.user):
         raise PermissionDenied
 
-    # Get submitted tests that include this category
-    tests_qs = Test.objects.filter(categories=category, is_submitted=True).select_related('student')
+    # Get submitted tests that include this category - avoid duplicates by using distinct()
+    # and only get the latest test per student for this category
+    tests_qs = Test.objects.filter(
+        categories=category, 
+        is_submitted=True
+    ).select_related('student').distinct()
+
+    # Group by student and get only the latest test per student
+    from django.db.models import Max
+    latest_test_dates = tests_qs.values('student').annotate(
+        latest_date=Max('date_taken')
+    ).values_list('student', 'latest_date')
+    
+    # Filter to only include the latest test per student
+    latest_tests_filter = Q()
+    for student_id, latest_date in latest_test_dates:
+        latest_tests_filter |= Q(student_id=student_id, date_taken=latest_date)
+    
+    tests_qs = tests_qs.filter(latest_tests_filter)
 
     # Annotate correct and wrong counts per test for this category so we can sort by them
     tests_qs = tests_qs.annotate(
-        correct_count_ann=Count('answers', filter=Q(answers__question__category=category, answers__selected_choice__is_correct=True)),
-        wrong_count_ann=Count('answers', filter=Q(answers__question__category=category, answers__selected_choice__is_correct=False)),
+        correct_count_ann=Count(
+            'answers', 
+            filter=Q(answers__question__category=category) & (
+                Q(answers__selected_choice__is_correct=True) | 
+                Q(answers__question__question_type='essay', answers__text_answer__isnull=False)
+            ), 
+            distinct=True
+        ),
+        wrong_count_ann=Count(
+            'answers', 
+            filter=Q(answers__question__category=category) & (
+                Q(answers__selected_choice__is_correct=False) |
+                Q(answers__question__question_type='essay', answers__text_answer__isnull=True)
+            ), 
+            distinct=True
+        ),
     )
 
     # Sorting support via query params: ?sort=score|correct&order=asc|desc
@@ -942,9 +973,51 @@ def teacher_view_student_scores(request, category_id):
         test.correct_count = getattr(test, 'correct_count_ann', None)
         test.wrong_count = getattr(test, 'wrong_count_ann', None)
         if test.correct_count is None:
-            test.correct_count = Answer.objects.filter(test=test, question__category=category, selected_choice__is_correct=True).count()
+            # Count multiple choice correct answers
+            mc_correct = Answer.objects.filter(
+                test=test, 
+                question__category=category, 
+                selected_choice__is_correct=True
+            ).count()
+            
+            # Count essay correct answers (case-insensitive exact match)
+            essay_correct = 0
+            essay_answers = Answer.objects.filter(
+                test=test,
+                question__category=category,
+                question__question_type='essay',
+                text_answer__isnull=False
+            ).exclude(text_answer='')
+            
+            for answer in essay_answers:
+                if (answer.question.correct_answer_text and 
+                    answer.text_answer.strip().lower() == answer.question.correct_answer_text.strip().lower()):
+                    essay_correct += 1
+            
+            test.correct_count = mc_correct + essay_correct
+            
         if test.wrong_count is None:
-            test.wrong_count = Answer.objects.filter(test=test, question__category=category, selected_choice__is_correct=False).count()
+            # Count multiple choice wrong answers
+            mc_wrong = Answer.objects.filter(
+                test=test, 
+                question__category=category, 
+                selected_choice__is_correct=False
+            ).count()
+            
+            # Count essay wrong answers (including empty answers)
+            essay_wrong = 0
+            essay_questions = test.answers.filter(
+                question__category=category,
+                question__question_type='essay'
+            ).count()
+            
+            essay_wrong = essay_questions - (test.correct_count - Answer.objects.filter(
+                test=test, 
+                question__category=category, 
+                selected_choice__is_correct=True
+            ).count())
+            
+            test.wrong_count = mc_wrong + max(0, essay_wrong)
         # Percentage correct for this category (based on answered questions in this category)
         total_answered = (test.correct_count or 0) + (test.wrong_count or 0)
         if total_answered > 0:
@@ -1004,42 +1077,71 @@ def teacher_test_review(request, category_id, test_id):
 
     for q in questions_qs:
         ans = test.answers.filter(question=q).select_related('selected_choice').first()
-        selected_choice = ans.selected_choice if ans else None
-        correct_choice = q.choices.filter(is_correct=True).first()
-        is_correct = (selected_choice.is_correct) if selected_choice else False
-        if is_correct:
-            correct_count += 1
+        
+        if q.question_type == 'essay':
+            # Handle essay questions
+            is_correct = False
+            your_answer = None
+            if ans and ans.text_answer:
+                your_answer = ans.text_answer.strip()
+                # Check if essay answer is correct (case-insensitive exact match)
+                if q.correct_answer_text and your_answer.lower() == q.correct_answer_text.lower():
+                    is_correct = True
+            
+            if is_correct:
+                correct_count += 1
 
-        # Build labeled choices (A, B, C...)
-        all_choices = []
-        choices_qs = list(q.choices.all().order_by('id'))
-        for idx, ch in enumerate(choices_qs):
-            label = chr(65 + idx)
-            all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
+            question_list.append({
+                'question_text': q.question_text,
+                'question_type': q.question_type,
+                'your_answer': your_answer,
+                'is_correct': is_correct,
+                'correct_answer_text': q.correct_answer_text,
+                'question_obj': q,
+                'all_choices': [],  # Empty for essay questions
+                'your_choice_label': None,
+                'correct_choice_label': None,
+            })
+        else:
+            # Handle multiple choice questions
+            selected_choice = ans.selected_choice if ans else None
+            correct_choice = q.choices.filter(is_correct=True).first()
+            is_correct = (selected_choice.is_correct) if selected_choice else False
+            if is_correct:
+                correct_count += 1
 
-        your_answer_label = None
-        correct_answer_label = None
-        if selected_choice:
-            for c in all_choices:
-                if c['id'] == selected_choice.id:
-                    your_answer_label = c['label']
-                    break
-        if correct_choice:
-            for c in all_choices:
-                if c['id'] == correct_choice.id:
-                    correct_answer_label = c['label']
-                    break
+            # Build labeled choices (A, B, C...)
+            all_choices = []
+            choices_qs = list(q.choices.all().order_by('id'))
+            for idx, ch in enumerate(choices_qs):
+                label = chr(65 + idx)
+                all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
 
-        question_list.append({
-            'question_text': q.question_text,
-            'your_answer': selected_choice.choice_text if selected_choice else None,
-            'is_correct': is_correct,
-            'correct_answer': correct_choice.choice_text if correct_choice else None,
-            'question_obj': q,
-            'all_choices': all_choices,
-            'your_choice_label': your_answer_label,
-            'correct_choice_label': correct_answer_label,
-        })
+            your_answer_label = None
+            correct_answer_label = None
+            if selected_choice:
+                for c in all_choices:
+                    if c['id'] == selected_choice.id:
+                        your_answer_label = c['label']
+                        break
+            if correct_choice:
+                for c in all_choices:
+                    if c['id'] == correct_choice.id:
+                        correct_answer_label = c['label']
+                        break
+
+            question_list.append({
+                'question_text': q.question_text,
+                'question_type': q.question_type,
+                'your_answer': selected_choice.choice_text if selected_choice else None,
+                'is_correct': is_correct,
+                'correct_answer': correct_choice.choice_text if correct_choice else None,
+                'correct_answer_text': getattr(q, 'correct_answer_text', None),
+                'question_obj': q,
+                'all_choices': all_choices,
+                'your_choice_label': your_answer_label,
+                'correct_choice_label': correct_answer_label,
+            })
 
     percent_correct = round((correct_count / total_questions) * 100, 1) if total_questions > 0 else 0.0
 
@@ -1508,23 +1610,47 @@ def question_create(request):
         form = QuestionForm(request.POST)
         formset = ChoiceFormSet(request.POST, prefix='choices')
         
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             question = form.save(commit=False)
             if hasattr(request.user, 'created_by'):
                 question.created_by = request.user
-            question.save()
             
-            choices = formset.save(commit=False)
-            for choice in choices:
-                choice.question = question
-                choice.save()
+            # For essay questions, choices are not required
+            if question.question_type == 'essay':
+                question.save()
+                messages.success(request, 'Soal isian berhasil dibuat!')
+                
+                # Redirect to category-specific question list if came from there
+                if question.category:
+                    return redirect('question_list_by_category', category_id=question.category.id)
+                return redirect('question_list')
             
-            messages.success(request, 'Question created successfully!')
-            
-            # Redirect to category-specific question list if came from there
-            if question.category:
-                return redirect('question_list_by_category', category_id=question.category.id)
-            return redirect('question_list')
+            # For multiple choice questions, validate and save choices
+            elif question.question_type == 'multiple_choice' and formset.is_valid():
+                # Check if at least one choice is marked as correct
+                correct_choices = sum(1 for form in formset if form.cleaned_data.get('is_correct', False) and not form.cleaned_data.get('DELETE', False))
+                if correct_choices == 0:
+                    messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
+                    return render(request, 'admin/manage_questions/question_form.html', {
+                        'form': form,
+                        'formset': formset,
+                        'title': 'Add New Question'
+                    })
+                
+                question.save()
+                choices = formset.save(commit=False)
+                for choice in choices:
+                    choice.question = question
+                    choice.save()
+                
+                messages.success(request, 'Soal pilihan ganda berhasil dibuat!')
+                
+                # Redirect to category-specific question list if came from there
+                if question.category:
+                    return redirect('question_list_by_category', category_id=question.category.id)
+                return redirect('question_list')
+            else:
+                messages.error(request, 'Please correct the errors below.')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -1547,7 +1673,7 @@ def question_update(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     
     if request.method == 'POST':
-        form = QuestionForm(request.POST, instance=question)
+        form = QuestionUpdateForm(request.POST, instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
             fields=('choice_text', 'is_correct'),
@@ -1556,16 +1682,43 @@ def question_update(request, question_id):
         )
         formset = ChoiceFormSet(request.POST, instance=question, prefix='choice_set')
         
-        if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                question = form.save()
-                formset.save()
-                messages.success(request, 'Question updated successfully!')
+        if form.is_valid():
+            updated_question = form.save(commit=False)
+            
+            # For essay questions, choices are not required
+            if updated_question.question_type == 'essay':
+                # Delete existing choices when converting to essay
+                question.choices.all().delete()
+                updated_question.save()
+                messages.success(request, 'Soal isian berhasil diperbarui!')
                 return redirect('question_list')
+            
+            # For multiple choice questions, validate and save choices
+            elif updated_question.question_type == 'multiple_choice' and formset.is_valid():
+                # Check if at least one choice is marked as correct
+                forms_data = [form.cleaned_data for form in formset if form.cleaned_data and not form.cleaned_data.get('DELETE', False)]
+                correct_choices = sum(1 for data in forms_data if data.get('is_correct', False))
+                
+                if correct_choices == 0:
+                    messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
+                    return render(request, 'admin/manage_questions/question_update.html', {
+                        'form': form,
+                        'formset': formset,
+                        'question': question,
+                        'title': 'Update Question'
+                    })
+                
+                with transaction.atomic():
+                    updated_question.save()
+                    formset.save()
+                    messages.success(request, 'Soal pilihan ganda berhasil diperbarui!')
+                    return redirect('question_list')
+            else:
+                messages.error(request, 'Please correct the errors below.')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = QuestionForm(instance=question)
+        form = QuestionUpdateForm(instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
             fields=('choice_text', 'is_correct'),
@@ -1852,20 +2005,24 @@ def take_test(request, category_id, question):
     # Handle POST (accept both 'choice' and 'answer' names to be compatible)
     if request.method == 'POST':
         choice_id = request.POST.get('choice') or request.POST.get('answer')
+        text_answer = request.POST.get('text_answer')
         action = request.POST.get('action')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        if choice_id:
+        # Handle multiple choice answers
+        if choice_id and current_question.is_multiple_choice():
             choice = get_object_or_404(Choice, id=choice_id, question=current_question)
             existing_answers_qs = Answer.objects.filter(test=test, question=current_question)
             if existing_answers_qs.count() > 1:
                 first_answer = existing_answers_qs.first()
                 existing_answers_qs.exclude(id=first_answer.id).delete()
                 first_answer.selected_choice = choice
+                first_answer.text_answer = None  # Clear text answer
                 first_answer.save()
             elif existing_answers_qs.count() == 1:
                 ans = existing_answers_qs.first()
                 ans.selected_choice = choice
+                ans.text_answer = None  # Clear text answer
                 ans.save()
             else:
                 Answer.objects.create(test=test, question=current_question, selected_choice=choice)
@@ -1873,6 +2030,31 @@ def take_test(request, category_id, question):
             # Update session store
             test_session = request.session.get(session_key, {'answered_questions': {}})
             test_session['answered_questions'][current_question.id] = int(choice_id)
+            request.session[session_key] = test_session
+
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': 'Answer saved'})
+
+        # Handle essay answers
+        elif text_answer is not None and current_question.is_essay():
+            existing_answers_qs = Answer.objects.filter(test=test, question=current_question)
+            if existing_answers_qs.count() > 1:
+                first_answer = existing_answers_qs.first()
+                existing_answers_qs.exclude(id=first_answer.id).delete()
+                first_answer.text_answer = text_answer
+                first_answer.selected_choice = None  # Clear choice
+                first_answer.save()
+            elif existing_answers_qs.count() == 1:
+                ans = existing_answers_qs.first()
+                ans.text_answer = text_answer
+                ans.selected_choice = None  # Clear choice
+                ans.save()
+            else:
+                Answer.objects.create(test=test, question=current_question, text_answer=text_answer)
+
+            # Update session store
+            test_session = request.session.get(session_key, {'answered_questions': {}})
+            test_session['answered_questions'][current_question.id] = 'text_answered' if text_answer.strip() else None
             request.session[session_key] = test_session
 
             if is_ajax:
@@ -1929,6 +2111,9 @@ def take_test(request, category_id, question):
             remaining_td = timedelta(0)
         time_remaining = remaining_td
 
+    # Get previous answer for this question
+    previous_answer = Answer.objects.filter(test=test, question=current_question).first()
+    
     context = {
         'is_package': False,
         'category': category,
@@ -1938,7 +2123,8 @@ def take_test(request, category_id, question):
         'choices': choices,
         'current_question_number': current_question_index + 1,
         'total_questions': total_questions,
-        'previous_answer': Answer.objects.filter(test=test, question=current_question).first(),
+        'previous_answer': previous_answer,
+        'previous_text_answer': previous_answer.text_answer if previous_answer and previous_answer.text_answer else '',
         'progress': progress,
         'answered_questions': answered_count,
         'unanswered_questions': unanswered_count,
@@ -2160,41 +2346,71 @@ def test_results_detail(request, test_id):
     # Iterate full question list and include answers if present
 
     for q in all_questions:
-        ans = test.answers.filter(question=q).select_related('selected_choice').first()
-        selected_choice = ans.selected_choice if ans else None
-        correct_choice = q.choices.filter(is_correct=True).first()
-        is_correct = (selected_choice.is_correct) if selected_choice else False
+        ans = test.answers.filter(question=q).first()
+        
+        # Handle different question types
+        if q.is_multiple_choice():
+            selected_choice = ans.selected_choice if ans else None
+            correct_choice = q.choices.filter(is_correct=True).first()
+            is_correct = (selected_choice and selected_choice.is_correct) if selected_choice else False
+            
+            # Build labeled choices (A, B, C...)
+            all_choices = []
+            choices_qs = list(q.choices.all().order_by('id'))
+            for idx, ch in enumerate(choices_qs):
+                label = chr(65 + idx)  # A, B, C, ...
+                all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
+
+            # Determine labels for selected and correct choices
+            your_answer_label = None
+            correct_answer_label = None
+            if selected_choice:
+                for c in all_choices:
+                    if c['id'] == selected_choice.id:
+                        your_answer_label = c['label']
+                        break
+            if correct_choice:
+                for c in all_choices:
+                    if c['id'] == correct_choice.id:
+                        correct_answer_label = c['label']
+                        break
+            
+            your_answer_text = selected_choice.choice_text if selected_choice else None
+            correct_answer_text = correct_choice.choice_text if correct_choice else None
+            
+        elif q.is_essay():
+            # Essay question handling
+            all_choices = []
+            selected_choice = None
+            correct_choice = None
+            your_answer_label = None
+            correct_answer_label = None
+            
+            your_answer_text = ans.text_answer if ans and ans.text_answer else None
+            correct_answer_text = q.correct_answer_text
+            is_correct = ans.is_correct() if ans else False
+        
+        else:
+            # Fallback for unknown question types
+            all_choices = []
+            selected_choice = None
+            correct_choice = None
+            your_answer_label = None
+            correct_answer_label = None
+            your_answer_text = None
+            correct_answer_text = None
+            is_correct = False
 
         if is_correct:
             correct_count += 1
 
-        # Build labeled choices (A, B, C...)
-        all_choices = []
-        choices_qs = list(q.choices.all().order_by('id'))
-        for idx, ch in enumerate(choices_qs):
-            label = chr(65 + idx)  # A, B, C, ...
-            all_choices.append({'label': label, 'id': ch.id, 'text': ch.choice_text, 'is_correct': ch.is_correct})
-
-        # Determine labels for selected and correct choices
-        your_answer_label = None
-        correct_answer_label = None
-        if selected_choice:
-            for c in all_choices:
-                if c['id'] == selected_choice.id:
-                    your_answer_label = c['label']
-                    break
-        if correct_choice:
-            for c in all_choices:
-                if c['id'] == correct_choice.id:
-                    correct_answer_label = c['label']
-                    break
-
         # Append to question_list in the shape template expects
         question_list.append({
             'question_text': q.question_text,
-            'your_answer': selected_choice.choice_text if selected_choice else None,
+            'question_type': q.question_type,
+            'your_answer': your_answer_text,
             'is_correct': is_correct,
-            'correct_answer': correct_choice.choice_text if correct_choice else None,
+            'correct_answer': correct_answer_text,
             'question_obj': q,
             'all_choices': all_choices,
             'your_choice_label': your_answer_label,
@@ -4355,21 +4571,25 @@ def take_package_test_question(request, package_id, question):
         question=current_question
     ).first()
     
+    # Get previous text answer if exists (for essay questions)
+    previous_text_answer = previous_answer.text_answer if previous_answer and previous_answer.text_answer else ''
+    
     # Update current question position in the test model
     test.current_question = question
     test.save(update_fields=['current_question'])
     
     if request.method == 'POST':
         choice_id = request.POST.get('choice')
+        text_answer = request.POST.get('text_answer')
         action = request.POST.get('action')
         
         # Handle AJAX requests for saving answers
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         # Debug logging: record incoming POST attempts for troubleshooting
-        print(f"[DEBUG] take_package_test_question POST - user={getattr(request.user, 'email', request.user)} package_id={package_id} question_index={question} choice_id={choice_id} is_ajax={is_ajax} test_id={getattr(test, 'id', None)}")
+        print(f"[DEBUG] take_package_test_question POST - user={getattr(request.user, 'email', request.user)} package_id={package_id} question_index={question} choice_id={choice_id} text_answer={text_answer} is_ajax={is_ajax} test_id={getattr(test, 'id', None)}")
 
-        if choice_id:
+        if choice_id and current_question.is_multiple_choice():
             choice = get_object_or_404(Choice, id=choice_id, question=current_question)
             
             # Check for existing answers and clean up duplicates if any
@@ -4385,6 +4605,7 @@ def take_package_test_question(request, package_id, question):
                 
                 # Update the remaining answer
                 first_answer.selected_choice = choice
+                first_answer.text_answer = None  # Clear text answer for multiple choice
                 first_answer.save()
                 answer = first_answer
                 created = False
@@ -4392,6 +4613,7 @@ def take_package_test_question(request, package_id, question):
                 # Update existing single answer
                 answer = existing_answers.first()
                 answer.selected_choice = choice
+                answer.text_answer = None  # Clear text answer for multiple choice
                 answer.save()
                 created = False
             else:
@@ -4405,13 +4627,57 @@ def take_package_test_question(request, package_id, question):
 
             # Debug logging: report result of save
             try:
-                print(f"[DEBUG] Answer saved - test_id={test.id} question_id={current_question.id} answer_id={answer.id} created={created} selected_choice={getattr(answer.selected_choice, 'id', None)}")
+                print(f"[DEBUG] Multiple choice answer saved - test_id={test.id} question_id={current_question.id} answer_id={answer.id} created={created} selected_choice={getattr(answer.selected_choice, 'id', None)}")
             except Exception as _e:
                 print(f"[DEBUG] Answer save - exception while logging: {_e}")
 
             # If this is AJAX, return JSON response
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer saved'})
+                
+        elif text_answer is not None and current_question.is_essay():
+            # Handle essay answer
+            existing_answers = Answer.objects.filter(
+                test=test,
+                question=current_question
+            )
+            
+            if existing_answers.count() > 1:
+                # Keep the first answer and delete the rest
+                first_answer = existing_answers.first()
+                existing_answers.exclude(id=first_answer.id).delete()
+                
+                # Update the remaining answer
+                first_answer.text_answer = text_answer
+                first_answer.selected_choice = None  # Clear selected choice for essay
+                first_answer.save()
+                answer = first_answer
+                created = False
+            elif existing_answers.count() == 1:
+                # Update existing single answer
+                answer = existing_answers.first()
+                answer.text_answer = text_answer
+                answer.selected_choice = None  # Clear selected choice for essay
+                answer.save()
+                created = False
+            else:
+                # Create new answer
+                answer = Answer.objects.create(
+                    test=test,
+                    question=current_question,
+                    text_answer=text_answer
+                )
+                created = True
+
+            # Debug logging: report result of save
+            try:
+                print(f"[DEBUG] Essay answer saved - test_id={test.id} question_id={current_question.id} answer_id={answer.id} created={created} text_answer='{text_answer}'")
+            except Exception as _e:
+                print(f"[DEBUG] Essay answer save - exception while logging: {_e}")
+
+            # If this is AJAX, return JSON response
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': 'Essay answer saved'})
         
         # If not AJAX, handle navigation
         if not is_ajax:
@@ -4465,6 +4731,7 @@ def take_package_test_question(request, package_id, question):
         'current_question_number': question,
         'total_questions': len(all_questions),
         'previous_answer': previous_answer,
+        'previous_text_answer': previous_text_answer,
         'progress': progress,
         'answered_questions': answered_questions,
         'unanswered_questions': unanswered_questions,

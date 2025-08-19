@@ -248,13 +248,14 @@
                         <tr>
                             <th scope="col" class="px-6 py-3">#</th>
                             <th scope="col" class="px-6 py-3">Question Text</th>
+                            <th scope="col" class="px-6 py-3">Type</th>
                             {% if category.scoring_method == 'custom' %}
                             <th scope="col" class="px-6 py-3">Custom Weight</th>
                             {% elif category.scoring_method == 'utbk' %}
                             <th scope="col" class="px-6 py-3">Difficulty Coefficient</th>
                             {% endif %}
                             <th scope="col" class="px-6 py-3">Date Created</th>
-                            <th scope="col" class="px-6 py-3">Choices</th>
+                            <th scope="col" class="px-6 py-3">Jawaban</th>
                             <th scope="col" class="px-6 py-3">Actions</th>
                         </tr>
                     </thead>
@@ -279,6 +280,23 @@
                                     {% endif %}
                                 </div>
                             </td>
+                            <td class="px-6 py-4">
+                                {% if question.question_type == 'essay' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Essay
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Multiple Choice
+                                </span>
+                                {% endif %}
+                            </td>
                             {% if category.scoring_method == 'custom' %}
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
@@ -301,27 +319,47 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="space-y-1">
-                                    {% for choice in question.choices.all %}
-                                    <div class="flex items-center text-xs">
-                                        {% if choice.is_correct %}
-                                        <div class="flex items-center text-green-600 dark:text-green-400">
-                                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            <span class="font-medium">{{ choice.choice_text|striptags|truncatechars:30 }}</span>
+                                {% if question.question_type == 'essay' %}
+                                    <!-- Essay Answer -->
+                                    <div class="flex items-start">
+                                        <div class="flex-1">
+                                            <div class="text-sm text-gray-900 dark:text-white font-medium">
+                                                {{ question.correct_answer_text|truncatechars:50 }}
+                                            </div>
+                                            {% if question.correct_answer_text|length > 50 %}
+                                            <button onclick="toggleEssayAnswer({{ forloop.counter }})" class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 mt-1">
+                                                Show full answer
+                                            </button>
+                                            <div id="essay-answer-{{ forloop.counter }}" class="hidden mt-2 text-sm text-gray-700 dark:text-gray-300 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                                {{ question.correct_answer_text }}
+                                            </div>
+                                            {% endif %}
                                         </div>
-                                        {% else %}
-                                        <div class="flex items-center text-gray-500 dark:text-gray-400">
-                                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            <span>{{ choice.choice_text|striptags|truncatechars:30 }}</span>
-                                        </div>
-                                        {% endif %}
                                     </div>
-                                    {% endfor %}
-                                </div>
+                                {% else %}
+                                    <!-- Multiple Choice Answers -->
+                                    <div class="space-y-1">
+                                        {% for choice in question.choices.all %}
+                                        <div class="flex items-center text-xs">
+                                            {% if choice.is_correct %}
+                                            <div class="flex items-center text-green-600 dark:text-green-400">
+                                                <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                <span class="font-medium">{{ choice.choice_text|striptags|truncatechars:30 }}</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="flex items-center text-gray-500 dark:text-gray-400">
+                                                <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                <span>{{ choice.choice_text|striptags|truncatechars:30 }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center space-x-2">
@@ -349,7 +387,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="{% if category.scoring_method == 'custom' or category.scoring_method == 'utbk' %}6{% else %}5{% endif %}" class="px-6 py-12 text-center">
+                            <td colspan="{% if category.scoring_method == 'custom' or category.scoring_method == 'utbk' %}7{% else %}6{% endif %}" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -461,6 +499,19 @@
         } else {
             fullTextDiv.classList.add('hidden');
             button.textContent = 'Show more';
+        }
+    }
+
+    function toggleEssayAnswer(index) {
+        const essayAnswerDiv = document.getElementById(`essay-answer-${index}`);
+        const button = event.target;
+        
+        if (essayAnswerDiv.classList.contains('hidden')) {
+            essayAnswerDiv.classList.remove('hidden');
+            button.textContent = 'Hide full answer';
+        } else {
+            essayAnswerDiv.classList.add('hidden');
+            button.textContent = 'Show full answer';
         }
     }
     

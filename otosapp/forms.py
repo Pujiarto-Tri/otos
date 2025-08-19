@@ -313,6 +313,13 @@ class CategoryUpdateForm(forms.ModelForm):
 
 class QuestionForm(forms.ModelForm):
     question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    question_type = forms.ChoiceField(
+        choices=Question.QUESTION_TYPES,
+        widget=forms.RadioSelect(attrs={
+            'class': 'question-type-radio'
+        }),
+        initial='multiple_choice'
+    )
     category = forms.ModelChoiceField(
         queryset=Category.objects.all(),
         widget=forms.Select(attrs={
@@ -330,14 +337,34 @@ class QuestionForm(forms.ModelForm):
             'step': '0.01'
         })
     )
+    correct_answer_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'placeholder': 'Masukkan jawaban benar (pisahkan dengan koma jika ada beberapa jawaban yang benar)',
+            'rows': 3
+        }),
+        help_text="Untuk soal isian: masukkan jawaban benar. Jika ada beberapa jawaban yang benar, pisahkan dengan koma."
+    )
     
     class Meta:
         model = Question
-        fields = ['question_text', 'category', 'custom_weight']
+        fields = ['question_text', 'question_type', 'category', 'custom_weight', 'correct_answer_text']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['custom_weight'].help_text = "Only used for custom scoring method (leave 0 for default/UTBK)"
+        self.fields['question_type'].help_text = "Pilih tipe soal yang akan dibuat"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        correct_answer_text = cleaned_data.get('correct_answer_text')
+        
+        if question_type == 'essay' and not correct_answer_text:
+            raise forms.ValidationError("Jawaban benar wajib diisi untuk soal isian.")
+        
+        return cleaned_data
     
     def save(self, commit=True):
         question = super().save(commit=False)
@@ -367,8 +394,26 @@ ChoiceFormSet = forms.inlineformset_factory(
     can_delete=True
 )
 
+class EssayAnswerForm(forms.Form):
+    """Form for essay/fill-in-the-blank answers"""
+    answer_text = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-y',
+            'placeholder': 'Tulis jawaban Anda di sini...',
+            'rows': 4
+        }),
+        required=False,
+        help_text="Masukkan jawaban Anda untuk soal isian ini."
+    )
+
 class QuestionUpdateForm(forms.ModelForm):
     question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    question_type = forms.ChoiceField(
+        choices=Question.QUESTION_TYPES,
+        widget=forms.RadioSelect(attrs={
+            'class': 'question-type-radio'
+        })
+    )
     custom_weight = forms.FloatField(
         required=False,
         widget=forms.NumberInput(attrs={
@@ -378,10 +423,18 @@ class QuestionUpdateForm(forms.ModelForm):
             'step': '0.01'
         })
     )
+    correct_answer_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5',
+            'placeholder': 'Masukkan jawaban benar (pisahkan dengan koma jika ada beberapa jawaban yang benar)',
+            'rows': 3
+        })
+    )
     
     class Meta:
         model = Question
-        fields = ['question_text', 'category', 'custom_weight']
+        fields = ['question_text', 'question_type', 'category', 'custom_weight', 'correct_answer_text']
         widgets = {
             'category': forms.Select(attrs={
                 'class': 'bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5'
@@ -398,6 +451,19 @@ class QuestionUpdateForm(forms.ModelForm):
         
         self.fields['custom_weight'].label = "Custom Weight"
         self.fields['custom_weight'].help_text = "Weight for custom scoring (0-100 points)"
+        
+        self.fields['question_type'].help_text = "Pilih tipe soal: pilihan ganda atau isian"
+        self.fields['correct_answer_text'].help_text = "Untuk soal isian: masukkan jawaban benar (pisahkan dengan koma jika ada beberapa jawaban yang benar)"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        correct_answer_text = cleaned_data.get('correct_answer_text')
+        
+        if question_type == 'essay' and not correct_answer_text:
+            raise forms.ValidationError("Jawaban benar wajib diisi untuk soal isian.")
+        
+        return cleaned_data
 
     def save(self, commit=True):
         question = super().save(commit=False)

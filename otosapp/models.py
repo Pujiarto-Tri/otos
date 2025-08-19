@@ -394,11 +394,18 @@ class TryoutPackageCategory(models.Model):
         return available_questions >= self.question_count
 
 class Question(models.Model):
+    QUESTION_TYPES = [
+        ('multiple_choice', 'Pilihan Ganda'),
+        ('essay', 'Isian/Essay'),
+    ]
+    
     question_text = CKEditor5Field('Text', config_name='extends')
     pub_date = models.DateTimeField('date published')
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     custom_weight = models.FloatField(default=0, help_text="Custom weight for scoring (0-100)")
     difficulty_coefficient = models.FloatField(default=1.0, help_text="UTBK difficulty coefficient (auto-calculated)")
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='multiple_choice', help_text="Tipe soal: pilihan ganda atau isian")
+    correct_answer_text = models.TextField(blank=True, null=True, help_text="Jawaban benar untuk soal isian (pisahkan dengan koma jika ada beberapa jawaban yang benar)")
 
     def delete_media_files(self):
         """Delete associated media files without calling delete()"""
@@ -424,6 +431,30 @@ class Question(models.Model):
         for choice in self.choices.all():
             choice.delete_media_files()
         super().delete(*args, **kwargs)
+    
+    def is_multiple_choice(self):
+        """Check if this is a multiple choice question"""
+        return self.question_type == 'multiple_choice'
+    
+    def is_essay(self):
+        """Check if this is an essay/fill-in question"""
+        return self.question_type == 'essay'
+    
+    def get_correct_answers_list(self):
+        """Get list of correct answers for essay questions"""
+        if not self.correct_answer_text:
+            return []
+        return [answer.strip().lower() for answer in self.correct_answer_text.split(',') if answer.strip()]
+    
+    def check_essay_answer(self, user_answer):
+        """Check if user's essay answer is correct"""
+        if not user_answer or not self.correct_answer_text:
+            return False
+        
+        user_answer_clean = user_answer.strip().lower()
+        correct_answers = self.get_correct_answers_list()
+        
+        return user_answer_clean in correct_answers
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
@@ -517,7 +548,7 @@ class Test(models.Model):
                 continue
             
             # Calculate correct answers for this category
-            correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+            correct_answers = sum(1 for answer in category_answers if answer.is_correct())
             total_questions = category_answers.count()
             
             if total_questions > 0:
@@ -534,14 +565,14 @@ class Test(models.Model):
         if total_answered == 0:
             self.score = 0
         else:
-            correct_answers = self.answers.filter(selected_choice__is_correct=True).count()
+            correct_answers = sum(1 for answer in self.answers.all() if answer.is_correct())
             self.score = (correct_answers / total_answered) * 100
     
     def _calculate_custom_score(self):
         """Custom scoring: Each question has custom weight"""
         total_score = 0
         for answer in self.answers.all():
-            if answer.selected_choice.is_correct:
+            if answer.is_correct():
                 total_score += answer.question.custom_weight
         self.score = total_score
     
@@ -554,7 +585,7 @@ class Test(models.Model):
             question_weight = answer.question.difficulty_coefficient
             total_possible_score += question_weight
             
-            if answer.selected_choice.is_correct:
+            if answer.is_correct():
                 total_score += question_weight
         
         if total_possible_score > 0:
@@ -638,7 +669,7 @@ class Test(models.Model):
             category_answers = self.answers.filter(question__category=category)
             
             if category_answers.exists():
-                correct_answers = category_answers.filter(selected_choice__is_correct=True).count()
+                correct_answers = sum(1 for answer in category_answers if answer.is_correct())
                 total_questions = category_answers.count()
                 score_percentage = correct_answers / total_questions if total_questions > 0 else 0
                 category_score = score_percentage * package_category.max_score
@@ -875,10 +906,27 @@ class Test(models.Model):
 class Answer(models.Model):
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="answers")
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
+    selected_choice = models.ForeignKey(Choice, on_delete=models.CASCADE, null=True, blank=True)
+    text_answer = models.TextField(blank=True, null=True, help_text="Jawaban teks untuk soal isian")
 
     def __str__(self):
         return f"Answer by {self.test.student.username} for {self.question.question_text}"
+    
+    def is_correct(self):
+        """Check if this answer is correct based on question type"""
+        if self.question.is_multiple_choice():
+            return self.selected_choice and self.selected_choice.is_correct
+        elif self.question.is_essay():
+            return self.question.check_essay_answer(self.text_answer)
+        return False
+    
+    def get_answer_text(self):
+        """Get the answer text for display"""
+        if self.question.is_multiple_choice():
+            return self.selected_choice.choice_text if self.selected_choice else ""
+        elif self.question.is_essay():
+            return self.text_answer or ""
+        return ""
 
 @receiver(pre_delete, sender=Question)
 def question_pre_delete(sender, instance, **kwargs):

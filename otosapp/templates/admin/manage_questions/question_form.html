@@ -47,6 +47,35 @@
             color: #e5e7eb !important;
         }
     </style>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
+            const choicesSection = document.getElementById('choicesSection');
+            const essayAnswerSection = document.getElementById('essayAnswerSection');
+            
+            function toggleSections() {
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                if (selectedType) {
+                    if (selectedType.value === 'multiple_choice') {
+                        choicesSection.style.display = 'block';
+                        essayAnswerSection.style.display = 'none';
+                    } else if (selectedType.value === 'essay') {
+                        choicesSection.style.display = 'none';
+                        essayAnswerSection.style.display = 'block';
+                    }
+                }
+            }
+            
+            // Initial toggle based on selected value
+            toggleSections();
+            
+            // Add event listeners to radio buttons
+            questionTypeRadios.forEach(function(radio) {
+                radio.addEventListener('change', toggleSections);
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -85,7 +114,7 @@
 
                 <!-- Category and Weight Section -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category & Scoring</h3>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category & Question Type</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -109,12 +138,46 @@
                         </div>
                         {% endif %}
                     </div>
+                    
+                    <!-- Question Type Selection -->
+                    <div class="mt-6">
+                        <label class="block mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                            Tipe Soal
+                        </label>
+                        <div class="flex space-x-6">
+                            {% for radio in form.question_type %}
+                                <div class="flex items-center mr-4 mb-2">
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" class="ml-2 text-sm font-medium text-gray-900 dark:text-white">{{ radio.choice_label }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.question_type.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.question_type.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-gray-500 text-xs mt-1">{{ form.question_type.help_text }}</p>
+                    </div>
                 </div>
 
-                <!-- Choices Section -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <!-- Essay Answer Section (for essay questions) -->
+                <div id="essayAnswerSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6" style="display: none;">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Jawaban Benar (Soal Isian)</h3>
+                    <div>
+                        <label for="{{ form.correct_answer_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Jawaban Benar
+                        </label>
+                        {{ form.correct_answer_text }}
+                        {% if form.correct_answer_text.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.correct_answer_text.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-gray-500 text-xs mt-1">{{ form.correct_answer_text.help_text }}</p>
+                    </div>
+                </div>
+
+                <!-- Choices Section (for multiple choice questions) -->
+                <div id="choicesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Pilihan Jawaban (Pilihan Ganda)</h3>
                     </div>
 
                     {{ formset.management_form }}

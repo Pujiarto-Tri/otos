@@ -88,6 +88,77 @@
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
           <div class="col-span-1 md:col-span-4">
+            {% if q.question_type == 'essay' %}
+            <!-- Essay Question Display -->
+            <div class="space-y-4">
+              <!-- Student Answer -->
+              {% if q.your_answer %}
+              <div class="p-4 rounded-lg {% if q.is_correct %}bg-emerald-50 border-2 border-emerald-400 dark:bg-emerald-900/20 dark:border-emerald-500{% else %}bg-red-50 border-2 border-red-400 dark:bg-red-900/20 dark:border-red-500{% endif %}">
+                <div class="flex items-start gap-3">
+                  <div class="flex items-center justify-center w-8 h-8 rounded-full {% if q.is_correct %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300{% else %}bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300{% endif %}">
+                    {% if q.is_correct %}
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    {% else %}
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    {% endif %}
+                  </div>
+                  <div class="flex-1">
+                    <div class="text-sm font-medium {% if q.is_correct %}text-emerald-800 dark:text-emerald-300{% else %}text-red-800 dark:text-red-300{% endif %} mb-2">
+                      Jawaban Siswa:
+                    </div>
+                    <div class="text-sm {% if q.is_correct %}text-emerald-700 dark:text-emerald-200{% else %}text-red-700 dark:text-red-200{% endif %} bg-white dark:bg-slate-800 p-3 rounded border {% if q.is_correct %}border-emerald-200 dark:border-emerald-600{% else %}border-red-200 dark:border-red-600{% endif %}">
+                      {{ q.your_answer }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Show correct answer only if student's answer is wrong -->
+              {% if not q.is_correct %}
+              <div class="p-3 rounded-lg bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-600">
+                <div class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  Jawaban yang Benar:
+                </div>
+                <div class="text-sm text-slate-600 dark:text-slate-400 italic">
+                  {{ q.correct_answer_text }}
+                </div>
+              </div>
+              {% endif %}
+              
+              {% else %}
+              <!-- No Answer - Show correct answer for reference -->
+              <div class="p-4 rounded-lg bg-slate-50 border-2 border-slate-300 dark:bg-slate-800 dark:border-slate-600">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <div class="text-sm text-slate-600 dark:text-slate-400">Siswa tidak memberikan jawaban</div>
+                </div>
+                <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
+                  <div class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Jawaban yang Benar:
+                  </div>
+                  <div class="text-sm text-slate-600 dark:text-slate-400 italic">
+                    {{ q.correct_answer_text }}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <!-- Multiple Choice Display -->
             <ul class="space-y-2">
               {% for c in q.all_choices %}
               <li class="flex items-center justify-between gap-3 p-3 rounded-md w-full transition-shadow {% if c.is_correct %}bg-emerald-50 border-2 border-emerald-400 text-emerald-800 shadow-sm dark:bg-emerald-900/20 dark:border-emerald-500 dark:text-emerald-300 dark:shadow-lg{% elif q.your_choice_label == c.label and not c.is_correct %}bg-red-50 border-2 border-red-400 text-red-800 shadow-sm dark:bg-red-900/20 dark:border-red-500 dark:text-red-300 dark:shadow-lg{% else %}bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200{% endif %}">
@@ -106,22 +177,45 @@
               </li>
               {% endfor %}
             </ul>
+            {% endif %}
           </div>
 
           <div class="col-span-1 md:col-span-1">
-            <!-- optional: extra info or explanation area -->
-            <div class="text-sm text-slate-300">Status: 
-              {% if q.is_correct %}
-                <span class="text-emerald-300 font-medium">Benar</span>
-              {% elif q.your_answer %}
-                <span class="text-red-300 font-medium">Salah</span>
-              {% else %}
-                <span class="text-slate-400">Kosong</span>
-              {% endif %}
+            <!-- Question info area -->
+            <div class="text-sm text-slate-600 dark:text-slate-300">
+              <div class="mb-2">
+                <span class="font-medium text-slate-800 dark:text-slate-200">Tipe:</span>
+                {% if q.question_type == 'essay' %}
+                <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300 ml-1">
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  Essay
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300 ml-1">
+                  <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                  </svg>
+                  Multiple Choice
+                </span>
+                {% endif %}
+              </div>
+              
+              <div class="mb-2">Status: 
+                {% if q.is_correct %}
+                  <span class="text-emerald-600 dark:text-emerald-300 font-medium">Benar</span>
+                {% elif q.your_answer %}
+                  <span class="text-red-600 dark:text-red-300 font-medium">Salah</span>
+                {% else %}
+                  <span class="text-slate-500 dark:text-slate-400">Kosong</span>
+                {% endif %}
+              </div>
             </div>
-            {% if q.your_answer %}
-            <div class="mt-4 text-sm text-slate-300">
-              <div class="font-medium text-slate-200">Jawaban Siswa</div>
+            
+            {% if q.your_answer and q.question_type != 'essay' %}
+            <div class="mt-4 text-sm text-slate-600 dark:text-slate-300">
+              <div class="font-medium text-slate-800 dark:text-slate-200">Jawaban Siswa</div>
               <div class="mt-1 prose prose-sm dark:prose-invert">{{ q.your_answer|safe }}</div>
             </div>
             {% endif %}

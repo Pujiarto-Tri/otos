@@ -58,24 +58,51 @@
                 </div>
             </div>
 
-            <!-- Answer Choices -->
+            <!-- Answer Section -->
             <div class="space-y-4 mb-8">
-                {% for choice in choices %}
-                <label for="choice_{{ choice.id }}" class="group flex items-start cursor-pointer p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-900 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200">
-                    <input type="radio" id="choice_{{ choice.id }}" name="choice" value="{{ choice.id }}" 
-                           {% if previous_answer and previous_answer.selected_choice.id == choice.id %}checked{% endif %}
-                           class="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600 mt-1 flex-shrink-0"
-                           onchange="saveAnswer()">
-                    <div class="ml-4 text-lg font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-relaxed ckeditor-content">
-                        {{ choice.choice_text|safe }}
-                        {% if choice.choice_image %}
-                        <div class="mt-3">
-                            <img src="{{ choice.choice_image.url }}" alt="Choice Image" class="max-w-sm h-auto rounded-lg border border-gray-200 dark:border-gray-600">
+                {% if question.question_type == 'multiple_choice' %}
+                    <!-- Multiple Choice Answers -->
+                    {% for choice in choices %}
+                    <label for="choice_{{ choice.id }}" class="group flex items-start cursor-pointer p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-900 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200">
+                        <input type="radio" id="choice_{{ choice.id }}" name="choice" value="{{ choice.id }}" 
+                               {% if previous_answer and previous_answer.selected_choice and previous_answer.selected_choice.id == choice.id %}checked{% endif %}
+                               class="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600 mt-1 flex-shrink-0"
+                               onchange="saveAnswer()">
+                        <div class="ml-4 text-lg font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-relaxed ckeditor-content">
+                            {{ choice.choice_text|safe }}
+                            {% if choice.choice_image %}
+                            <div class="mt-3">
+                                <img src="{{ choice.choice_image.url }}" alt="Choice Image" class="max-w-sm h-auto rounded-lg border border-gray-200 dark:border-gray-600">
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
+                    </label>
+                    {% endfor %}
+                {% elif question.question_type == 'essay' %}
+                    <!-- Essay Answer -->
+                    <div class="p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                        <label for="text_answer" class="block text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                            <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Tulis jawaban Anda:
+                        </label>
+                        <textarea 
+                            id="text_answer" 
+                            name="text_answer" 
+                            rows="6" 
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+                            placeholder="Ketik jawaban Anda di sini..."
+                            onchange="saveEssayAnswer()"
+                            onblur="saveEssayAnswer()">{{ previous_text_answer }}</textarea>
+                        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Jawaban akan tersimpan otomatis
+                        </div>
                     </div>
-                </label>
-                {% endfor %}
+                {% endif %}
                 
                 <!-- Saving indicator (flyout, fixed so it doesn't shift layout) -->
                 <div id="saving-indicator" class="hidden fixed top-20 right-4 z-50 flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700 shadow-lg transform translate-x-full opacity-0 transition-all duration-200">
@@ -786,6 +813,56 @@ function saveAnswer() {
         console.error('Error:', error);
     // Hide saving indicator flyout
     hideSavingIndicator();
+        showSaveError();
+    });
+}
+
+// Save essay answer function
+function saveEssayAnswer() {
+    const textAnswer = document.getElementById('text_answer');
+    if (!textAnswer) return;
+
+    const answer = textAnswer.value.trim();
+    
+    // Add current question to answeredQuestions if not already there (for real-time UI)
+    if (!answeredQuestions.includes({{ current_question_number }})) {
+        answeredQuestions.push({{ current_question_number }});
+    }
+    // Update progress bar & stats immediately for real-time feedback
+    updateNavigationColors();
+    updateStats();
+
+    // Show saving indicator flyout (no layout shift)
+    showSavingIndicator();
+
+    // Send AJAX request to save essay answer
+    const formData = new FormData();
+    formData.append('text_answer', answer);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide saving indicator flyout
+        hideSavingIndicator();
+
+        if (data.status === 'success') {
+            showSaveConfirmation();
+            // (No need to update UI again here, already done above)
+        } else {
+            showSaveError();
+        }
+    })
+    .catch(error => {
+        console.error('Error saving essay answer:', error);
+        // Hide saving indicator flyout
+        hideSavingIndicator();
         showSaveError();
     });
 }
