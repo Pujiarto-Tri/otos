@@ -1,11 +1,13 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponseNotFound
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.utils import timezone
-from django.http import JsonResponse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -902,25 +904,11 @@ def teacher_view_student_scores(request, category_id):
     if not (request.user.is_admin() or category.created_by == request.user):
         raise PermissionDenied
 
-    # Get submitted tests that include this category - avoid duplicates by using distinct()
-    # and only get the latest test per student for this category
+    # Get all submitted tests that include this category (show every attempt)
     tests_qs = Test.objects.filter(
-        categories=category, 
+        categories=category,
         is_submitted=True
     ).select_related('student').distinct()
-
-    # Group by student and get only the latest test per student
-    from django.db.models import Max
-    latest_test_dates = tests_qs.values('student').annotate(
-        latest_date=Max('date_taken')
-    ).values_list('student', 'latest_date')
-    
-    # Filter to only include the latest test per student
-    latest_tests_filter = Q()
-    for student_id, latest_date in latest_test_dates:
-        latest_tests_filter |= Q(student_id=student_id, date_taken=latest_date)
-    
-    tests_qs = tests_qs.filter(latest_tests_filter)
 
     # Annotate correct and wrong counts per test for this category so we can sort by them
     tests_qs = tests_qs.annotate(
@@ -1639,8 +1627,28 @@ def question_create(request):
                 
                 question.save()
                 choices = formset.save(commit=False)
-                for choice in choices:
+                
+                # Process choice images from uploaded URLs
+                for i, choice in enumerate(choices, 1):
                     choice.question = question
+                    
+                    # Check if there's an uploaded image URL for this choice
+                    choice_image_url = request.POST.get(f'choice_image_{i}')
+                    if choice_image_url:
+                        # Extract filename from URL and create ImageField
+                        import urllib.parse
+                        from django.core.files.base import ContentFile
+                        from django.core.files.storage import default_storage
+                        
+                        # Parse the URL to get the file path
+                        parsed_url = urllib.parse.urlparse(choice_image_url)
+                        if parsed_url.path.startswith('/media/'):
+                            file_path = parsed_url.path[7:]  # Remove '/media/' prefix
+                            
+                            # Check if file exists in media storage
+                            if default_storage.exists(file_path):
+                                choice.choice_image = file_path
+                    
                     choice.save()
                 
                 messages.success(request, 'Soal pilihan ganda berhasil dibuat!')
@@ -1676,11 +1684,11 @@ def question_update(request, question_id):
         form = QuestionUpdateForm(request.POST, instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
-            fields=('choice_text', 'is_correct'),
+            fields=('choice_text', 'choice_image', 'is_correct'),
             extra=0, can_delete=True,
             min_num=2, validate_min=True
         )
-        formset = ChoiceFormSet(request.POST, instance=question, prefix='choice_set')
+        formset = ChoiceFormSet(request.POST, instance=question, prefix='choices')
         
         if form.is_valid():
             updated_question = form.save(commit=False)
@@ -1691,6 +1699,10 @@ def question_update(request, question_id):
                 question.choices.all().delete()
                 updated_question.save()
                 messages.success(request, 'Soal isian berhasil diperbarui!')
+                
+                # Redirect to category-specific question list if available
+                if updated_question.category:
+                    return redirect('question_list_by_category', category_id=updated_question.category.id)
                 return redirect('question_list')
             
             # For multiple choice questions, validate and save choices
@@ -1701,7 +1713,7 @@ def question_update(request, question_id):
                 
                 if correct_choices == 0:
                     messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
-                    return render(request, 'admin/manage_questions/question_update.html', {
+                    return render(request, 'admin/manage_questions/question_form.html', {
                         'form': form,
                         'formset': formset,
                         'question': question,
@@ -1710,8 +1722,36 @@ def question_update(request, question_id):
                 
                 with transaction.atomic():
                     updated_question.save()
-                    formset.save()
+                    choices = formset.save(commit=False)
+                    
+                    # Process choice images from uploaded URLs
+                    for i, choice in enumerate(choices, 1):
+                        # Check if there's an uploaded image URL for this choice
+                        choice_image_url = request.POST.get(f'choice_image_{i}')
+                        if choice_image_url:
+                            # Extract filename from URL and create ImageField
+                            import urllib.parse
+                            from django.core.files.base import ContentFile
+                            from django.core.files.storage import default_storage
+                            
+                            # Parse the URL to get the file path
+                            parsed_url = urllib.parse.urlparse(choice_image_url)
+                            if parsed_url.path.startswith('/media/'):
+                                file_path = parsed_url.path[7:]  # Remove '/media/' prefix
+                                
+                                # Check if file exists in media storage
+                                if default_storage.exists(file_path):
+                                    choice.choice_image = file_path
+                        
+                        choice.save()
+                    
+                    # Save any remaining formset instances
+                    formset.save_m2m()
                     messages.success(request, 'Soal pilihan ganda berhasil diperbarui!')
+                    
+                    # Redirect to category-specific question list if available
+                    if updated_question.category:
+                        return redirect('question_list_by_category', category_id=updated_question.category.id)
                     return redirect('question_list')
             else:
                 messages.error(request, 'Please correct the errors below.')
@@ -1721,13 +1761,13 @@ def question_update(request, question_id):
         form = QuestionUpdateForm(instance=question)
         ChoiceFormSet = inlineformset_factory(
             Question, Choice,
-            fields=('choice_text', 'is_correct'),
+            fields=('choice_text', 'choice_image', 'is_correct'),
             extra=0, can_delete=True,
             min_num=2, validate_min=True
         )
-        formset = ChoiceFormSet(instance=question, prefix='choice_set')
+        formset = ChoiceFormSet(instance=question, prefix='choices')
 
-    return render(request, 'admin/manage_questions/question_update.html', {
+    return render(request, 'admin/manage_questions/question_form.html', {
         'form': form,
         'formset': formset,
         'question': question,
@@ -4895,4 +4935,39 @@ def api_universities(request):
         print(f"First 3 results: {[r['name'] + ' (' + r['tier'] + ')' for r in results[:3]]}")
     
     return JsonResponse({'results': results})
+
+
+@csrf_exempt
+@require_POST
+def image_upload(request):
+    """Handle image uploads for Quill.js editor"""
+    try:
+        if 'upload' not in request.FILES:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
+        
+        uploaded_file = request.FILES['upload']
+        
+        # Validate file type
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+        file_extension = os.path.splitext(uploaded_file.name)[1].lower()
+        
+        if file_extension not in allowed_extensions:
+            return JsonResponse({'error': 'Invalid file type'}, status=400)
+        
+        # Validate file size (max 5MB)
+        if uploaded_file.size > 5 * 1024 * 1024:
+            return JsonResponse({'error': 'File too large (max 5MB)'}, status=400)
+        
+        # Generate unique filename
+        from .utils import generate_unique_filename
+        filename = generate_unique_filename(uploaded_file.name)
+        
+        # Save file
+        file_path = default_storage.save(f'uploads/{filename}', ContentFile(uploaded_file.read()))
+        file_url = default_storage.url(file_path)
+        
+        return JsonResponse({'url': file_url})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

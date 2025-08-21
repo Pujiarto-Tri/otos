@@ -4,52 +4,673 @@
 {% block title %}{{ title|default:"Question Form" }}{% endblock %}
 
 {% block extrahead %}
-    <!-- Remove the CDN CKEditor script as we're using django-ckeditor-5 -->
+    <!-- Quill.js Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
     
     <style>
-        /* Add these styles to fix CKEditor appearance */
-        .ck-editor__editable {
-            min-height: 200px;
-            background-color: white !important;
-            color: black !important;
+        /* Quill Rich Text Editor Styling */
+        .ql-editor {
+            min-height: 280px !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-size: 15px !important;
+            line-height: 1.6 !important;
+            color: #1f2937 !important;
         }
         
-        .ck.ck-editor__main>.ck-editor__editable {
-            background: white !important;
+        .ql-toolbar {
+            border-top: 1px solid #d1d5db !important;
+            border-left: 1px solid #d1d5db !important;
+            border-right: 1px solid #d1d5db !important;
+            border-bottom: none !important;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+            background: #f9fafb !important;
         }
         
-        .ck.ck-toolbar {
-            background: white !important;
-            border: 1px solid #d1d5db !important;
+        .ql-container {
+            border-bottom: 1px solid #d1d5db !important;
+            border-left: 1px solid #d1d5db !important;
+            border-right: 1px solid #d1d5db !important;
+            border-top: none !important;
+            border-radius: 0 0 0.5rem 0.5rem !important;
         }
         
-        .ck.ck-button {
-            color: #374151 !important;
-        }
-        
-        /* Dark mode styles */
-        .dark .ck-editor__editable {
-            background-color: #1f2937 !important;
-            color: white !important;
-        }
-        
-        .dark .ck.ck-editor__main>.ck-editor__editable {
-            background: #1f2937 !important;
-        }
-        
-        .dark .ck.ck-toolbar {
+        /* Quill Editor Dark Mode */
+        .dark .ql-toolbar {
             background: #374151 !important;
             border-color: #4b5563 !important;
         }
         
-        .dark .ck.ck-button {
+        .dark .ql-editor {
+            background: #1f2937 !important;
+            color: #f3f4f6 !important;
+        }
+        
+        /* Custom styling for choice textareas */
+        .choice-item textarea {
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+        
+        .choice-item textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .choice-item textarea {
+            background-color: #1f2937;
+            border-color: #4b5563;
+            color: #f9fafb;
+        }
+        
+        .dark .choice-item textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Question text field should be hidden since we use Quill */
+        #id_question_text {
+            display: none;
+        }
+        
+        .dark .ql-container {
+            border-color: #4b5563 !important;
+        }
+        
+        /* Quill Toolbar Buttons - Dark Mode Fix */
+        .dark .ql-toolbar .ql-formats {
+            margin-right: 15px !important;
+        }
+        
+        .dark .ql-toolbar button {
             color: #e5e7eb !important;
+            border: none !important;
+            background: transparent !important;
+        }
+        
+        .dark .ql-toolbar button:hover {
+            background: #4b5563 !important;
+            border-radius: 3px !important;
+        }
+        
+        .dark .ql-toolbar button.ql-active {
+            background: #3b82f6 !important;
+            color: white !important;
+            border-radius: 3px !important;
+        }
+        
+        /* Quill Toolbar Icons - Make them visible in dark mode */
+        .dark .ql-toolbar button svg {
+            fill: #e5e7eb !important;
+        }
+        
+        .dark .ql-toolbar button:hover svg {
+            fill: #f3f4f6 !important;
+        }
+        
+        .dark .ql-toolbar button.ql-active svg {
+            fill: white !important;
+        }
+        
+        /* Quill Picker Labels - Dark Mode */
+        .dark .ql-toolbar .ql-picker-label {
+            color: #e5e7eb !important;
+            border: none !important;
+        }
+        
+        .dark .ql-toolbar .ql-picker-label:hover {
+            background: #4b5563 !important;
+            border-radius: 3px !important;
+        }
+        
+        /* Quill Stroke Icons - Dark Mode */
+        .dark .ql-toolbar .ql-stroke {
+            stroke: #e5e7eb !important;
+        }
+        
+        .dark .ql-toolbar button:hover .ql-stroke {
+            stroke: #f3f4f6 !important;
+        }
+        
+        .dark .ql-toolbar button.ql-active .ql-stroke {
+            stroke: white !important;
+        }
+        
+        /* Quill Fill Icons - Dark Mode */
+        .dark .ql-toolbar .ql-fill {
+            fill: #e5e7eb !important;
+        }
+        
+        .dark .ql-toolbar button:hover .ql-fill {
+            fill: #f3f4f6 !important;
+        }
+        
+        .dark .ql-toolbar button.ql-active .ql-fill {
+            fill: white !important;
+        }
+        
+        /* Quill Image Button - Dark Mode */
+        .dark .ql-toolbar .ql-image svg {
+            fill: #e5e7eb !important;
+        }
+        
+        .dark .ql-toolbar button:hover .ql-image svg {
+            fill: #f3f4f6 !important;
+        }
+        
+        .dark .ql-toolbar button.ql-active .ql-image svg {
+            fill: white !important;
+        }
+        
+        /* Quill Editor Images - Responsive */
+        .ql-editor img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 0.375rem !important;
+            margin: 8px 0 !important;
+        }
+        
+        /* Mobile responsive improvements */
+        @media (max-width: 768px) {
+            .ql-editor {
+                min-height: 250px !important;
+                font-size: 16px !important; /* Prevent zoom on iOS */
+            }
+        }
+        
+        /* Hidden textarea for form submission */
+        #id_question_text {
+            display: none !important;
+        }
+        
+        /* Fallback styling if Quill fails to load */
+        .textarea-fallback {
+            display: block !important;
+            width: 100% !important;
+            min-height: 280px !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            padding: 16px !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-size: 15px !important;
+            line-height: 1.6 !important;
+            background: white !important;
+            color: #1f2937 !important;
+        }
+        
+        /* Custom animations and transitions */
+        .section-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .choice-item {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .choice-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .choice-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
     </style>
-    
+{% endblock %}
+
+{% block content %}
+    <div class="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+        <!-- Sidebar -->
+        <div class="hidden md:flex md:flex-shrink-0">
+            <div class="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                <!-- Navigation content will be included here -->
+                <div class="flex-1 px-4 py-6">
+                    <nav>
+                        <a href="{% url 'home' %}" class="block px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                            ← Back to Dashboard
+                        </a>
+                        <a href="{% url 'question_list' %}" class="block px-3 py-2 mt-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                            View All Questions
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-1 overflow-hidden">
+            <div class="flex flex-col h-full">
+                <!-- Header -->
+                <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+                    <div class="px-4 sm:px-6 lg:px-8 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {% if question %}Edit Question{% else %}Create Question{% endif %}
+                                    </h1>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {% if question %}Update the details of this question{% else %}Fill in the details to create a new question{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Form content -->
+                <main class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+                    <div class="px-4 sm:px-6 lg:px-8 py-8">
+                        <div class="max-w-4xl mx-auto">
+                            <!-- Error Messages -->
+                            {% if form.errors %}
+                                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-medium">Please fix the following errors:</h3>
+                                            <div class="mt-2 text-sm">
+                                                <ul class="list-disc pl-5 space-y-1">
+                                                    {% for field, errors in form.errors.items %}
+                                                        {% for error in errors %}
+                                                            <li>{{ field|capfirst }}: {{ error }}</li>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Form -->
+                            <form method="post" class="space-y-6">
+                                {% csrf_token %}
+                                
+                                <!-- Question Content -->
+                                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Content</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            {% if question %}Update your question content using the rich text editor{% else %}Enter your question content using the rich text editor{% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                            <label for="id_question_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Question Text
+                                                <span class="text-red-500">*</span>
+                                            </label>
+                                            {{ form.question_text }}
+                                            {% if form.question_text.errors %}
+                                                {% for error in form.question_text.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Question Type and Category -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <!-- Question Type -->
+                                    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Type</h3>
+                                        </div>
+                                        <div class="px-6 py-4">
+                                            <fieldset>
+                                                <legend class="sr-only">Question Type</legend>
+                                                <div class="space-y-3">
+                                                    {% for choice in form.question_type %}
+                                                        <div class="flex items-center">
+                                                            {{ choice.tag }}
+                                                            <label for="{{ choice.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                {{ choice.choice_label }}
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </fieldset>
+                                            {% if form.question_type.help_text %}
+                                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ form.question_type.help_text }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Category -->
+                                    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Category</h3>
+                                        </div>
+                                        <div class="px-6 py-4">
+                                            <label for="id_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Question Category
+                                                <span class="text-red-500">*</span>
+                                            </label>
+                                            {{ form.category }}
+                                            {% if form.category.errors %}
+                                                {% for error in form.category.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Weight -->
+                                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Weight Configuration</h3>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <label for="id_custom_weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Custom Weight (Optional)
+                                        </label>
+                                        {{ form.custom_weight }}
+                                        {% if form.custom_weight.help_text %}
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.custom_weight.help_text }}</p>
+                                        {% endif %}
+                                        {% if form.custom_weight.errors %}
+                                            {% for error in form.custom_weight.errors %}
+                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Multiple Choice Options -->
+                                <div id="choicesSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            {% if question %}Update multiple choice options for this question{% else %}Add multiple choice options for this question{% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="px-6 py-6">
+                                        {{ formset.management_form }}
+                                        <div id="choice-forms" class="space-y-4">
+                                            {% for form in formset %}
+                                                <div class="choice-item p-6 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                                    
+                                                    <!-- Choice Header -->
+                                                    <div class="flex items-center justify-between mb-4">
+                                                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                                            Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}
+                                                        </h4>
+                                                        <div class="flex items-center space-x-2">
+                                                            {{ form.is_correct }}
+                                                            <label for="{{ form.is_correct.id_for_label }}" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Mark as correct answer
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Choice Text -->
+                                                    <div class="mb-4">
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                            Choice Text <span class="text-red-500">*</span>
+                                                        </label>
+                                                        {{ form.choice_text }}
+                                                        {% if form.choice_text.errors %}
+                                                            {% for error in form.choice_text.errors %}
+                                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    <!-- Choice Image Section -->
+                                                    <div class="space-y-3">
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                            Choice Image (Optional)
+                                                        </label>
+                                                        
+                                                        <!-- Current Image Display -->
+                                                        {% if form.instance.choice_image %}
+                                                            <div class="flex items-start space-x-3 p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
+                                                                <div class="text-sm text-gray-600 dark:text-gray-300">
+                                                                    <strong>Currently:</strong> {{ form.instance.choice_image.name|truncatechars:50 }}
+                                                                </div>
+                                                                <label class="inline-flex items-center">
+                                                                    <input type="checkbox" name="choice_image_{{ forloop.counter }}-clear" 
+                                                                           class="form-checkbox h-4 w-4 text-primary-600 dark:bg-gray-700 dark:border-gray-600">
+                                                                    <span class="ml-2 text-sm text-red-600 dark:text-red-400">Clear</span>
+                                                                </label>
+                                                            </div>
+                                                        {% endif %}
+                                                        
+                                                        <!-- Hidden Django Field -->
+                                                        <div class="hidden">{{ form.choice_image }}</div>
+                                                        
+                                                        <!-- Custom Upload Interface -->
+                                                        <div class="flex items-center space-x-3">
+                                                            <input type="file" 
+                                                                   id="choice-image-{{ forloop.counter }}" 
+                                                                   accept="image/*" 
+                                                                   class="hidden" 
+                                                                   onchange="uploadChoiceImage(this, {{ forloop.counter }})">
+                                                            <button type="button" 
+                                                                    onclick="document.getElementById('choice-image-{{ forloop.counter }}').click()" 
+                                                                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                                </svg>
+                                                                Upload Image
+                                                            </button>
+                                                            <span id="choice-image-status-{{ forloop.counter }}" class="text-sm text-gray-500 dark:text-gray-400"></span>
+                                                        </div>
+                                                        
+                                                        <!-- Image Preview -->
+                                                        <div id="choice-image-preview-{{ forloop.counter }}" class="{% if not form.instance.choice_image %}hidden{% endif %}">
+                                                            {% if form.instance.choice_image %}
+                                                                <div class="relative inline-block">
+                                                                    <img src="{{ form.instance.choice_image.url }}" 
+                                                                         class="h-24 w-auto rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm" 
+                                                                         alt="Choice image">
+                                                                    <button type="button" 
+                                                                            onclick="removeChoiceImage({{ forloop.counter }})" 
+                                                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors duration-200">
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="relative inline-block">
+                                                                    <img class="h-24 w-auto rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm" alt="Choice image">
+                                                                    <button type="button" 
+                                                                            onclick="removeChoiceImage({{ forloop.counter }})" 
+                                                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors duration-200">
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        
+                                                        <input type="hidden" 
+                                                               id="choice-image-url-{{ forloop.counter }}" 
+                                                               name="choice_image_{{ forloop.counter }}" 
+                                                               value="{% if form.instance.choice_image %}{{ form.instance.choice_image.url }}{% endif %}">
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Essay Answer Section -->
+                                <div id="essayAnswerSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Expected Answer</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Provide the expected answer or key points for this essay question</p>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <label for="id_correct_answer_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Expected Answer
+                                        </label>
+                                        {{ form.correct_answer_text }}
+                                        {% if form.correct_answer_text.help_text %}
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.correct_answer_text.help_text }}</p>
+                                        {% endif %}
+                                        {% if form.correct_answer_text.errors %}
+                                            {% for error in form.correct_answer_text.errors %}
+                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <a href="{% url 'question_list' %}" class="bg-white dark:bg-gray-800 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                                        {% if question %}Update Question{% else %}Create Question{% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Quill.js Rich Text Editor Initialization -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Quill Rich Text Editor
+            const questionTextarea = document.querySelector('#id_question_text');
+            let quillEditor = null;
+            
+            if (questionTextarea) {
+                // Create container for Quill editor
+                const editorContainer = document.createElement('div');
+                editorContainer.id = 'quill-editor';
+                questionTextarea.parentNode.insertBefore(editorContainer, questionTextarea);
+                
+                // Initialize Quill
+                try {
+                    quillEditor = new Quill('#quill-editor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                ['link', 'blockquote'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                ['image'],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Type your question here...'
+                    });
+                    
+                    // Custom Image Upload Handler
+                    quillEditor.getModule('toolbar').addHandler('image', function() {
+                        const input = document.createElement('input');
+                        input.setAttribute('type', 'file');
+                        input.setAttribute('accept', 'image/*');
+                        input.click();
+                        
+                        input.onchange = function() {
+                            const file = input.files[0];
+                            if (file) {
+                                // Show upload progress
+                                const range = quillEditor.getSelection();
+                                quillEditor.insertText(range.index, 'Uploading image...', 'italic', true);
+                                
+                                const formData = new FormData();
+                                formData.append('upload', file);
+                                
+                                // Add CSRF token
+                                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                                
+                                fetch('/admin/image-upload/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': csrfToken
+                                    },
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    // Remove progress text
+                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                                    
+                                    if (data.url) {
+                                        // Insert image at cursor position
+                                        quillEditor.insertEmbed(range.index, 'image', data.url);
+                                        quillEditor.setSelection(range.index + 1);
+                                    } else {
+                                        showNotification('Image upload failed: ' + (data.error || 'Unknown error'), 'error');
+                                    }
+                                })
+                                .catch(error => {
+                                    // Remove progress text
+                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                                    console.error('Upload failed:', error);
+                                    showNotification('Image upload failed. Please try again.', 'error');
+                                });
+                            }
+                        };
+                    });
+                    
+                    // Set initial content if textarea has value
+                    if (questionTextarea.value) {
+                        quillEditor.root.innerHTML = questionTextarea.value;
+                    }
+                    
+                    // Sync editor content with textarea
+                    quillEditor.on('text-change', function() {
+                        questionTextarea.value = quillEditor.root.innerHTML;
+                    });
+                    
+                    console.log('Quill editor initialized successfully');
+                    
+                } catch (error) {
+                    console.error('Quill initialization failed:', error);
+                    // Show textarea as fallback
+                    questionTextarea.style.display = 'block';
+                    questionTextarea.classList.add('textarea-fallback');
+                    if (editorContainer) {
+                        editorContainer.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Question type functionality
             const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
             const choicesSection = document.getElementById('choicesSection');
             const essayAnswerSection = document.getElementById('essayAnswerSection');
@@ -57,13 +678,22 @@
             function toggleSections() {
                 const selectedType = document.querySelector('input[name="question_type"]:checked');
                 if (selectedType) {
-                    if (selectedType.value === 'multiple_choice') {
-                        choicesSection.style.display = 'block';
-                        essayAnswerSection.style.display = 'none';
-                    } else if (selectedType.value === 'essay') {
-                        choicesSection.style.display = 'none';
-                        essayAnswerSection.style.display = 'block';
-                    }
+                    document.body.style.cursor = 'wait';
+                    
+                    setTimeout(() => {
+                        if (selectedType.value === 'multiple_choice') {
+                            choicesSection.style.display = 'block';
+                            essayAnswerSection.style.display = 'none';
+                            choicesSection.classList.add('section-fade-in');
+                        } else if (selectedType.value === 'essay') {
+                            choicesSection.style.display = 'none';
+                            essayAnswerSection.style.display = 'block';
+                            essayAnswerSection.classList.add('section-fade-in');
+                        }
+                        
+                        document.body.style.cursor = '';
+                        console.log('Question type changed to:', selectedType.value);
+                    }, 100);
                 }
             }
             
@@ -74,154 +704,200 @@
             questionTypeRadios.forEach(function(radio) {
                 radio.addEventListener('change', toggleSections);
             });
+            
+            // Form validation with enhanced UX
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const category = document.querySelector('#id_category');
+                    
+                    // Get content from Quill editor or textarea
+                    let questionContent = '';
+                    if (quillEditor) {
+                        questionContent = quillEditor.root.innerHTML.trim();
+                        // Also check for empty content (just HTML tags)
+                        const textContent = quillEditor.getText().trim();
+                        if (!textContent) questionContent = '';
+                    } else if (questionTextarea) {
+                        questionContent = questionTextarea.value.trim();
+                    }
+                    
+                    if (!questionContent || (category && !category.value)) {
+                        e.preventDefault();
+                        showNotification('Please fill in all required fields', 'error');
+                        
+                        const firstError = document.querySelector('.text-red-500');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                    
+                    // Check if essay type and answer is provided
+                    const essayRadio = document.querySelector('input[value="essay"]:checked');
+                    if (essayRadio) {
+                        const essayAnswer = document.getElementById('id_correct_answer_text');
+                        if (essayAnswer && !essayAnswer.value.trim()) {
+                            e.preventDefault();
+                            showNotification('Please provide an expected answer for the essay question', 'error');
+                            essayAnswer.focus();
+                            return;
+                        }
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        const isUpdate = submitBtn.textContent.includes('Update');
+                        submitBtn.innerHTML = `
+                            <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            ${isUpdate ? 'Updating' : 'Creating'} Question...
+                        `;
+                    }
+                });
+            }
+            
+            // Choice Image Upload Function
+            window.uploadChoiceImage = function(input, choiceNumber) {
+                const file = input.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('upload', file);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                
+                const statusElement = document.getElementById(`choice-image-status-${choiceNumber}`);
+                statusElement.textContent = 'Uploading...';
+                statusElement.className = 'text-sm text-blue-600 dark:text-blue-400';
+                
+                fetch('/admin/image-upload/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.url) {
+                        // Update hidden input with image URL
+                        document.getElementById(`choice-image-url-${choiceNumber}`).value = data.url;
+                        
+                        // Show preview
+                        const previewContainer = document.getElementById(`choice-image-preview-${choiceNumber}`);
+                        const previewImage = previewContainer.querySelector('img');
+                        previewImage.src = data.url;
+                        previewContainer.classList.remove('hidden');
+                        
+                        // Update status
+                        statusElement.textContent = 'Image uploaded successfully';
+                        statusElement.className = 'text-sm text-green-600 dark:text-green-400';
+                        
+                        showNotification('Choice image uploaded successfully!', 'success');
+                    } else {
+                        statusElement.textContent = 'Failed to upload image';
+                        statusElement.className = 'text-sm text-red-600 dark:text-red-400';
+                        showNotification('Failed to upload choice image', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusElement.textContent = 'Failed to upload image';
+                    statusElement.className = 'text-sm text-red-600 dark:text-red-400';
+                    showNotification('Failed to upload choice image', 'error');
+                });
+                
+                // Clear the file input
+                input.value = '';
+            };
+
+            // Remove Choice Image Function
+            window.removeChoiceImage = function(choiceNumber) {
+                // Clear hidden input
+                document.getElementById(`choice-image-url-${choiceNumber}`).value = '';
+                
+                // Hide preview
+                const previewContainer = document.getElementById(`choice-image-preview-${choiceNumber}`);
+                previewContainer.classList.add('hidden');
+                
+                // Clear status
+                const statusElement = document.getElementById(`choice-image-status-${choiceNumber}`);
+                statusElement.textContent = '';
+                
+                showNotification('Choice image removed', 'info');
+            };
+            
+            // Notification system
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg max-w-sm ${getNotificationClasses(type)}`;
+                notification.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            ${getNotificationIcon(type)}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">${message}</p>
+                        </div>
+                        <div class="ml-auto pl-3">
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-gray-400 hover:text-gray-600">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+            
+            function getNotificationClasses(type) {
+                switch (type) {
+                    case 'success':
+                        return 'bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400';
+                    case 'error':
+                        return 'bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400';
+                    case 'warning':
+                        return 'bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-400';
+                    default:
+                        return 'bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400';
+                }
+            }
+            
+            function getNotificationIcon(type) {
+                switch (type) {
+                    case 'success':
+                        return '<svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>';
+                    case 'error':
+                        return '<svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>';
+                    case 'warning':
+                        return '<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>';
+                    default:
+                        return '<svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>';
+                }
+            }
+            
+            // Mobile-friendly enhancements
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('input, textarea, select').forEach(input => {
+                    input.addEventListener('focus', function() {
+                        setTimeout(() => {
+                            this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                    });
+                });
+            }
         });
     </script>
-{% endblock %}
-
-{% block content %}
-<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 min-h-screen">
-    <div class="mx-auto max-w-5xl px-4 lg:px-12">
-        <!-- Breadcrumb -->
-        <nav class="flex mb-5" aria-label="Breadcrumb">
-            <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                <li><a href="{% url 'question_list' %}" class="text-gray-700 dark:text-gray-300 hover:text-primary-600">Questions</a></li>
-                <li class="text-gray-500 dark:text-gray-400">/ {{ title|default:"Question Form" }}</li>
-            </ol>
-        </nav>
-
-        <!-- Main Content -->
-        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden p-4">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">{{ title|default:"Question Form" }}</h2>
-            
-            <form method="POST" class="space-y-6" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <!-- Question Text Section -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Question Details</h3>
-                    <div>
-                        <label for="{{ form.question_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Question Text
-                        </label>
-                        <div class="w-full">
-                            {{ form.question_text }}
-                        </div>
-                        {% if form.question_text.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.question_text.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Category and Weight Section -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Category & Question Type</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="{{ form.category.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                Select Category
-                            </label>
-                            {{ form.category }}
-                            {% if form.category.errors %}
-                                <p class="text-red-500 text-sm mt-1">{{ form.category.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                        
-                        {% if form.custom_weight %}
-                        <div>
-                            <label for="{{ form.custom_weight.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                Custom Weight <span class="text-sm text-gray-500">(for custom scoring)</span>
-                            </label>
-                            {{ form.custom_weight }}
-                            {% if form.custom_weight.errors %}
-                                <p class="text-red-500 text-sm mt-1">{{ form.custom_weight.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Question Type Selection -->
-                    <div class="mt-6">
-                        <label class="block mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                            Tipe Soal
-                        </label>
-                        <div class="flex space-x-6">
-                            {% for radio in form.question_type %}
-                                <div class="flex items-center mr-4 mb-2">
-                                    {{ radio.tag }}
-                                    <label for="{{ radio.id_for_label }}" class="ml-2 text-sm font-medium text-gray-900 dark:text-white">{{ radio.choice_label }}</label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        {% if form.question_type.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.question_type.errors.0 }}</p>
-                        {% endif %}
-                        <p class="text-gray-500 text-xs mt-1">{{ form.question_type.help_text }}</p>
-                    </div>
-                </div>
-
-                <!-- Essay Answer Section (for essay questions) -->
-                <div id="essayAnswerSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6" style="display: none;">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Jawaban Benar (Soal Isian)</h3>
-                    <div>
-                        <label for="{{ form.correct_answer_text.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Jawaban Benar
-                        </label>
-                        {{ form.correct_answer_text }}
-                        {% if form.correct_answer_text.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.correct_answer_text.errors.0 }}</p>
-                        {% endif %}
-                        <p class="text-gray-500 text-xs mt-1">{{ form.correct_answer_text.help_text }}</p>
-                    </div>
-                </div>
-
-                <!-- Choices Section (for multiple choice questions) -->
-                <div id="choicesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Pilihan Jawaban (Pilihan Ganda)</h3>
-                    </div>
-
-                    {{ formset.management_form }}
-                    <div class="hidden">
-                        <input type="hidden" name="choice_set-TOTAL_FORMS" id="id_choice_set-TOTAL_FORMS" value="2">
-                        <input type="hidden" name="choice_set-INITIAL_FORMS" id="id_choice_set-INITIAL_FORMS" value="0">
-                        <input type="hidden" name="choice_set-MIN_NUM_FORMS" id="id_choice_set-MIN_NUM_FORMS" value="2">
-                        <input type="hidden" name="choice_set-MAX_NUM_FORMS" id="id_choice_set-MAX_NUM_FORMS" value="10">
-                    </div>
-                    
-                    <div id="choicesContainer" class="space-y-4">
-                        {% for choice_form in formset %}
-                            <div class="choice-item p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-2">
-                                {{ choice_form.id }}
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-1 w-full">
-                                        {{ choice_form.choice_text }}
-                                    </div>
-                                    <div class="flex items-center whitespace-nowrap">
-                                        <label class="inline-flex items-center">
-                                            {{ choice_form.is_correct }}
-                                            <span class="ml-2 text-sm text-gray-900 dark:text-white">Correct Answer</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="flex justify-end space-x-4">
-                    <a href="{% url 'question_list' %}" 
-                       class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                        {% if title == "Update Question" %}Update Question{% else %}Create Question{% endif %}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</section>
-
 {% endblock %}

@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'widget_tweaks',
     'compressor',
-    'django_ckeditor_5',
     'otosapp',
     # Use django-storages for S3 media storage in production
     'storages',
@@ -195,27 +194,3 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'compressor.finders.CompressorFinder',
 ]
-
-# CKEditor Configuration
-CKEDITOR_5_CONFIGS = {
-    'extends': {
-        'toolbar': ['heading', '|', 'bold', 'italic', 'link',
-                   'bulletedList', 'numberedList', 'blockQuote', 'imageUpload'],
-        'blockToolbar': [
-            'paragraph', 'heading1', 'heading2', 'heading3',
-            '|',
-            'bulletedList', 'numberedList',
-            '|',
-            'blockQuote', 'imageUpload'
-        ],
-        'image': {
-            'upload': {
-                'types': ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'jpg'],
-            }
-        },
-    }
-}
-
-CKEDITOR_5_FILE_STORAGE = "otosapp.storage.UniqueFileSystemStorage"
-CKEDITOR_5_UPLOAD_PATH = "uploads/"
-CKEDITOR_5_FILENAME_GENERATOR = 'otosapp.utils.generate_unique_filename'

@@ -3,7 +3,6 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
 from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
-from django_ckeditor_5.widgets import CKEditor5Widget
 
 class CustomUserCreationForm(UserCreationForm):
     phone_number = forms.CharField(
@@ -312,7 +311,11 @@ class CategoryUpdateForm(forms.ModelForm):
         return category
 
 class QuestionForm(forms.ModelForm):
-    question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    question_text = forms.CharField(widget=forms.Textarea(attrs={
+        'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+        'placeholder': 'Type your question here...',
+        'rows': 6
+    }))
     question_type = forms.ChoiceField(
         choices=Question.QUESTION_TYPES,
         widget=forms.RadioSelect(attrs={
@@ -374,12 +377,17 @@ class QuestionForm(forms.ModelForm):
         return question
 
 class ChoiceForm(forms.ModelForm):
-    choice_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    choice_text = forms.CharField(widget=forms.Textarea(attrs={
+        'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+        'placeholder': 'Enter choice text...',
+        'rows': 2
+    }))
     
     class Meta:
         model = Choice
-        fields = ['choice_text', 'is_correct']
+        fields = ['choice_text', 'choice_image', 'is_correct']
         widgets = {
+            'choice_image': forms.FileInput(attrs={'class': 'hidden'}),
             'is_correct': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'})
         }
 
@@ -391,7 +399,7 @@ ChoiceFormSet = forms.inlineformset_factory(
     min_num=5,
     max_num=5,
     validate_max=True,
-    can_delete=True
+    can_delete=False
 )
 
 class EssayAnswerForm(forms.Form):
@@ -407,7 +415,11 @@ class EssayAnswerForm(forms.Form):
     )
 
 class QuestionUpdateForm(forms.ModelForm):
-    question_text = forms.CharField(widget=CKEditor5Widget(config_name='extends'))
+    question_text = forms.CharField(widget=forms.Textarea(attrs={
+        'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+        'placeholder': 'Type your question here...',
+        'rows': 6
+    }))
     question_type = forms.ChoiceField(
         choices=Question.QUESTION_TYPES,
         widget=forms.RadioSelect(attrs={

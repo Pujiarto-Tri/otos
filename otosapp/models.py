@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
-from django_ckeditor_5.fields import CKEditor5Field
 import re
 from django.conf import settings
 import os
@@ -399,7 +398,7 @@ class Question(models.Model):
         ('essay', 'Isian/Essay'),
     ]
     
-    question_text = CKEditor5Field('Text', config_name='extends')
+    question_text = models.TextField('Text')
     pub_date = models.DateTimeField('date published')
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     custom_weight = models.FloatField(default=0, help_text="Custom weight for scoring (0-100)")
@@ -458,11 +457,13 @@ class Question(models.Model):
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
-    choice_text = CKEditor5Field('Text', config_name='extends')
+    choice_text = models.TextField('Text')
+    choice_image = models.ImageField(upload_to='choice_images/', blank=True, null=True)
     is_correct = models.BooleanField(default=False)
 
     def delete_media_files(self):
         """Delete associated media files without calling delete()"""
+        # Delete images from choice_text
         pattern = r'src="([^"]+)"'
         matches = re.findall(pattern, self.choice_text)
         
@@ -476,6 +477,14 @@ class Choice(models.Model):
                         os.remove(absolute_path)
                     except (OSError, PermissionError):
                         pass
+        
+        # Delete choice_image if exists
+        if self.choice_image:
+            try:
+                if os.path.exists(self.choice_image.path):
+                    os.remove(self.choice_image.path)
+            except (OSError, PermissionError, ValueError):
+                pass
 
     def delete(self, *args, **kwargs):
         self.delete_media_files()

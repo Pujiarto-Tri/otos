@@ -28,6 +28,7 @@ urlpatterns = [
     path('admin/question/create/', views.question_create, name='question_create'),
     path('admin/question/<int:question_id>/edit/', views.question_update, name='question_update'),
     path('admin/question/<int:question_id>/delete/', views.question_delete, name='question_delete'),
+    path('admin/image-upload/', views.image_upload, name='image_upload'),
 
     # Teacher routes
     path('teacher/categories/', views.teacher_category_list, name='teacher_category_list'),

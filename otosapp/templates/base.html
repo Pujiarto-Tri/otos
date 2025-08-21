@@ -10,8 +10,10 @@
     
     {% block extrahead %}{% endblock %}
     
-    <!-- Add this for CKEditor -->
-    {{ form.media }}
+    <!-- CKEditor 5 Assets -->
+    {% if form.media %}
+        {{ form.media }}
+    {% endif %}
 </head>
 
 <body class="min-h-screen bg-gray-50 dark:bg-gray-900">
