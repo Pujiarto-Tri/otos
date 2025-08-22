@@ -377,7 +377,9 @@ class QuestionForm(forms.ModelForm):
         return question
 
 class ChoiceForm(forms.ModelForm):
-    choice_text = forms.CharField(widget=forms.Textarea(attrs={
+    # Allow empty choice_text so a choice can be image-only. Validation below
+    # will ensure at least one of text or image exists.
+    choice_text = forms.CharField(required=False, widget=forms.Textarea(attrs={
         'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
         'placeholder': 'Enter choice text...',
         'rows': 2
@@ -388,8 +390,47 @@ class ChoiceForm(forms.ModelForm):
         fields = ['choice_text', 'choice_image', 'is_correct']
         widgets = {
             'choice_image': forms.FileInput(attrs={'class': 'hidden'}),
-            'is_correct': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'})
+            'is_correct': forms.CheckboxInput(attrs={'class': 'choice-checkbox'})
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        text = cleaned.get('choice_text')
+        image = cleaned.get('choice_image')
+
+        # If no text and no newly uploaded image, check existing instance image
+        has_existing_image = False
+        try:
+            if self.instance and getattr(self.instance, 'choice_image'):
+                # instance.choice_image may be a FieldFile
+                if getattr(self.instance.choice_image, 'name', None):
+                    has_existing_image = True
+        except Exception:
+            has_existing_image = False
+
+        # Additional check: some flows upload the image via AJAX and place the
+        # resulting URL into a hidden input named `choice_image_<1-based-index>`
+        # in the template. The form `prefix` is usually like 'choices-0', so we
+        # derive the 1-based index from the prefix and look for that POST key.
+        has_uploaded_url = False
+        try:
+            prefix = getattr(self, 'prefix', '')  # e.g. 'choices-0'
+            if prefix and '-' in prefix:
+                parts = prefix.split('-')
+                # last part should be the numeric index
+                idx = int(parts[-1])
+                hidden_name = f'choice_image_{idx+1}'
+                # self.data contains POST values (QueryDict)
+                uploaded_url = self.data.get(hidden_name)
+                if uploaded_url and str(uploaded_url).strip():
+                    has_uploaded_url = True
+        except Exception:
+            has_uploaded_url = False
+
+        if not text and not image and not has_existing_image and not has_uploaded_url:
+            raise forms.ValidationError('Please provide either choice text or an image for each choice.')
+
+        return cleaned
 
 ChoiceFormSet = forms.inlineformset_factory(
     Question,

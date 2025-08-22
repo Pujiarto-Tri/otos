@@ -1597,6 +1597,13 @@ def question_create(request):
     if request.method == 'POST':
         form = QuestionForm(request.POST)
         formset = ChoiceFormSet(request.POST, prefix='choices')
+
+        # DEBUG: show incoming POST and FILES keys to diagnose validation issues
+        try:
+            print('\n[DEBUG] question_create POST keys:', list(request.POST.keys()))
+            print('[DEBUG] question_create FILES keys:', list(request.FILES.keys()))
+        except Exception as _:
+            pass
         
         if form.is_valid():
             question = form.save(commit=False)
@@ -1622,7 +1629,10 @@ def question_create(request):
                     return render(request, 'admin/manage_questions/question_form.html', {
                         'form': form,
                         'formset': formset,
-                        'title': 'Add New Question'
+                        'title': 'Add New Question',
+                        'page_title': 'Create New Question',
+                        'page_subtitle': 'Fill in the details to create a new question',
+                        'category': question.category if hasattr(question, 'category') else None
                     })
                 
                 question.save()
@@ -1658,8 +1668,31 @@ def question_create(request):
                     return redirect('question_list_by_category', category_id=question.category.id)
                 return redirect('question_list')
             else:
+                # DEBUG: formset invalid - dump errors and posted hidden image urls
+                try:
+                    print('\n[DEBUG] Choice formset is invalid')
+                    print('formset.non_form_errors():', formset.non_form_errors())
+                    for idx, f in enumerate(formset.forms, start=1):
+                        try:
+                            print(f"-- form {idx} prefix={f.prefix} errors=", f.errors.as_json())
+                        except Exception:
+                            print(f"-- form {idx} prefix={f.prefix} errors=", f.errors)
+                    # Also show any hidden image POST fields that JS should set
+                    for i in range(1, 10):
+                        key = f'choice_image_{i}'
+                        if key in request.POST:
+                            print(f"POST[{key}] =", request.POST.get(key))
+                except Exception as e:
+                    print('[DEBUG] error while printing formset debug:', e)
+
                 messages.error(request, 'Please correct the errors below.')
         else:
+            # DEBUG: form invalid - print errors
+            try:
+                print('\n[DEBUG] Question form is invalid:')
+                print(form.errors.as_json())
+            except Exception:
+                print('\n[DEBUG] Question form is invalid (non-json):', form.errors)
             messages.error(request, 'Please correct the errors below.')
     else:
         form = QuestionForm()
@@ -1672,7 +1705,10 @@ def question_create(request):
     return render(request, 'admin/manage_questions/question_form.html', {
         'form': form,
         'formset': formset,
-        'title': 'Add New Question'
+        'title': 'Add New Question',
+        'page_title': 'Create New Question',
+        'page_subtitle': 'Fill in the details to create a new question',
+        'category': initial_category
     })
 
 @login_required
@@ -1717,7 +1753,10 @@ def question_update(request, question_id):
                         'form': form,
                         'formset': formset,
                         'question': question,
-                        'title': 'Update Question'
+                        'title': 'Update Question',
+                        'page_title': 'Edit Question',
+                        'page_subtitle': 'Update the details of this question',
+                        'category': question.category
                     })
                 
                 with transaction.atomic():
@@ -1771,7 +1810,10 @@ def question_update(request, question_id):
         'form': form,
         'formset': formset,
         'question': question,
-        'title': 'Update Question'
+        'title': 'Update Question',
+        'page_title': 'Edit Question',
+        'page_subtitle': 'Update the details of this question',
+        'category': question.category
     })
 
 @login_required

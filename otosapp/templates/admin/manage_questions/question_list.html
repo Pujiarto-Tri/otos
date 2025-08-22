@@ -6,113 +6,8 @@
 <!-- Start block -->
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
-        <!-- Breadcrumb and Header -->
-        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden mb-6">
-            <div class="p-6">
-                <!-- Breadcrumb -->
-                <nav class="flex mb-4" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                        <li class="inline-flex items-center">
-                            <a href="{% url 'question_list' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">
-                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L9 5.414V17a1 1 0 102 0V5.414l5.293 5.293a1 1 0 001.414-1.414l-7-7z"></path>
-                                </svg>
-                                Categories
-                            </a>
-                        </li>
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                </svg>
-                                <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">{{ category.category_name }}</span>
-                            </div>
-                        </li>
-                    </ol>
-                </nav>
-
-                <!-- Header -->
-                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ category.category_name }} Questions</h1>
-                            <div class="flex items-center space-x-4 mt-2">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">{{ category.time_limit }} minutes</span>
-                                <span class="px-2 py-1 text-xs font-medium rounded-full
-                                    {% if category.scoring_method == 'default' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
-                                    {% elif category.scoring_method == 'custom' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
-                                    {% elif category.scoring_method == 'utbk' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
-                                    {% endif %}">
-                                    {{ category.get_scoring_method_display }}
-                                </span>
-                                {% if category.scoring_method == 'custom' %}
-                                    {% if category.scoring_status.complete %}
-                                        <span class="flex items-center text-green-600 dark:text-green-400 text-sm">
-                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            Complete ({{ category.scoring_status.total_points|floatformat:1 }})
-                                        </span>
-                                    {% else %}
-                                        <span class="flex items-center text-red-600 dark:text-red-400 text-sm">
-                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            Incomplete ({{ category.scoring_status.total_points|floatformat:1 }}/100)
-                                        </span>
-                                    {% endif %}
-                                {% endif %}
-                                
-                                <!-- Active Filters Indicator -->
-                                {% if search_query or scoring_filter or date_from or date_to %}
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">Active filters:</span>
-                                    {% if search_query %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                                        Search: "{{ search_query|truncatechars:15 }}"
-                                    </span>
-                                    {% endif %}
-                                    {% if scoring_filter %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-full dark:bg-purple-900 dark:text-purple-300">
-                                        {% if scoring_filter == 'with_weight' %}With Weight{% elif scoring_filter == 'no_weight' %}No Weight{% endif %}
-                                    </span>
-                                    {% endif %}
-                                    {% if date_from or date_to %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">
-                                        Date Range
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        {% if category.scoring_method == 'utbk' %}
-                        <a href="{% url 'update_utbk_coefficients' category.id %}" 
-                           class="flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
-                            </svg>
-                            Update UTBK
-                        </a>
-                        {% endif %}
-                        <a href="{% url 'question_create' %}?category={{ category.id }}" 
-                           class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                            <svg class="h-4 w-4 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-                            </svg>
-                            Add Question
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Include Question Header Component -->
+        {% include 'admin/manage_questions/includes/question_header.html' with show_add_button=True show_utbk_button=True %}
 
         <!-- Questions Table -->
         <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
@@ -460,6 +355,10 @@
         </div>
     </div>
 </section>
+
+        </div>
+    </div>
+</div>
 
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" 
