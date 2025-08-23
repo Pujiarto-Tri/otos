@@ -1,0 +1,294 @@
+{% comment %} Shared Quill initialization + sanitization JS. Included where needed. {% endcomment %}
+<!-- Quill.js Rich Text Editor Initialization (shared include) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill Rich Text Editor
+    const questionTextarea = document.querySelector('#id_question_text');
+    let quillEditor = null;
+
+    if (questionTextarea) {
+        // Create container for Quill editor
+        const editorContainer = document.createElement('div');
+        editorContainer.id = 'quill-editor';
+        editorContainer.className = 'qf-editor-container rounded-lg shadow-sm';
+        questionTextarea.parentNode.insertBefore(editorContainer, questionTextarea);
+
+        // Initialize Quill
+        try {
+            quillEditor = new Quill('#quill-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        ['link', 'blockquote'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        ['image'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Type your question here...'
+            });
+
+            // Custom Image Upload Handler
+            quillEditor.getModule('toolbar').addHandler('image', function() {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+
+                input.onchange = function() {
+                    const file = input.files[0];
+                    if (file) {
+                        const range = quillEditor.getSelection();
+                        quillEditor.insertText(range.index, 'Uploading image...', 'italic', true);
+
+                        const formData = new FormData();
+                        formData.append('upload', file);
+
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                        fetch('/admin/image-upload/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                            if (data.url) {
+                                quillEditor.insertEmbed(range.index, 'image', data.url);
+                                quillEditor.setSelection(range.index + 1);
+                            } else {
+                                showNotification('Image upload failed: ' + (data.error || 'Unknown error'), 'error');
+                            }
+                        })
+                        .catch(error => {
+                            quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                            console.error('Upload failed:', error);
+                            showNotification('Image upload failed. Please try again.', 'error');
+                        });
+                    }
+                };
+            });
+
+            // Set initial content if textarea has value
+            if (questionTextarea.value) {
+                quillEditor.root.innerHTML = questionTextarea.value;
+            }
+
+            // Sync editor content with textarea
+            quillEditor.on('text-change', function() {
+                questionTextarea.value = quillEditor.root.innerHTML;
+            });
+
+            // Hide original textarea (Quill is the visible editor)
+            questionTextarea.style.display = 'none';
+
+            // Decide whether to auto-fix toolbar based on the theme at initial page load.
+            const initialIsDark = document.documentElement.classList.contains('dark') ||
+                                  document.body.classList.contains('dark') ||
+                                  !!document.querySelector('[data-theme="dark"]');
+
+            setTimeout(function tryToolbarInit(retry = 0) {
+                const toolbar = document.querySelector('#quill-editor .ql-toolbar');
+                if (!toolbar && retry < 5) {
+                    return setTimeout(() => tryToolbarInit(retry + 1), 120);
+                }
+
+                if (!initialIsDark) {
+                    return;
+                }
+
+                if (toolbar) {
+                    toolbar.classList.add('force-light', 'qf-theme-light');
+                    toolbar.classList.remove('qf-theme-dark');
+
+                    toolbar.style.setProperty('background-color', '#ffffff', 'important');
+                    toolbar.style.setProperty('border-color', 'var(--qf-border, #e5e7eb)', 'important');
+                    toolbar.style.setProperty('box-shadow', '0 1px 0 rgba(0,0,0,0.04) inset', 'important');
+                    toolbar.style.setProperty('pointer-events', 'auto', 'important');
+                    toolbar.style.setProperty('position', 'relative', 'important');
+                    toolbar.style.setProperty('z-index', '9999', 'important');
+
+                    toolbar.querySelectorAll('[class*="text-"]').forEach(el => el.classList.remove(...Array.from(el.classList).filter(c => c.startsWith('text-'))));
+
+                    const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                    buttons.forEach(button => {
+                        button.style.setProperty('color', '#111827', 'important');
+                        button.style.setProperty('background', 'transparent', 'important');
+                        button.style.setProperty('border', 'none', 'important');
+                        button.style.setProperty('pointer-events', 'auto', 'important');
+                        try { button.removeAttribute('disabled'); } catch(e){}
+                        try { button.removeAttribute('aria-disabled'); } catch(e){}
+                        if (button.tabIndex < 0) button.tabIndex = 0;
+
+                        button.classList.remove(...Array.from(button.classList).filter(c => c.startsWith('text-') || c.startsWith('bg-') || c.startsWith('hover:')));
+
+                        const svgs = button.querySelectorAll('svg');
+                        svgs.forEach(svg => {
+                            try { svg.removeAttribute('style'); } catch(e){}
+                            try { svg.removeAttribute('stroke'); svg.removeAttribute('fill'); } catch(e){}
+                            svg.classList.add('qf-svg-icon');
+
+                            const children = svg.querySelectorAll('*');
+                            children.forEach(child => {
+                                try { child.removeAttribute('style'); } catch(e){}
+                                try { child.removeAttribute('stroke'); child.removeAttribute('fill'); } catch(e){}
+                                child.classList.add('qf-svg-child');
+                            });
+                        });
+                    });
+                }
+            }, 100);
+
+            // Observer for theme changes and toolbar DOM changes
+            const observer = new MutationObserver(function(mutations) {
+                let shouldRefix = false;
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target === document.documentElement || target === document.body) {
+                            shouldRefix = true;
+                        }
+                    }
+                    if (mutation.type === 'childList' && mutation.target.closest && mutation.target.closest('.ql-toolbar')) {
+                        shouldRefix = true;
+                    }
+                });
+                if (shouldRefix) {
+                    if (initialIsDark) {
+                        setTimeout(() => window.fixQuillIcons(), 100);
+                    }
+                }
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeOldValue: true,
+                attributeFilter: ['class', 'data-theme']
+            });
+            observer.observe(document.body, {
+                attributes: true,
+                attributeOldValue: true,
+                attributeFilter: ['class', 'data-theme']
+            });
+
+            const toolbar = document.querySelector('.ql-toolbar');
+            if (toolbar) {
+                observer.observe(toolbar, { childList: true, subtree: true });
+            }
+
+            // Exposed function to sanitize and enforce toolbar appearance
+            window.fixQuillIcons = function() {
+                const selectors = ['#quill-editor .ql-toolbar', '.ql-toolbar', '[class*="ql-toolbar"]', '.ql-snow .ql-toolbar'];
+                let toolbar = null;
+                for (let selector of selectors) {
+                    toolbar = document.querySelector(selector);
+                    if (toolbar) break;
+                }
+
+                if (!toolbar) {
+                    let attempts = 0;
+                    const retryFn = () => {
+                        attempts += 1;
+                        const t = document.querySelector('#quill-editor .ql-toolbar');
+                        if (t) {
+                            toolbar = t;
+                            enforce();
+                        } else if (attempts < 6) {
+                            setTimeout(retryFn, 120);
+                        } else {
+                            console.warn('fixQuillIcons: toolbar not found after retries');
+                        }
+                    };
+                    setTimeout(retryFn, 80);
+                    return null;
+                }
+
+                const enforce = function() {
+                    try {
+                        toolbar.classList.add('force-light', 'qf-theme-light');
+                        toolbar.classList.remove('qf-theme-dark');
+
+                        toolbar.style.setProperty('background-color', '#ffffff', 'important');
+                        toolbar.style.setProperty('border-color', 'var(--qf-border, #e5e7eb)', 'important');
+                        toolbar.style.setProperty('box-shadow', '0 1px 0 rgba(0,0,0,0.04) inset', 'important');
+                        toolbar.style.setProperty('pointer-events', 'auto', 'important');
+                        toolbar.style.setProperty('position', 'relative', 'important');
+                        toolbar.style.setProperty('z-index', '9999', 'important');
+
+                        const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                        buttons.forEach((button) => {
+                            button.classList.remove(...Array.from(button.classList).filter(c => c.startsWith('text-') || c.startsWith('bg-') || c.startsWith('hover:')));
+                            button.style.setProperty('color', '#111827', 'important');
+                            button.style.setProperty('background', 'transparent', 'important');
+                            button.style.setProperty('border', 'none', 'important');
+                            button.style.setProperty('pointer-events', 'auto', 'important');
+                            try { button.removeAttribute('disabled'); } catch(e){}
+                            try { button.removeAttribute('aria-disabled'); } catch(e){}
+                            if (button.tabIndex < 0) button.tabIndex = 0;
+
+                            const svgElements = button.querySelectorAll('svg, .ql-stroke, .ql-fill');
+                            svgElements.forEach((svg) => {
+                                try { svg.removeAttribute('style'); } catch(e){}
+                                try { svg.removeAttribute('stroke'); svg.removeAttribute('fill'); } catch(e){}
+                                svg.classList.add('qf-svg-icon');
+                                svg.style.setProperty('opacity', '1', 'important');
+
+                                const children = svg.querySelectorAll('*');
+                                children.forEach(child => {
+                                    try { child.removeAttribute('style'); } catch(e){}
+                                    try { child.removeAttribute('stroke'); child.removeAttribute('fill'); } catch(e){}
+                                    child.classList.add('qf-svg-child');
+                                });
+                            });
+                        });
+
+                        toolbar.classList.add('qf-reflow');
+                        setTimeout(() => toolbar.classList.remove('qf-reflow'), 50);
+                    } catch (e) {
+                        console.warn('Error enforcing light toolbar styling:', e);
+                    }
+                };
+                enforce();
+                return toolbar;
+            };
+
+            window.persistentIconFix = function() {
+                if (typeof window.fixQuillIcons === 'function') {
+                    window.fixQuillIcons();
+                }
+            };
+
+            if (initialIsDark) {
+                const checkAndFixIcons = () => {
+                    const isDarkMode = document.documentElement.classList.contains('dark') ||
+                                     document.body.classList.contains('dark') ||
+                                     document.querySelector('[data-theme="dark"]');
+                    if (isDarkMode) return window.fixQuillIcons();
+                    return false;
+                };
+
+                const attemptFix = (attempt = 1) => {
+                    const result = checkAndFixIcons();
+                    if (!result && attempt < 3) {
+                        setTimeout(() => attemptFix(attempt + 1), 500 * attempt);
+                    }
+                };
+
+                setTimeout(() => attemptFix(), 100);
+            }
+
+        } catch (error) {
+            console.error('Quill initialization failed:', error);
+            questionTextarea.style.display = 'block';
+            questionTextarea.classList.add('textarea-fallback');
+            if (editorContainer) { editorContainer.style.display = 'none'; }
+            showNotification('Rich text editor failed to load. Using fallback editor.', 'warning');
+        }
+    }
+});
+</script>
