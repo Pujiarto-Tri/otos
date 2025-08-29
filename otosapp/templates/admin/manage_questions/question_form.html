@@ -430,6 +430,28 @@
             background-color: rgba(31, 41, 55, 0.98) !important;
         }
 
+        /* Dark theme adjustments for correct answer (softer, more readable) */
+        .dark .choice-item.correct-answer {
+            background: rgba(6, 95, 70, 0.22) !important; /* emerald-800 with opacity */
+            border-color: #059669 !important; /* emerald-600 */
+            box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18) !important;
+        }
+
+        .dark .choice-item.correct-answer .choice-header {
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%) !important; /* emerald-800 → emerald-700 */
+            color: #e5fff4 !important; /* soft mint text */
+        }
+
+        .dark .choice-item.correct-answer .choice-status,
+        .dark .choice-item.correct-answer h4 {
+            color: #e5fff4 !important; /* improve contrast on dark */
+        }
+
+        .dark .choice-item.correct-answer .choice-badge {
+            background-color: #059669 !important; /* emerald-600 */
+            color: #ecfdf5 !important; /* emerald-50 */
+        }
+
         /* Layout and small animations */
         .section-fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -520,29 +542,25 @@
                                     </div>
                                 </div>
 
-                                <!-- Question Type and Category -->
+                                <!-- Question Type and Category (swapped: Weight config now on the left) -->
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <!-- Question Type -->
+                                    <!-- Weight Configuration (moved here) -->
                                     <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
                                         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Type</h3>
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Weight Configuration</h3>
                                         </div>
                                         <div class="px-6 py-4">
-                                            <fieldset>
-                                                <legend class="sr-only">Question Type</legend>
-                                                <div class="space-y-3">
-                                                    {% for choice in form.question_type %}
-                                                        <div class="flex items-center">
-                                                            {{ choice.tag }}
-                                                            <label for="{{ choice.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                                {{ choice.choice_label }}
-                                                            </label>
-                                                        </div>
-                                                    {% endfor %}
-                                                </div>
-                                            </fieldset>
-                                            {% if form.question_type.help_text %}
-                                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ form.question_type.help_text }}</p>
+                                            <label for="id_custom_weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Custom Weight (Optional)
+                                            </label>
+                                            {{ form.custom_weight }}
+                                            {% if form.custom_weight.help_text %}
+                                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.custom_weight.help_text }}</p>
+                                            {% endif %}
+                                            {% if form.custom_weight.errors %}
+                                                {% for error in form.custom_weight.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
                                             {% endif %}
                                         </div>
                                     </div>
@@ -558,6 +576,23 @@
                                                 <span class="text-red-500">*</span>
                                             </label>
                                             {{ form.category }}
+                                            <input type="hidden" id="id_category_hidden" name="category">
+                                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Category dikunci agar tidak dapat diubah.</p>
+                                            <script>
+                                            (function() {
+                                                var categorySelect = document.getElementById('id_category');
+                                                if (categorySelect) {
+                                                    categorySelect.setAttribute('disabled', 'disabled');
+                                                    if (categorySelect.classList) {
+                                                        categorySelect.classList.add('bg-gray-100', 'cursor-not-allowed', 'opacity-60', 'dark:bg-gray-700', 'dark:text-gray-300', 'dark:placeholder-gray-400', 'dark:border-gray-600');
+                                                    }
+                                                    var hiddenInput = document.getElementById('id_category_hidden');
+                                                    if (hiddenInput) {
+                                                        hiddenInput.value = categorySelect.value;
+                                                    }
+                                                }
+                                            })();
+                                            </script>
                                             {% if form.category.errors %}
                                                 {% for error in form.category.errors %}
                                                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
@@ -567,23 +602,73 @@
                                     </div>
                                 </div>
 
-                                <!-- Custom Weight -->
+                                <!-- Question Type (moved here and redesigned as selectable cards) -->
                                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
                                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Weight Configuration</h3>
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Type</h3>
                                     </div>
                                     <div class="px-6 py-4">
-                                        <label for="id_custom_weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Custom Weight (Optional)
-                                        </label>
-                                        {{ form.custom_weight }}
-                                        {% if form.custom_weight.help_text %}
-                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.custom_weight.help_text }}</p>
-                                        {% endif %}
-                                        {% if form.custom_weight.errors %}
-                                            {% for error in form.custom_weight.errors %}
-                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
-                                            {% endfor %}
+                                        <fieldset>
+                                            <legend class="sr-only">Question Type</legend>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="questionTypeCards">
+                                                {% for choice in form.question_type %}
+                                                    <label for="{{ choice.id_for_label }}" class="question-type-card group block border rounded-lg p-4 cursor-pointer transition-all duration-150 border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400">
+                                                        <div class="flex items-start">
+                                                            <div class="mt-1">
+                                                                {{ choice.tag|safe }}
+                                                            </div>
+                                                            <div class="ml-3">
+                                                                <div class="js-type-title text-sm font-medium text-gray-900 dark:text-white">{{ choice.choice_label }}</div>
+                                                                <div class="mt-1 text-xs text-gray-600 dark:text-gray-400 js-type-desc">Pilih tipe pertanyaan yang sesuai.</div>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                {% endfor %}
+                                            </div>
+                                        </fieldset>
+                                        <script>
+                                            (function() {
+                                                var radios = document.querySelectorAll('input[name="question_type"]');
+                                                var descMap = {
+                                                    'multiple_choice': 'Cocok untuk soal pilihan ganda dengan beberapa opsi jawaban.',
+                                                    'essay': 'Jawaban berupa teks esai yang dinilai sesuai kebijakan penilaian.'
+                                                };
+                                                function refreshCards() {
+                                                    radios.forEach(function(radio) {
+                                                        var label = document.querySelector('label[for="' + radio.id + '"]');
+                                                        if (!label) return;
+                                                        var desc = label.querySelector('.js-type-desc');
+                                                        var title = label.querySelector('.js-type-title');
+                                                        var text = descMap[radio.value] || 'Pilih tipe pertanyaan yang sesuai.';
+                                                        if (desc) desc.textContent = text;
+                                                        if (radio.checked) {
+                                                            label.classList.add('ring-2','ring-primary-500','border-primary-400','bg-primary-100','dark:bg-primary-800/40','dark:border-primary-500','dark:ring-primary-400');
+                                                            if (title) {
+                                                                title.classList.add('text-gray-900','dark:text-white');
+                                                            }
+                                                            if (desc) {
+                                                                desc.classList.add('text-gray-700','dark:text-gray-300');
+                                                                desc.classList.remove('text-gray-600','dark:text-gray-400');
+                                                            }
+                                                        } else {
+                                                            label.classList.remove('ring-2','ring-primary-500','border-primary-400','bg-primary-100','dark:bg-primary-800/40','dark:border-primary-500','dark:ring-primary-400');
+                                                            if (desc) {
+                                                                desc.classList.remove('text-gray-700','dark:text-gray-300');
+                                                                desc.classList.add('text-gray-600','dark:text-gray-400');
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                                radios.forEach(function(radio) {
+                                                    // Make the native radio visually hidden but accessible via label card
+                                                    radio.classList.add('sr-only');
+                                                    radio.addEventListener('change', refreshCards);
+                                                });
+                                                refreshCards();
+                                            })();
+                                        </script>
+                                        {% if form.question_type.help_text %}
+                                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ form.question_type.help_text }}</p>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -618,16 +703,16 @@
                                                     <div class="choice-header flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
                                                         <div class="flex items-center space-x-3">
                                                             <!-- Choice Letter Badge -->
-                                                            <div class="choice-badge flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg {% if form.is_correct.value %}bg-green-500 text-white{% else %}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{% endif %}">
+                                                            <div class="choice-badge flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg {% if form.is_correct.value %}bg-green-600 text-white dark:bg-emerald-600 dark:text-emerald-50{% else %}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{% endif %}">
                                                                 {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}
                                                             </div>
                                                             
                                                             <!-- Choice Title -->
                                                             <div>
-                                                                <h4 class="text-lg font-semibold {% if form.is_correct.value %}text-white font-bold{% else %}text-gray-900 dark:text-white{% endif %}">
+                                                                <h4 class="text-lg font-semibold {% if form.is_correct.value %}text-white font-bold dark:text-emerald-50{% else %}text-gray-900 dark:text-white{% endif %}">
                                                                     Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}
                                                                 </h4>
-                                                                <p class="choice-status text-sm {% if form.is_correct.value %}text-white font-medium{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                                                <p class="choice-status text-sm {% if form.is_correct.value %}text-white font-medium dark:text-emerald-50{% else %}text-gray-500 dark:text-gray-400{% endif %}">
                                                                     {% if form.is_correct.value %}✓ Correct Answer{% else %}Option{% endif %}
                                                                 </p>
                                                             </div>
@@ -756,6 +841,29 @@
                                     </div>
                                 </div>
 
+                                <!-- Explanation / Pembahasan (optional) -->
+                                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Pembahasan Jawaban (Opsional)</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Tambahkan penjelasan mengapa jawabannya seperti itu. Kosongkan jika tidak diperlukan.
+                                        </p>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                            <label for="id_explanation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Pembahasan
+                                            </label>
+                                            {{ form.explanation }}
+                                            {% if form.explanation.errors %}
+                                                {% for error in form.explanation.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Submit Button -->
                                 <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <a href="{% url 'question_list' %}" class="bg-white dark:bg-gray-800 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
@@ -829,7 +937,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Quill Rich Text Editor
             const questionTextarea = document.querySelector('#id_question_text');
+            const explanationTextarea = document.querySelector('#id_explanation');
             let quillEditor = null;
+            let quillExplanation = null;
             
             if (questionTextarea) {
                 // Create container for Quill editor
@@ -1260,6 +1370,49 @@
                     showNotification('Rich text editor failed to load. Using fallback editor.', 'warning');
                 }
             }
+
+            // Initialize Quill for Explanation (optional)
+            if (explanationTextarea) {
+                // Create container for Quill editor
+                const explanationContainer = document.createElement('div');
+                explanationContainer.id = 'quill-explanation';
+                explanationContainer.className = 'qf-editor-container rounded-lg shadow-sm';
+                explanationTextarea.parentNode.insertBefore(explanationContainer, explanationTextarea);
+
+                try {
+                    quillExplanation = new Quill('#quill-explanation', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                ['link', 'blockquote'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                ['image'],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Tulis pembahasan (opsional)...'
+                    });
+
+                    if (explanationTextarea.value) {
+                        quillExplanation.root.innerHTML = explanationTextarea.value;
+                    }
+
+                    quillExplanation.on('text-change', function() {
+                        explanationTextarea.value = quillExplanation.root.innerHTML;
+                    });
+
+                    explanationTextarea.style.display = 'none';
+                } catch (error) {
+                    console.error('Quill initialization for explanation failed:', error);
+                    explanationTextarea.style.display = 'block';
+                    explanationTextarea.classList.add('textarea-fallback');
+                    if (explanationContainer) {
+                        explanationContainer.style.display = 'none';
+                    }
+                }
+            }
             
             // Question type functionality
             const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
@@ -1316,6 +1469,11 @@
                         if (!textContent) questionContent = '';
                     } else if (questionTextarea) {
                         questionContent = questionTextarea.value.trim();
+                    }
+
+                    // Ensure explanation value is synced (optional field)
+                    if (quillExplanation && explanationTextarea) {
+                        explanationTextarea.value = quillExplanation.root.innerHTML;
                     }
                     
                     if (!questionContent || (category && !category.value)) {

@@ -666,7 +666,9 @@ def teacher_category_list(request):
     if request.user.is_admin():
         categories = Category.objects.all().order_by('-id')
     else:
-        categories = Category.objects.filter(created_by=request.user).order_by('-id')
+        categories = Category.objects.filter(
+            Q(created_by=request.user) | Q(teachers=request.user)
+        ).distinct().order_by('-id')
 
     paginator = Paginator(categories, 10)
     page = request.GET.get('page')
@@ -901,7 +903,7 @@ def teacher_question_delete(request, question_id):
 def teacher_view_student_scores(request, category_id):
     """Show students' tests and scores for a given teacher-owned category."""
     category = get_object_or_404(Category, id=category_id)
-    if not (request.user.is_admin() or category.created_by == request.user):
+    if not (request.user.is_admin() or category.created_by == request.user or category.teachers.filter(pk=request.user.pk).exists()):
         raise PermissionDenied
 
     # Get all submitted tests that include this category (show every attempt)
@@ -1153,7 +1155,9 @@ def teacher_student_list(request):
     if request.user.is_admin():
         categories = Category.objects.all().order_by('-id')
     else:
-        categories = Category.objects.filter(created_by=request.user).order_by('-id')
+        categories = Category.objects.filter(
+            Q(created_by=request.user) | Q(teachers=request.user)
+        ).distinct().order_by('-id')
 
     # Add quick stats
     for cat in categories:

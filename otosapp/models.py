@@ -405,6 +405,7 @@ class Question(models.Model):
     difficulty_coefficient = models.FloatField(default=1.0, help_text="UTBK difficulty coefficient (auto-calculated)")
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='multiple_choice', help_text="Tipe soal: pilihan ganda atau isian")
     correct_answer_text = models.TextField(blank=True, null=True, help_text="Jawaban benar untuk soal isian (pisahkan dengan koma jika ada beberapa jawaban yang benar)")
+    explanation = models.TextField(blank=True, null=True, help_text="Pembahasan atau penjelasan mengapa jawabannya demikian (opsional)")
 
     def delete_media_files(self):
         """Delete associated media files without calling delete()"""
