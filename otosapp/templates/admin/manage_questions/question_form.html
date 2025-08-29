@@ -7,337 +7,767 @@
     <!-- Quill.js Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    <!-- Flowbite: UI components (relies on Tailwind) -->
+    <script src="https://unpkg.com/flowbite@1.7.0/dist/flowbite.min.js"></script>
     <style>
-        /* Centralized Quill toolbar variables and minimal, high-level overrides
-           Keeps icons outlined by default and provides a simple .qf-force-light
-           modifier for a white toolbar regardless of site theme. Reduce use of
-           duplicate selectors and !important to make cascade predictable. */
+        /* CSS Variables for consistent theming */
         :root {
-            --qf-toolbar-bg: #f8fafc;
-            --qf-toolbar-icon: #374151;
-            --qf-toolbar-accent: #3b82f6;
+            /* Light theme colors */
+            --qf-bg-primary: #ffffff;
+            --qf-bg-secondary: #f8fafc;
+            --qf-text-primary: #1f2937;
+            --qf-text-secondary: #6b7280;
             --qf-border: #e5e7eb;
             --qf-border-focus: #3b82f6;
+            --qf-placeholder: rgba(107, 114, 128, 0.7);
         }
 
         .dark {
-            --qf-toolbar-bg: #374151;
-            --qf-toolbar-icon: rgba(255,255,255,0.92);
-            --qf-toolbar-accent: #60a5fa;
+            /* Dark theme colors */
+            --qf-bg-primary: #1f2937;
+            --qf-bg-secondary: #374151;
+            --qf-text-primary: #f9fafb;
+            --qf-text-secondary: #d1d5db;
             --qf-border: #4b5563;
             --qf-border-focus: #60a5fa;
+            --qf-placeholder: rgba(209, 213, 219, 0.7);
+            --qf-toolbar-icon: #e5e7eb; /* Specific color for toolbar icons */
         }
 
-        /* Base toolbar styling (single source of truth) */
+        /* Quill Rich Text Editor Styling */
         #quill-editor .ql-toolbar.ql-snow {
-            background: var(--qf-toolbar-bg);
-            border: 1px solid var(--qf-border);
-            border-radius: 0.5rem 0.5rem 0 0;
-            border-bottom: none;
+            background: var(--qf-bg-secondary) !important;
+            border: 1px solid var(--qf-border) !important;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+            border-bottom: none !important;
         }
 
-        /* Explicit modifier class to force a white (light) toolbar regardless of theme.
-           Apply this class to the toolbar element via JS when needed: .ql-toolbar.qf-force-light */
-        #quill-editor .ql-toolbar.ql-snow.qf-force-light {
-            background: #ffffff;
-            border-color: var(--qf-border);
-            color: #111827;
-            box-shadow: 0 1px 0 rgba(0,0,0,0.04) inset;
+        /* Dark mode toolbar with better contrast */
+        .dark #quill-editor .ql-toolbar.ql-snow,
+        html.dark #quill-editor .ql-toolbar.ql-snow,
+        [data-theme="dark"] #quill-editor .ql-toolbar.ql-snow {
+            background: #374151 !important; /* Lighter than secondary bg for better contrast */
+            border-color: #6b7280 !important;
         }
 
-        /* Icons: outlined by default. Use stroke for color and keep fill none. */
-        #quill-editor .ql-toolbar svg,
-        #quill-editor .ql-toolbar button svg,
-        #quill-editor .ql-toolbar .ql-picker-label svg {
-            stroke: var(--qf-toolbar-icon) !important;
+    /* Do not use filter invert; rely on stroke/fill rules to keep icons outlined and colored */
+
+        #quill-editor .ql-container.ql-snow {
+            background: var(--qf-bg-primary) !important;
+            border: 1px solid var(--qf-border) !important;
+            border-radius: 0 0 0.5rem 0.5rem !important;
+            border-top: none !important;
+        }
+
+        #quill-editor .ql-editor {
+            min-height: 280px !important;
+            background: var(--qf-bg-primary) !important;
+            color: var(--qf-text-primary) !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-size: 15px !important;
+            line-height: 1.6 !important;
+            padding: 16px !important;
+        }
+
+        /* Toolbar buttons and icons */
+        #quill-editor .ql-toolbar button,
+        #quill-editor .ql-toolbar .ql-picker-label {
+            color: var(--qf-text-primary) !important;
+        }
+
+        #quill-editor .ql-toolbar button:hover,
+        #quill-editor .ql-toolbar .ql-picker-label:hover {
+            background: rgba(59, 130, 246, 0.1) !important;
+            color: var(--qf-border-focus) !important;
+        }
+
+        #quill-editor .ql-toolbar .ql-active {
+            background: rgba(59, 130, 246, 0.15) !important;
+            color: var(--qf-border-focus) !important;
+        }
+
+        /* Make active toolbar icons visually distinct (outlined + accent stroke) */
+        #quill-editor .ql-toolbar .ql-active svg,
+        #quill-editor .ql-toolbar .ql-active svg * {
+            stroke: var(--qf-border-focus) !important;
+            fill: none !important; /* Keep outlined */
+            stroke-width: 1.8 !important;
+        }
+
+        /* Theme classes applied by JS: allows CSS to drive visual states without inline styles */
+        #quill-editor .ql-toolbar.qf-theme-dark button,
+        #quill-editor .ql-toolbar.qf-theme-dark .ql-picker-label {
+            color: #ffffff !important;
+            background: rgba(255,255,255,0.03) !important;
+        }
+
+        #quill-editor .ql-toolbar.qf-theme-dark button:hover,
+        #quill-editor .ql-toolbar.qf-theme-dark .ql-picker-label:hover {
+            color: var(--qf-border-focus) !important;
+        }
+
+        #quill-editor .ql-toolbar.qf-theme-light button,
+        #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label {
+            color: #374151 !important;
+            background: transparent !important;
+        }
+
+        #quill-editor .ql-toolbar.qf-theme-light button:hover,
+        #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label:hover {
+            color: var(--qf-border-focus) !important;
+        }
+
+        #quill-editor .ql-toolbar svg {
+            stroke: currentColor !important;
+            fill: currentColor !important;
+        }
+
+        /* Dark mode specific toolbar styling for better icon visibility */
+        /* High specificity overrides for Flowbite dark mode */
+        .dark #quill-editor .ql-toolbar button,
+        .dark #quill-editor .ql-toolbar .ql-picker-label,
+        html.dark #quill-editor .ql-toolbar button,
+        html.dark #quill-editor .ql-toolbar .ql-picker-label,
+        [data-theme="dark"] #quill-editor .ql-toolbar button,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label {
+            color: #ffffff !important; /* Pure white for maximum contrast */
+            border: 1px solid transparent !important;
+            border-radius: 0.25rem !important;
+            background: rgba(255, 255, 255, 0.05) !important; /* Subtle background */
+        }
+
+        .dark #quill-editor .ql-toolbar button:hover,
+        .dark #quill-editor .ql-toolbar .ql-picker-label:hover,
+        html.dark #quill-editor .ql-toolbar button:hover,
+        html.dark #quill-editor .ql-toolbar .ql-picker-label:hover,
+        [data-theme="dark"] #quill-editor .ql-toolbar button:hover,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label:hover {
+            background: rgba(96, 165, 250, 0.25) !important; /* More visible hover */
+            border-color: rgba(96, 165, 250, 0.5) !important;
+            color: #ffffff !important; /* Keep white on hover */
+        }
+
+        .dark #quill-editor .ql-toolbar .ql-active,
+        html.dark #quill-editor .ql-toolbar .ql-active,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active {
+            background: rgba(96, 165, 250, 0.3) !important;
+            border-color: rgba(96, 165, 250, 0.6) !important;
+            color: var(--qf-border-focus) !important; /* Accent for active state */
+        }
+
+        /* Active icons in dark mode: accent stroke, no fill */
+        .dark #quill-editor .ql-toolbar .ql-active svg,
+        html.dark #quill-editor .ql-toolbar .ql-active svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg,
+        .dark #quill-editor .ql-toolbar .ql-active svg *,
+        html.dark #quill-editor .ql-toolbar .ql-active svg *,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg * {
+            stroke: var(--qf-border-focus) !important;
             fill: none !important;
-            opacity: 0.92;
-            transition: stroke 140ms ease, opacity 140ms ease, stroke-width 140ms ease;
+            stroke-width: 1.8 !important;
         }
 
-        /* Hover / active states use accent color */
-        #quill-editor .ql-toolbar button:hover svg,
-        #quill-editor .ql-toolbar .ql-active svg {
-            stroke: var(--qf-toolbar-accent) !important;
+        /* Improve default icon visibility in dark mode: slightly brighter and smoother */
+        .dark #quill-editor .ql-toolbar button svg,
+        html.dark #quill-editor .ql-toolbar button svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar button svg,
+        .dark #quill-editor .ql-toolbar .ql-picker-label svg,
+        html.dark #quill-editor .ql-toolbar .ql-picker-label svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label svg {
+            stroke: rgba(255,255,255,0.88) !important; /* brighter than before */
+            opacity: 0.8 !important; /* inactive icons slightly dim */
+            transition: stroke 140ms ease, opacity 140ms ease, stroke-width 140ms ease;
+            fill: none !important;
+        }
+
+        /* Hover and active state should be full-bright and thicker stroke */
+        .dark #quill-editor .ql-toolbar button:hover svg,
+        .dark #quill-editor .ql-toolbar .ql-active svg,
+        html.dark #quill-editor .ql-toolbar button:hover svg,
+        html.dark #quill-editor .ql-toolbar .ql-active svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg {
+            stroke: var(--qf-border-focus) !important; /* accent color */
             opacity: 1 !important;
             stroke-width: 1.9 !important;
         }
 
-        /* Keep picker dropdowns readable and consistent */
-        #quill-editor .ql-picker-options {
-            background: var(--qf-toolbar-bg);
-            border: 1px solid var(--qf-border);
-            border-radius: 0.375rem;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        /* Disabled or unavailable toolbar items should be more muted */
+        .dark #quill-editor .ql-toolbar button.ql-disabled svg,
+        .dark #quill-editor .ql-toolbar .ql-picker-label.ql-disabled svg {
+            opacity: 0.28 !important;
+            stroke: rgba(255,255,255,0.5) !important;
         }
 
-        /* Do not globally force .ql-fill to none here; override individual icons if needed. */
+        .dark #quill-editor .ql-toolbar svg,
+        html.dark #quill-editor .ql-toolbar svg,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg {
+            stroke: #ffffff !important;
+            fill: none !important; /* Keep icons outlined (no fill) */
+            opacity: 1 !important; /* Ensure full opacity in dark mode */
+            color: #ffffff !important;
+        }
 
-        /* Theme-aware fallbacks using the variables above (no duplicate dark blocks) */
-        html:not(.dark) #quill-editor .ql-toolbar svg {
+        /* Ensure SVG paths inherit the color properly in dark mode */
+        .dark #quill-editor .ql-toolbar svg path,
+        .dark #quill-editor .ql-toolbar svg line,
+        .dark #quill-editor .ql-toolbar svg rect,
+        .dark #quill-editor .ql-toolbar svg circle,
+        .dark #quill-editor .ql-toolbar svg polygon,
+        html.dark #quill-editor .ql-toolbar svg path,
+        html.dark #quill-editor .ql-toolbar svg line,
+        html.dark #quill-editor .ql-toolbar svg rect,
+        html.dark #quill-editor .ql-toolbar svg circle,
+        html.dark #quill-editor .ql-toolbar svg polygon,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg path,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg line,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg rect,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg circle,
+        [data-theme="dark"] #quill-editor .ql-toolbar svg polygon {
+            stroke: #ffffff !important;
+            fill: none !important; /* Keep paths outlined */
+            color: #ffffff !important;
+        }
+
+        /* Override any Tailwind/Flowbite styles that might interfere */
+        .dark #quill-editor .ql-toolbar button[class*="text-"],
+        .dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
+        html.dark #quill-editor .ql-toolbar button[class*="text-"],
+        html.dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
+        [data-theme="dark"] #quill-editor .ql-toolbar button[class*="text-"],
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label[class*="text-"] {
+            color: #ffffff !important;
+        }
+
+        /* Light mode reset - ensure icons are dark (outlined) when switching back from dark mode */
+        html:not(.dark) #quill-editor .ql-toolbar svg,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg,
+        body:not(.dark) #quill-editor .ql-toolbar svg {
             stroke: #374151 !important;
-            fill: none !important;
+            fill: none !important; /* Keep outlined icons */
+            color: #374151 !important;
+            filter: none !important; /* Remove any invert filters */
+        }
+
+        html:not(.dark) #quill-editor .ql-toolbar svg path,
+        html:not(.dark) #quill-editor .ql-toolbar svg line,
+        html:not(.dark) #quill-editor .ql-toolbar svg rect,
+        html:not(.dark) #quill-editor .ql-toolbar svg circle,
+        html:not(.dark) #quill-editor .ql-toolbar svg polygon,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg path,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg line,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg rect,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg circle,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg polygon,
+        body:not(.dark) #quill-editor .ql-toolbar svg path,
+        body:not(.dark) #quill-editor .ql-toolbar svg line,
+        body:not(.dark) #quill-editor .ql-toolbar svg rect,
+        body:not(.dark) #quill-editor .ql-toolbar svg circle,
+        body:not(.dark) #quill-editor .ql-toolbar svg polygon {
+            stroke: #374151 !important;
+            fill: none !important; /* Keep outlined icons */
             color: #374151 !important;
         }
 
-        html.dark #quill-editor .ql-toolbar:not(.qf-force-light) svg {
-            stroke: var(--qf-toolbar-icon) !important;
-            color: var(--qf-toolbar-icon) !important;
+        html:not(.dark) #quill-editor .ql-toolbar button,
+        html:not(.dark) #quill-editor .ql-toolbar .ql-picker-label,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar button,
+        html:not([data-theme="dark"]) #quill-editor .ql-toolbar .ql-picker-label,
+        body:not(.dark) #quill-editor .ql-toolbar button,
+        body:not(.dark) #quill-editor .ql-toolbar .ql-picker-label {
+            color: #374151 !important;
+            background: transparent !important;
+        }
+        html.dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
+        [data-theme="dark"] #quill-editor .ql-toolbar button[class*="text-"],
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label[class*="text-"] {
+            color: #ffffff !important;
         }
 
-        /* Quill editor content & container colors to ensure readable text & placeholder in dark mode */
-        #quill-editor .ql-container.ql-snow {
-            background: var(--qf-editor-bg, #ffffff);
-            border: 1px solid var(--qf-border);
-            border-radius: 0 0 0.5rem 0.5rem;
-            color: var(--qf-editor-text, #111827);
+        /* Specific targeting for stroke and fill attributes */
+        .dark #quill-editor .ql-toolbar .ql-stroke,
+        html.dark #quill-editor .ql-toolbar .ql-stroke,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-stroke {
+            stroke: #ffffff !important;
         }
 
-        /* Editor area (where text is typed) */
-        #quill-editor .ql-editor {
-            min-height: 6rem;
-            color: var(--qf-editor-text, #111827);
-            background: transparent;
-            caret-color: var(--qf-toolbar-accent);
+        /* Ensure any elements using .ql-fill are not forced to a solid fill; keep outlines */
+        .dark #quill-editor .ql-toolbar .ql-fill,
+        html.dark #quill-editor .ql-toolbar .ql-fill,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-fill {
+            fill: none !important;
         }
 
-        /* Placeholder (Quill uses .ql-editor.ql-blank::before) */
+        /* Force override for any inherited styles - keep fills none */
+        .dark #quill-editor .ql-toolbar button *,
+        .dark #quill-editor .ql-toolbar .ql-picker-label *,
+        html.dark #quill-editor .ql-toolbar button *,
+        html.dark #quill-editor .ql-toolbar .ql-picker-label *,
+        [data-theme="dark"] #quill-editor .ql-toolbar button *,
+        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label * {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            fill: none !important; /* Prevent icons from becoming filled */
+        }
+
+        /* Dark mode picker options */
+        .dark #quill-editor .ql-picker-options {
+            background: #374151 !important; /* Darker background for dropdowns */
+            border: 1px solid #4b5563 !important;
+        }
+
+        .dark #quill-editor .ql-picker-item {
+            color: #e5e7eb !important;
+        }
+
+        .dark #quill-editor .ql-picker-item:hover {
+            background: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+
+        /* Dropdown pickers for Quill toolbar */
+        #quill-editor .ql-picker-options {
+            background: var(--qf-bg-primary) !important;
+            border: 1px solid var(--qf-border) !important;
+            border-radius: 0.375rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        #quill-editor .ql-picker-item {
+            color: var(--qf-text-primary) !important;
+        }
+
+        #quill-editor .ql-picker-item:hover {
+            background: var(--qf-bg-secondary) !important;
+        }
+
+        #quill-editor .ql-picker-label {
+            color: var(--qf-text-primary) !important;
+        }
+
+        /* Placeholder text */
         #quill-editor .ql-editor.ql-blank::before {
-            color: #9ca3af;
-            opacity: 1;
+            color: var(--qf-placeholder) !important;
+            font-style: italic !important;
         }
 
-        /* Dark-theme adjustments when toolbar is NOT forced to light */
-        html.dark #quill-editor .ql-container.ql-snow:not(.qf-force-light) {
-            background: #0f1724; /* slightly lighter than page bg for contrast */
-            border-color: var(--qf-border);
-            color: rgba(255,255,255,0.95);
+        /* Text inputs and textareas */
+        textarea,
+        input[type="text"],
+        select,
+        .choice-item textarea {
+            background: var(--qf-bg-primary) !important;
+            color: var(--qf-text-primary) !important;
+            border: 1px solid var(--qf-border) !important;
+            border-radius: 0.5rem !important;
+            padding: 0.75rem !important;
+            font-size: 14px !important;
+            transition: border-color 0.2s ease-in-out !important;
         }
 
-        html.dark #quill-editor .ql-editor:not(.ql-disabled) {
-            color: rgba(255,255,255,0.92);
+        textarea:focus,
+        input[type="text"]:focus,
+        select:focus,
+        .choice-item textarea:focus {
+            outline: none !important;
+            border-color: var(--qf-border-focus) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
         }
 
-        html.dark #quill-editor .ql-editor.ql-blank::before {
-            color: rgba(255,255,255,0.6);
+        textarea::placeholder,
+        input[type="text"]::placeholder,
+        .choice-item textarea::placeholder {
+            color: var(--qf-placeholder) !important;
         }
 
-        /* Ensure links and inline elements remain visible in dark mode */
-        #quill-editor .ql-editor a {
-            color: var(--qf-toolbar-accent);
+        /* Fallback textarea styling */
+        .textarea-fallback {
+            background: var(--qf-bg-primary) !important;
+            color: var(--qf-text-primary) !important;
+            border: 1px solid var(--qf-border) !important;
+            border-radius: 0.5rem !important;
+            padding: 16px !important;
+            min-height: 280px !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-size: 15px !important;
+            line-height: 1.6 !important;
         }
 
-        /* Leave more specific visual rules (e.g., correct-answer, choice-item) to their existing styles.
-           This block intentionally avoids heavy use of !important so later page rules can fine-tune behavior. */
-
-        /* Animated section show/hide for question type switching
-           Uses JS to animate max-height + opacity + translateY for smooth toggles. */
-        .qf-section {
-            overflow: hidden;
-            transition: max-height 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease, transform 200ms ease;
-            will-change: max-height, opacity, transform;
+        /* Choice checkbox styling */
+        .choice-checkbox:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
 
-        /* Start hidden state - applied by JS when collapsing */
-        .qf-section-hidden {
-            max-height: 0 !important;
-            opacity: 0 !important;
-            transform: translateY(-6px) !important;
-            pointer-events: none;
+        .dark .choice-checkbox {
+            border-color: #4b5563;
+            background-color: #374151;
         }
 
-        /* When visible we remove inline max-height after transition; this class keeps expected visual state */
-        .qf-section-visible {
-            opacity: 1;
-            transform: translateY(0);
+        /* Correct answer visual states */
+        .choice-item.correct-answer {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+            border: 3px solid #10b981 !important;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+            transform: scale(1.02) !important;
         }
+
+        .choice-item.correct-answer .choice-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: white !important;
+        }
+
+        .choice-item.correct-answer textarea {
+            border: 2px solid #10b981 !important;
+            background-color: rgba(255, 255, 255, 0.98) !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+        }
+
+        .dark .choice-item.correct-answer textarea {
+            background-color: rgba(31, 41, 55, 0.98) !important;
+        }
+
+        /* Layout and small animations */
+        .section-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .choice-item { transition: all 0.2s ease-in-out; }
+        .choice-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+        /* Modal and thumbnail */
+        #imageModal { backdrop-filter: blur(4px); }
+        #modalImage { transition: transform 0.2s ease-in-out; cursor: zoom-in; }
+        #modalImage:hover { transform: scale(1.02); }
+        .choice-item img { transition: all 0.2s ease-in-out; }
+        .choice-item img:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+
+        /* Responsive tweaks */
+        @media (max-width: 768px) {
+            #quill-editor .ql-editor { min-height: 180px !important; }
+            .choice-item { padding: 0.5rem !important; }
+        }
+
+        /* Dark mode adjustments for previews */
+        .dark #imageModal .modal-panel { background-color: #0f172a; }
+        .dark .choice-item img { box-shadow: 0 4px 14px rgba(255,255,255,0.03); }
     </style>
 {% endblock %}
 
 {% block content %}
-<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased question-form-section">
+<!-- Include Question Header Component -->
+<section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
-        <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden question-form-card">
-            <div class="p-6">
-                <div class="max-w-4xl mx-auto">
-                    <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                        {% if question %}Edit Question{% else %}Create New Question{% endif %}
-                    </h1>
-                    
-                    <form method="post" id="questionForm" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="space-y-6">
-                            {{ form.non_field_errors }}
-                            
-                            <!-- Question Type Selection -->
-                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Question Type</h3>
-                                <div class="flex flex-wrap gap-4">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="question_type" value="multiple_choice" 
-                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                               {% if form.question_type.value == 'multiple_choice' or not form.question_type.value %}checked{% endif %}>
-                                        <span class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Multiple Choice</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="question_type" value="essay" 
-                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                               {% if form.question_type.value == 'essay' %}checked{% endif %}>
-                                        <span class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Essay</span>
-                                    </label>
-                                </div>
-                            </div>
+        {% with header_title=page_title|default:"Question Form" header_subtitle=page_subtitle show_back_button=True header_icon='<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>' %}
+            {% include 'admin/manage_questions/includes/question_header.html' %}
+        {% endwith %}
 
-                            <!-- Question Text -->
-                            <div>
-                                <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Question Text <span class="text-red-500">*</span>
-                                </label>
-                                {{ form.question_text }}
-                                {% if form.question_text.errors %}
-                                    <p class="text-sm text-red-600 mt-1">{{ form.question_text.errors|striptags }}</p>
-                                {% endif %}
-                            </div>
-
-                            <!-- Question Image: removed (Quill handles images in editor) -->
-
-                            <!-- Category and Weight -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Category <span class="text-red-500">*</span>
-                                    </label>
-                                    {{ form.category }}
-                                    {% if form.category.errors %}
-                                        <p class="text-sm text-red-600 mt-1">{{ form.category.errors|striptags }}</p>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Custom Weight
-                                    </label>
-                                    {{ form.custom_weight }}
-                                    {% if form.custom_weight.errors %}
-                                        <p class="text-sm text-red-600 mt-1">{{ form.custom_weight.errors|striptags }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Multiple Choice Options (shown only for multiple choice) -->
-                            <div id="multipleChoiceSection" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Multiple Choice Options</h3>
-                                {{ formset.management_form }}
-                                {% if formset.non_form_errors %}
-                                    <div class="text-sm text-red-600 mb-4">{{ formset.non_form_errors }}</div>
-                                {% endif %}
-
-                                <div id="choicesContainer" class="space-y-4">
-                                    {% for f in formset %}
-                                        <div class="choice-item p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" data-index="{{ forloop.counter0 }}">
-                                            {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
-                                            
-                                            <div class="choice-header flex items-center justify-between mb-3 p-2 rounded bg-gray-100 dark:bg-gray-700">
-                                                <h4 class="text-sm font-medium text-gray-900 dark:text-white">Choice {{ forloop.counter }}</h4>
-                                                <div class="flex items-center space-x-2">
-                                                    <span class="choice-badge px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded">Option</span>
-                                                    <label class="inline-flex items-center">
-                                                        <input type="checkbox" name="{{ f.is_correct.name }}" value="1" 
-                                                               class="choice-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                                               {% if f.is_correct.value %}checked{% endif %}
-                                                               onchange="handleCorrectAnswerChange(this, {{ forloop.counter }})">
-                                                        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</span>
-                                                    </label>
-                                                </div>
+    <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden question-form-card">
+        <div class="p-6">
+            <div class="max-w-4xl mx-auto">
+                <!-- Error Messages -->
+                {% if form.errors %}
+                    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-medium">Please fix the following errors:</h3>
+                                            <div class="mt-2 text-sm">
+                                                <ul class="list-disc pl-5 space-y-1">
+                                                    {% for field, errors in form.errors.items %}
+                                                        {% for error in errors %}
+                                                            <li>{{ field|capfirst }}: {{ error }}</li>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                </ul>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
 
-                                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                <!-- Choice Text -->
-                                                <div>
-                                                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Choice Text
-                                                    </label>
-                                                    {{ f.choice_text }}
-                                                    {% if f.choice_text.errors %}
-                                                        <p class="text-sm text-red-600 mt-1">{{ f.choice_text.errors|striptags }}</p>
-                                                    {% endif %}
-                                                </div>
+                            <!-- Form -->
+                            <form method="post" class="space-y-6">
+                                {% csrf_token %}
+                                
+                                <!-- Question Content -->
+                                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Content</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            {% if question %}Update your question content using the rich text editor{% else %}Enter your question content using the rich text editor{% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                            <label for="id_question_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Question Text
+                                                <span class="text-red-500">*</span>
+                                            </label>
+                                            {{ form.question_text }}
+                                            {% if form.question_text.errors %}
+                                                {% for error in form.question_text.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                <!-- Choice Image -->
-                                                <div>
-                                                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Choice Image (Optional)
-                                                    </label>
-                                                    <div class="space-y-2">
-                                                        <div id="choice-upload-area-{{ forloop.counter }}" class="{% if f.choice_image.value %}hidden{% endif %}">
-                                                            <input type="file" id="choice-image-{{ forloop.counter }}" 
-                                                                   accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-                                                                   onchange="handleChoiceImageUpload(this, {{ forloop.counter }})">
+                                <!-- Question Type and Category -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <!-- Question Type -->
+                                    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Question Type</h3>
+                                        </div>
+                                        <div class="px-6 py-4">
+                                            <fieldset>
+                                                <legend class="sr-only">Question Type</legend>
+                                                <div class="space-y-3">
+                                                    {% for choice in form.question_type %}
+                                                        <div class="flex items-center">
+                                                            {{ choice.tag }}
+                                                            <label for="{{ choice.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                {{ choice.choice_label }}
+                                                            </label>
                                                         </div>
-                                                        
-                                                        <div id="choice-image-preview-{{ forloop.counter }}" class="{% if not f.choice_image.value %}hidden{% endif %}">
-                                                            <img src="{{ f.choice_image.value|default:'' }}" alt="Choice Image" class="w-full h-32 object-cover rounded-lg border">
-                                                            <div class="flex items-center justify-between mt-2">
-                                                                <button type="button" onclick="removeChoiceImage({{ forloop.counter }})" 
-                                                                        class="text-sm text-red-600 hover:text-red-800">Remove Image</button>
+                                                    {% endfor %}
+                                                </div>
+                                            </fieldset>
+                                            {% if form.question_type.help_text %}
+                                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ form.question_type.help_text }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Category -->
+                                    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Category</h3>
+                                        </div>
+                                        <div class="px-6 py-4">
+                                            <label for="id_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Question Category
+                                                <span class="text-red-500">*</span>
+                                            </label>
+                                            {{ form.category }}
+                                            {% if form.category.errors %}
+                                                {% for error in form.category.errors %}
+                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Weight -->
+                                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Weight Configuration</h3>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <label for="id_custom_weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Custom Weight (Optional)
+                                        </label>
+                                        {{ form.custom_weight }}
+                                        {% if form.custom_weight.help_text %}
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.custom_weight.help_text }}</p>
+                                        {% endif %}
+                                        {% if form.custom_weight.errors %}
+                                            {% for error in form.custom_weight.errors %}
+                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Multiple Choice Options -->
+                                <div id="choicesSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
+                                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    {% if question %}Update multiple choice options for this question{% else %}Add multiple choice options for this question{% endif %}
+                                                </p>
+                                            </div>
+                                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>Select at least one correct answer</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="px-6 py-6">
+                                        {{ formset.management_form }}
+                                        
+                                        <div id="choice-forms" class="space-y-4">
+                                            {% for form in formset %}
+                                                <div class="choice-item relative group border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary-300 dark:hover:border-primary-500 {% if form.is_correct.value %}correct-answer{% endif %}" data-choice="{{ forloop.counter }}">
+                                                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                                    
+                                                    <!-- Choice Header with Letter Badge -->
+                                                    <div class="choice-header flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                                                        <div class="flex items-center space-x-3">
+                                                            <!-- Choice Letter Badge -->
+                                                            <div class="choice-badge flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg {% if form.is_correct.value %}bg-green-500 text-white{% else %}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{% endif %}">
+                                                                {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}
+                                                            </div>
+                                                            
+                                                            <!-- Choice Title -->
+                                                            <div>
+                                                                <h4 class="text-lg font-semibold {% if form.is_correct.value %}text-white font-bold{% else %}text-gray-900 dark:text-white{% endif %}">
+                                                                    Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}
+                                                                </h4>
+                                                                <p class="choice-status text-sm {% if form.is_correct.value %}text-white font-medium{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                                                    {% if form.is_correct.value %}✓ Correct Answer{% else %}Option{% endif %}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                         
-                                                        <input type="hidden" id="choice-image-url-{{ forloop.counter }}" name="{{ f.choice_image.name }}" value="{{ f.choice_image.value|default:'' }}">
-                                                        <div id="choice-image-status-{{ forloop.counter }}" class="mt-1 text-xs"></div>
+                                                        <!-- Correct Answer Toggle -->
+                                                        <div class="flex items-center space-x-3">
+                                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                                {{ form.is_correct }}
+                                                                <span class="ml-3 text-sm font-medium {% if form.is_correct.value %}text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+                                                                    Mark as correct
+                                                                </span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Choice Content -->
+                                                    <div class="p-4">
+                                                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                            <!-- Choice Text (Left 2/3) -->
+                                                            <div class="lg:col-span-2">
+                                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                                    Choice Text <span id="choice-text-req-{{ forloop.counter }}" class="text-red-500">*</span>
+                                                                </label>
+                                                                {{ form.choice_text }}
+                                                                {% if form.choice_text.errors %}
+                                                                    {% for error in form.choice_text.errors %}
+                                                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                            </div>
+                                                            
+                                                            <!-- Choice Image (Right 1/3) -->
+                                                            <div class="lg:col-span-1">
+                                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                                    Choice Image
+                                                                </label>
+                                                                
+                                                                <!-- Image Upload Area -->
+                                                                <div class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors duration-200">
+                                                                    <!-- Current Image Preview -->
+                                                                    <div id="choice-image-preview-{{ forloop.counter }}" class="{% if not form.instance.choice_image %}hidden{% endif %}">
+                                                                        {% if form.instance.choice_image %}
+                                                                            <div class="relative inline-block">
+                                                                                <img src="{{ form.instance.choice_image.url }}" 
+                                                                                     class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
+                                                                                     alt="Choice image"
+                                                                                     onclick="openImageModal('{{ form.instance.choice_image.url }}', 'Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}')">
+                                                                                <button type="button" 
+                                                                                        onclick="console.log('Remove existing image clicked for choice {{ forloop.counter }}'); removeChoiceImage({{ forloop.counter }}); event.stopPropagation(); return false;" 
+                                                                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200 z-20 border-2 border-white">
+                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                                    </svg>
+                                                                                </button>
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <div class="relative inline-block">
+                                                                                <img class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
+                                                                                     alt="Choice image"
+                                                                                     onclick="openImageModal(this.src, 'Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}')">
+                                                                                <button type="button" 
+                                                                                        onclick="console.log('Remove new image clicked for choice {{ forloop.counter }}'); removeChoiceImage({{ forloop.counter }}); event.stopPropagation(); return false;" 
+                                                                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200 z-20 border-2 border-white">
+                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                                    </svg>
+                                                                                </button>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    
+                                                                    <!-- Upload Area (shown when no image) -->
+                                                                    <div id="choice-upload-area-{{ forloop.counter }}" class="{% if form.instance.choice_image %}hidden{% endif %}">
+                                                                        <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                                        </svg>
+                                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Click to upload</p>
+                                                                    </div>
+                                                                    
+                                                                    <!-- Hidden File Input -->
+                                                                    <input type="file" 
+                                                                           id="choice-image-{{ forloop.counter }}" 
+                                                                           accept="image/*" 
+                                                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                                                           onchange="uploadChoiceImage(this, {{ forloop.counter }})">
+                                                                    
+                                                                    <!-- Status Text -->
+                                                                    <p id="choice-image-status-{{ forloop.counter }}" class="mt-1 text-xs"></p>
+                                                                </div>
+                                                                
+                                                                <!-- Hidden Django Field -->
+                                                                <div class="hidden">{{ form.choice_image }}</div>
+                                                                <input type="hidden" 
+                                                                       id="choice-image-url-{{ forloop.counter }}" 
+                                                                       name="choice_image_{{ forloop.counter }}" 
+                                                                       value="{% if form.instance.choice_image %}{{ form.instance.choice_image.url }}{% endif %}">
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            <div class="choice-status text-sm text-gray-600 dark:text-gray-400 mt-2">Option</div>
+                                            {% endfor %}
                                         </div>
-                                    {% endfor %}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Essay Section (shown only for essay) -->
-                            <div id="essaySection" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hidden">
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Essay Answer</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    For essay questions, students will provide written answers. No multiple choice options are needed.
-                                </p>
-
-                                <!-- Admin: correct answer(s) for essay questions -->
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Correct Answer(s) for Essay <span class="text-red-500">*</span>
-                                    </label>
-                                    {{ form.correct_answer_text }}
-                                    {% if form.correct_answer_text.errors %}
-                                        <p class="text-sm text-red-600 mt-1">{{ form.correct_answer_text.errors|striptags }}</p>
-                                    {% endif %}
-                                    {% if form.correct_answer_text.help_text %}
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.correct_answer_text.help_text }}</p>
-                                    {% endif %}
+                                <!-- Essay Answer Section -->
+                                <div id="essayAnswerSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Expected Answer</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Provide the expected answer or key points for this essay question</p>
+                                    </div>
+                                    <div class="px-6 py-4">
+                                        <label for="id_correct_answer_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Expected Answer
+                                        </label>
+                                        {{ form.correct_answer_text }}
+                                        {% if form.correct_answer_text.help_text %}
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.correct_answer_text.help_text }}</p>
+                                        {% endif %}
+                                        {% if form.correct_answer_text.errors %}
+                                            {% for error in form.correct_answer_text.errors %}
+                                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Form Actions -->
-                            <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-                                <div class="flex items-center space-x-4">
-                                    <button type="submit" id="questionSaveBtn" 
-                                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
-                                        {% if question %}Update Question{% else %}Create Question{% endif %}
-                                    </button>
-                                    <a href="{% url 'question_list' %}" 
-                                       class="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200">
+                                <!-- Submit Button -->
+                                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <a href="{% url 'question_list' %}" class="bg-white dark:bg-gray-800 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                                         Cancel
                                     </a>
-                                </div>
-                                
-                                {% if question %}
-                                    <button type="button" onclick="deleteQuestion()" 
-                                            class="px-4 py-2 text-red-600 bg-red-100 hover:bg-red-200 dark:text-red-400 dark:bg-red-900/20 dark:hover:bg-red-900/30 rounded-lg transition-colors duration-200">
-                                        Delete Question
+                                    <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                                        {% if question %}Update Question{% else %}Create Question{% endif %}
                                     </button>
-                                {% endif %}
-                            </div>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -345,32 +775,590 @@
 </section>
 
 <!-- Image Modal -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl max-h-full overflow-auto">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-                <h3 id="modal-title" class="text-lg font-medium text-gray-900 dark:text-white">Image Preview</h3>
-                <button onclick="closeImageModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+<div id="imageModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-black bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeImageModal()"></div>
+        
+        <!-- Modal panel -->
+        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                        Image Preview
+                    </h3>
+                    <button type="button" 
+                            onclick="closeImageModal()" 
+                            class="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <span class="sr-only">Close</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="mt-3 text-center sm:mt-0 sm:text-left">
+                    <div class="mt-2 flex justify-center">
+                        <img id="modalImage" 
+                             src="" 
+                             alt="Preview" 
+                             class="max-w-full max-h-96 h-auto rounded-lg border border-gray-200 dark:border-gray-600 shadow-lg">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" 
+                        onclick="closeImageModal()" 
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Close
                 </button>
             </div>
         </div>
-        <div class="p-4">
-            <img id="modalImage" src="" alt="Preview" class="max-w-full h-auto rounded">
-        </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
-    {% include 'includes/_quill_init.html' %}
-    
+    <!-- Quill.js Rich Text Editor Initialization -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // File upload handling for choice images
-            window.handleChoiceImageUpload = function(input, choiceNumber) {
+            // Initialize Quill Rich Text Editor
+            const questionTextarea = document.querySelector('#id_question_text');
+            let quillEditor = null;
+            
+            if (questionTextarea) {
+                // Create container for Quill editor
+                const editorContainer = document.createElement('div');
+                editorContainer.id = 'quill-editor';
+                editorContainer.className = 'qf-editor-container rounded-lg shadow-sm';
+                questionTextarea.parentNode.insertBefore(editorContainer, questionTextarea);
+                
+                // Initialize Quill
+                try {
+                    console.log('Initializing Quill editor...');
+                    quillEditor = new Quill('#quill-editor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                ['link', 'blockquote'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                ['image'],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Type your question here...'
+                    });
+                    
+                    console.log('Quill editor created:', quillEditor);
+                    console.log('Quill container:', document.querySelector('#quill-editor'));
+                    console.log('Quill toolbar:', document.querySelector('#quill-editor .ql-toolbar'));
+                    console.log('Quill toolbar buttons:', document.querySelectorAll('#quill-editor .ql-toolbar button'));
+                    
+                    // Custom Image Upload Handler
+                    quillEditor.getModule('toolbar').addHandler('image', function() {
+                        const input = document.createElement('input');
+                        input.setAttribute('type', 'file');
+                        input.setAttribute('accept', 'image/*');
+                        input.click();
+                        
+                        input.onchange = function() {
+                            const file = input.files[0];
+                            if (file) {
+                                // Show upload progress
+                                const range = quillEditor.getSelection();
+                                quillEditor.insertText(range.index, 'Uploading image...', 'italic', true);
+                                
+                                const formData = new FormData();
+                                formData.append('upload', file);
+                                
+                                // Add CSRF token
+                                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                                
+                                fetch('/admin/image-upload/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': csrfToken
+                                    },
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    // Remove progress text
+                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                                    
+                                    if (data.url) {
+                                        // Insert image at cursor position
+                                        quillEditor.insertEmbed(range.index, 'image', data.url);
+                                        quillEditor.setSelection(range.index + 1);
+                                    } else {
+                                        showNotification('Image upload failed: ' + (data.error || 'Unknown error'), 'error');
+                                    }
+                                })
+                                .catch(error => {
+                                    // Remove progress text
+                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
+                                    console.error('Upload failed:', error);
+                                    showNotification('Image upload failed. Please try again.', 'error');
+                                });
+                            }
+                        };
+                    });
+                    
+                    // Set initial content if textarea has value
+                    if (questionTextarea.value) {
+                        quillEditor.root.innerHTML = questionTextarea.value;
+                    }
+
+                    // Sync editor content with textarea
+                    quillEditor.on('text-change', function() {
+                        questionTextarea.value = quillEditor.root.innerHTML;
+                    });
+
+                    // Hide original textarea (Quill is the visible editor)
+                    questionTextarea.style.display = 'none';
+
+                    // Force dark mode icon styling after Quill initialization
+                    setTimeout(function() {
+                        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                                         document.body.classList.contains('dark') ||
+                                         document.querySelector('[data-theme="dark"]');
+                        
+                        if (isDarkMode) {
+                            const toolbar = document.querySelector('#quill-editor .ql-toolbar');
+                            if (toolbar) {
+                                // Force white icons in dark mode
+                                const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                                buttons.forEach(button => {
+                                    button.style.color = '#ffffff';
+                                    const svgs = button.querySelectorAll('svg, svg *');
+                                    svgs.forEach(svg => {
+                                        svg.style.stroke = '#ffffff';
+                                        svg.style.fill = '#ffffff';
+                                        svg.style.color = '#ffffff';
+                                        // Add filter as backup
+                                        svg.style.filter = 'brightness(0) invert(1)';
+                                    });
+                                });
+                                
+                                // Style the toolbar itself
+                                toolbar.style.backgroundColor = '#374151';
+                                toolbar.style.borderColor = '#6b7280';
+                            }
+                        }
+                    }, 100);
+
+                    console.log('Quill editor initialized successfully');
+                    
+                    // Observer for theme changes
+                    const observer = new MutationObserver(function(mutations) {
+                        let shouldRefix = false;
+                        
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                                const target = mutation.target;
+                                if (target === document.documentElement || target === document.body) {
+                                    console.log('Theme change detected on:', target.tagName);
+                                    console.log('  Old classes:', mutation.oldValue);
+                                    console.log('  New classes:', target.className);
+                                    shouldRefix = true;
+                                }
+                            }
+                            
+                            // Also watch for DOM changes in toolbar area
+                            if (mutation.type === 'childList' && mutation.target.closest('.ql-toolbar')) {
+                                console.log('Toolbar DOM change detected');
+                                shouldRefix = true;
+                            }
+                        });
+                        
+                        if (shouldRefix) {
+                            console.log('Theme change or toolbar update detected, re-fixing icons...');
+                            setTimeout(() => window.fixQuillIcons(), 100);
+                        }
+                    });
+                    
+                    // Start observing theme changes with oldValue tracking
+                    observer.observe(document.documentElement, {
+                        attributes: true,
+                        attributeOldValue: true,
+                        attributeFilter: ['class', 'data-theme']
+                    });
+                    observer.observe(document.body, {
+                        attributes: true,
+                        attributeOldValue: true,
+                        attributeFilter: ['class', 'data-theme']
+                    });
+                    
+                    // Also observe toolbar for DOM changes
+                    const toolbar = document.querySelector('.ql-toolbar');
+                    if (toolbar) {
+                        observer.observe(toolbar, {
+                            childList: true,
+                            subtree: true
+                        });
+                    }
+                    
+                    // Debug function for manual icon fix (can be called from console)
+                    window.fixQuillIcons = function() {
+                        console.log('=== Debug Quill Icons Fix ===');
+                        
+                        // Check current theme
+                        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                                         document.body.classList.contains('dark') ||
+                                         document.querySelector('[data-theme="dark"]');
+                        
+                        console.log('Current theme:', isDarkMode ? 'Dark' : 'Light');
+                        
+                        // Try multiple selectors
+                        const selectors = [
+                            '#quill-editor .ql-toolbar',
+                            '.ql-toolbar',
+                            '[class*="ql-toolbar"]',
+                            '.ql-snow .ql-toolbar'
+                        ];
+                        
+                        let toolbar = null;
+                        for (let selector of selectors) {
+                            toolbar = document.querySelector(selector);
+                            console.log(`Trying selector "${selector}":`, toolbar);
+                            if (toolbar) break;
+                        }
+                        
+                        if (!toolbar) {
+                            console.log('No toolbar found. Available Quill elements:');
+                            const quillElements = document.querySelectorAll('[id*="quill"], [class*="ql-"]');
+                            quillElements.forEach((el, i) => {
+                                console.log(`${i}: ${el.tagName}.${el.className}#${el.id}`, el);
+                            });
+                            return;
+                        }
+                        
+                        console.log('Found toolbar:', toolbar);
+                        
+                        // Use CSS classes instead of permanent inline styles so :hover and .ql-active
+                        // remain controllable by CSS when theme toggles.
+                        // Remove any previously injected inline styles that could block CSS state changes.
+                        try {
+                            toolbar.classList.toggle('qf-theme-dark', !!isDarkMode);
+                            toolbar.classList.toggle('qf-theme-light', !isDarkMode);
+
+                            // Remove inline toolbar colors if present so stylesheet rules take precedence
+                            toolbar.style.removeProperty('background-color');
+                            toolbar.style.removeProperty('border-color');
+
+                            const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                            console.log(`Found ${buttons.length} buttons/pickers - cleaning inline styles`);
+
+                            buttons.forEach((button) => {
+                                // Remove inline styles previously set by JS so CSS :hover/.ql-active can work
+                                button.style.removeProperty('color');
+                                button.style.removeProperty('background');
+                                button.style.removeProperty('border');
+                                button.style.removeProperty('border-radius');
+
+                                // Clean up SVG inline styles to allow CSS-driven stroke/fill
+                                const svgElements = button.querySelectorAll('svg, .ql-stroke, .ql-fill');
+                                svgElements.forEach((svg) => {
+                                    svg.style.removeProperty('stroke');
+                                    svg.style.removeProperty('fill');
+                                    svg.style.removeProperty('color');
+                                    svg.style.removeProperty('filter');
+                                    svg.style.removeProperty('stroke-width');
+
+                                    const children = svg.querySelectorAll('*');
+                                    children.forEach(child => {
+                                        child.style.removeProperty('stroke');
+                                        child.style.removeProperty('fill');
+                                    });
+                                });
+                            });
+
+                            // Ensure stylesheet has the right class-based selectors; toggle a reflow class
+                            toolbar.classList.add('qf-reflow');
+                            setTimeout(() => toolbar.classList.remove('qf-reflow'), 50);
+                        } catch (e) {
+                            console.warn('Error cleaning inline styles for Quill toolbar:', e);
+                        }
+                        
+                        console.log(`Icons fix completed for ${isDarkMode ? 'dark' : 'light'} mode!`);
+                        return toolbar;
+                    };
+                    
+                    // Debug function to find all Quill-related elements
+                    window.debugQuillElements = function() {
+                        console.log('=== Debug All Quill Elements ===');
+                        
+                        const allElements = document.querySelectorAll('*');
+                        const quillElements = [];
+                        
+                        allElements.forEach(el => {
+                            if (el.id && el.id.includes('quill')) {
+                                quillElements.push({type: 'id', selector: '#' + el.id, element: el});
+                            }
+                            if (el.className && el.className.toString().includes('ql-')) {
+                                quillElements.push({type: 'class', selector: '.' + el.className.toString().split(' ').find(c => c.includes('ql-')), element: el});
+                            }
+                        });
+                        
+                        console.log('Found Quill elements:', quillElements);
+                        
+                        // Check if textarea exists
+                        const textarea = document.querySelector('#id_question_text');
+                        console.log('Question textarea:', textarea);
+                        
+                        // Check if editor container exists
+                        const container = document.querySelector('#quill-editor');
+                        console.log('Quill container:', container);
+                        
+                        if (container) {
+                            console.log('Container children:', container.children);
+                        }
+                        
+                        return quillElements;
+                    };
+                    
+                    // Force re-initialize Quill if needed
+                    window.forceQuillInit = function() {
+                        console.log('=== Force Quill Re-initialization ===');
+                        
+                        const textarea = document.querySelector('#id_question_text');
+                        if (!textarea) {
+                            console.log('No textarea found');
+                            return;
+                        }
+                        
+                        // Remove existing Quill container if any
+                        const existingContainer = document.querySelector('#quill-editor');
+                        if (existingContainer) {
+                            existingContainer.remove();
+                        }
+                        
+                        // Show textarea temporarily
+                        textarea.style.display = 'block';
+                        
+                        // Create new container
+                        const newContainer = document.createElement('div');
+                        newContainer.id = 'quill-editor';
+                        newContainer.className = 'qf-editor-container rounded-lg shadow-sm';
+                        textarea.parentNode.insertBefore(newContainer, textarea);
+                        
+                        // Re-initialize Quill
+                        const newQuill = new Quill('#quill-editor', {
+                            theme: 'snow',
+                            modules: {
+                                toolbar: [
+                                    ['bold', 'italic', 'underline'],
+                                    ['link', 'blockquote'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                    ['image'],
+                                    ['clean']
+                                ]
+                            },
+                            placeholder: 'Type your question here...'
+                        });
+                        
+                        if (textarea.value) {
+                            newQuill.root.innerHTML = textarea.value;
+                        }
+                        
+                        newQuill.on('text-change', function() {
+                            textarea.value = newQuill.root.innerHTML;
+                        });
+                        
+                        textarea.style.display = 'none';
+                        
+                        // Fix icons immediately
+                        setTimeout(() => window.fixQuillIcons(), 100);
+                        
+                        console.log('Quill re-initialized');
+                        return newQuill;
+                    };
+                    
+                    // Persistent icon fix - runs periodically to ensure icons match current theme
+                    window.persistentIconFix = function() {
+                        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                                         document.body.classList.contains('dark') ||
+                                         document.querySelector('[data-theme="dark"]');
+                        
+                        const toolbar = document.querySelector('.ql-toolbar');
+                        if (toolbar) {
+                            const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                            let needsFix = false;
+                            
+                            buttons.forEach(button => {
+                                // Remove lingering inline styles so CSS :hover and .ql-active work
+                                button.style.removeProperty('color');
+                                button.style.removeProperty('background');
+                                button.style.removeProperty('border');
+
+                                const svgElements = button.querySelectorAll('svg, .ql-stroke, .ql-fill');
+                                svgElements.forEach(svg => {
+                                    svg.style.removeProperty('stroke');
+                                    svg.style.removeProperty('fill');
+                                    svg.style.removeProperty('filter');
+                                    svg.style.removeProperty('stroke-width');
+                                    const children = svg.querySelectorAll('*');
+                                    children.forEach(child => {
+                                        child.style.removeProperty('stroke');
+                                        child.style.removeProperty('fill');
+                                    });
+                                });
+                            });
+                            
+                            // Allow CSS to determine if active/hover states are applied; still run a quick check
+                            setTimeout(() => window.fixQuillIcons(), 80);
+                        }
+                    };
+                    
+                    // Run periodic check every 2 seconds
+                    setInterval(window.persistentIconFix, 2000);
+                    
+                    // Auto-fix on initialization if in dark mode
+                    const checkAndFixIcons = () => {
+                        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                                         document.body.classList.contains('dark') ||
+                                         document.querySelector('[data-theme="dark"]');
+                        
+                        if (isDarkMode) {
+                            console.log('Dark mode detected, applying icon fixes...');
+                            return window.fixQuillIcons();
+                        }
+                        return false;
+                    };
+                    
+                    // Multiple retry attempts with better timing
+                    const attemptFix = (attempt = 1) => {
+                        console.log(`Auto-fix attempt ${attempt}`);
+                        const result = checkAndFixIcons();
+                        
+                        if (!result && attempt < 3) {
+                            setTimeout(() => attemptFix(attempt + 1), 500 * attempt);
+                        } else if (result) {
+                            console.log('Icons successfully fixed on attempt', attempt);
+                        }
+                    };
+                    
+                    // Initial fix attempt
+                    setTimeout(() => attemptFix(), 100);
+                    
+                } catch (error) {
+                    console.error('Quill initialization failed:', error);
+                    // Show textarea as fallback with consistent styling
+                    questionTextarea.style.display = 'block';
+                    questionTextarea.classList.add('textarea-fallback');
+                    if (editorContainer) {
+                        editorContainer.style.display = 'none';
+                    }
+                    showNotification('Rich text editor failed to load. Using fallback editor.', 'warning');
+                }
+            }
+            
+            // Question type functionality
+            const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
+            const choicesSection = document.getElementById('choicesSection');
+            const essayAnswerSection = document.getElementById('essayAnswerSection');
+            
+            function toggleSections() {
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                if (selectedType) {
+                    document.body.style.cursor = 'wait';
+                    
+                    setTimeout(() => {
+                        if (selectedType.value === 'multiple_choice') {
+                            choicesSection.style.display = 'block';
+                            essayAnswerSection.style.display = 'none';
+                            choicesSection.classList.add('section-fade-in');
+                            
+                            // Initialize choice checkboxes after section becomes visible
+                            setTimeout(() => {
+                                initializeChoiceCheckboxes();
+                            }, 100);
+                        } else if (selectedType.value === 'essay') {
+                            choicesSection.style.display = 'none';
+                            essayAnswerSection.style.display = 'block';
+                            essayAnswerSection.classList.add('section-fade-in');
+                        }
+                        
+                        document.body.style.cursor = '';
+                        console.log('Question type changed to:', selectedType.value);
+                    }, 100);
+                }
+            }
+            
+            // Initial toggle based on selected value
+            toggleSections();
+            
+            // Add event listeners to radio buttons
+            questionTypeRadios.forEach(function(radio) {
+                radio.addEventListener('change', toggleSections);
+            });
+            
+            // Form validation with enhanced UX
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const category = document.querySelector('#id_category');
+                    
+                    // Get content from Quill editor or textarea
+                    let questionContent = '';
+                    if (quillEditor) {
+                        questionContent = quillEditor.root.innerHTML.trim();
+                        // Also check for empty content (just HTML tags)
+                        const textContent = quillEditor.getText().trim();
+                        if (!textContent) questionContent = '';
+                    } else if (questionTextarea) {
+                        questionContent = questionTextarea.value.trim();
+                    }
+                    
+                    if (!questionContent || (category && !category.value)) {
+                        e.preventDefault();
+                        showNotification('Please fill in all required fields', 'error');
+                        
+                        const firstError = document.querySelector('.text-red-500');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                    
+                    // Check if essay type and answer is provided
+                    const essayRadio = document.querySelector('input[value="essay"]:checked');
+                    if (essayRadio) {
+                        const essayAnswer = document.getElementById('id_correct_answer_text');
+                        if (essayAnswer && !essayAnswer.value.trim()) {
+                            e.preventDefault();
+                            showNotification('Please provide an expected answer for the essay question', 'error');
+                            essayAnswer.focus();
+                            return;
+                        }
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        const isUpdate = submitBtn.textContent.includes('Update');
+                        submitBtn.innerHTML = `
+                            <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            ${isUpdate ? 'Updating' : 'Creating'} Question...
+                        `;
+                    }
+                });
+            }
+            
+            // Choice Image Upload Function
+            window.uploadChoiceImage = function(input, choiceNumber) {
                 const file = input.files[0];
                 if (!file) return;
                 
@@ -412,7 +1400,7 @@
                         statusElement.className = 'text-sm text-green-600 dark:text-green-400';
                         
                         // Update requirement state: if image exists, choice text is not required
-                        updateChoiceRequirements();
+                        if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
 
                         showNotification('Choice image uploaded successfully!', 'success');
                     } else {
@@ -431,29 +1419,6 @@
                 // Clear the file input
                 input.value = '';
             };
-
-            // Update choice requirements based on content
-            function updateChoiceRequirements() {
-                const choiceItems = document.querySelectorAll('.choice-item');
-                choiceItems.forEach((item, index) => {
-                    const textField = item.querySelector('textarea');
-                    const imageInput = document.getElementById(`choice-image-url-${index + 1}`);
-                    
-                    if (textField && imageInput) {
-                        const hasText = textField.value.trim() !== '';
-                        const hasImage = imageInput.value.trim() !== '';
-                        
-                        // Update visual indicators
-                        if (hasText || hasImage) {
-                            item.classList.remove('border-red-300', 'dark:border-red-600');
-                            item.classList.add('border-gray-200', 'dark:border-gray-600');
-                        } else {
-                            item.classList.remove('border-gray-200', 'dark:border-gray-600');
-                            item.classList.add('border-red-300', 'dark:border-red-600');
-                        }
-                    }
-                });
-            }
 
             // Remove Choice Image Function
             window.removeChoiceImage = function(choiceNumber) {
@@ -489,13 +1454,33 @@
                         statusElement.className = 'mt-1 text-xs';
                     }
                     
+                    console.log(`Image removed for choice ${choiceNumber}`);
                     showNotification('Choice image removed', 'success');
                     // Update requirement state after removing image
-                    updateChoiceRequirements();
+                    if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
                 } catch (error) {
                     console.error('Error removing choice image:', error);
                     showNotification('Error removing image', 'error');
                 }
+
+                    // For multiple choice, ensure each visible choice has text or image
+                    const selectedType = document.querySelector('input[name="question_type"]:checked');
+                    if (selectedType && selectedType.value === 'multiple_choice') {
+                        const choiceItems = document.querySelectorAll('.choice-item');
+                        for (let idx = 0; idx < choiceItems.length; idx++) {
+                            const i = idx + 1;
+                            const textField = document.querySelector(`#id_choices-${idx}-choice_text`);
+                            const hiddenImageInput = document.getElementById(`choice-image-url-${i}`);
+                            const textVal = textField ? textField.value.trim() : '';
+                            const hasImage = hiddenImageInput && hiddenImageInput.value && hiddenImageInput.value.trim() !== '';
+                            if (!textVal && !hasImage) {
+                                e.preventDefault();
+                                showNotification('Each choice must have text or an image', 'error');
+                                if (textField) textField.focus();
+                                return;
+                            }
+                        }
+                    }
             };
 
             // Handle correct answer checkbox changes for visual feedback
@@ -653,7 +1638,7 @@
             // Initialize correct answer checkboxes on DOM ready
             document.addEventListener('DOMContentLoaded', function() {
                 initializeChoiceCheckboxes();
-                updateChoiceRequirements();
+                if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
             });
             
             // Image Modal Functions
@@ -747,126 +1732,6 @@
                 }
             }
             
-            // Question type toggle functionality
-            // Animated show/hide helpers using max-height + opacity + translateY
-            function animateShow(el) {
-                if (!el) return;
-                el.classList.remove('qf-section-hidden');
-                el.classList.add('qf-section-visible', 'qf-section');
-
-                // Measure and set max-height to enable smooth expand
-                el.style.maxHeight = el.scrollHeight + 'px';
-
-                // After transition, clear max-height to allow natural height
-                const cleanup = () => {
-                    el.style.maxHeight = '';
-                    el.removeEventListener('transitionend', cleanup);
-                };
-                el.addEventListener('transitionend', cleanup);
-            }
-
-            function animateHide(el) {
-                if (!el) return;
-                // Ensure we have a max-height to transition from
-                el.style.maxHeight = el.scrollHeight + 'px';
-
-                // Force reflow
-                // eslint-disable-next-line no-unused-expressions
-                el.offsetHeight;
-
-                el.classList.add('qf-section-hidden');
-                el.classList.remove('qf-section-visible');
-
-                // After transition, keep it collapsed
-                const cleanup = () => {
-                    el.style.maxHeight = '0px';
-                    el.removeEventListener('transitionend', cleanup);
-                };
-                el.addEventListener('transitionend', cleanup);
-            }
-
-            // Wire radios to animated toggles
-            document.querySelectorAll('input[name="question_type"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const multipleChoiceSection = document.getElementById('multipleChoiceSection');
-                    const essaySection = document.getElementById('essaySection');
-
-                    if (this.value === 'multiple_choice') {
-                        animateShow(multipleChoiceSection);
-                        animateHide(essaySection);
-                    } else if (this.value === 'essay') {
-                        animateHide(multipleChoiceSection);
-                        animateShow(essaySection);
-                    }
-                });
-            });
-
-            // Initialize question type sections on page load with animation-friendly classes
-            (function initQuestionTypeSections() {
-                const multipleChoiceSection = document.getElementById('multipleChoiceSection');
-                const essaySection = document.getElementById('essaySection');
-                [multipleChoiceSection, essaySection].forEach(el => {
-                    if (!el) return;
-                    el.classList.add('qf-section');
-                    // default to hidden for elements that have the 'hidden' utility in the template
-                    if (el.classList.contains('hidden')) {
-                        el.classList.add('qf-section-hidden');
-                        el.classList.remove('hidden');
-                    } else {
-                        el.classList.add('qf-section-visible');
-                    }
-                });
-
-                const selectedType = document.querySelector('input[name="question_type"]:checked');
-                if (selectedType && selectedType.value === 'essay') {
-                    // show essay, hide multiple choice
-                    animateHide(multipleChoiceSection);
-                    animateShow(essaySection);
-                } else {
-                    // default: show multiple choice, hide essay
-                    animateShow(multipleChoiceSection);
-                    animateHide(essaySection);
-                }
-            })();
-
-            // Question image input removed: image uploads are handled via the Quill editor
-
-            // Delete question functionality
-            window.deleteQuestion = function() {
-                if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
-                    // You can implement delete functionality here
-                    showNotification('Delete functionality not implemented yet', 'warning');
-                }
-            };
-
-            // Form validation
-            document.getElementById('questionForm').addEventListener('submit', function(e) {
-                const questionType = document.querySelector('input[name="question_type"]:checked');
-                if (!questionType) {
-                    e.preventDefault();
-                    showNotification('Please select a question type', 'error');
-                    return;
-                }
-
-                if (questionType.value === 'multiple_choice') {
-                    // For multiple choice, ensure each visible choice has text or image
-                    const choiceItems = document.querySelectorAll('.choice-item');
-                    for (let idx = 0; idx < choiceItems.length; idx++) {
-                        const i = idx + 1;
-                        const textField = document.querySelector(`#id_choices-${idx}-choice_text`);
-                        const hiddenImageInput = document.getElementById(`choice-image-url-${i}`);
-                        const textVal = textField ? textField.value.trim() : '';
-                        const hasImage = hiddenImageInput && hiddenImageInput.value && hiddenImageInput.value.trim() !== '';
-                        if (!textVal && !hasImage) {
-                            e.preventDefault();
-                            showNotification('Each choice must have text or an image', 'error');
-                            if (textField) textField.focus();
-                            return;
-                        }
-                    }
-                }
-            });
-
             // Mobile-friendly enhancements
             if (window.innerWidth <= 768) {
                 document.querySelectorAll('input, textarea, select').forEach(input => {

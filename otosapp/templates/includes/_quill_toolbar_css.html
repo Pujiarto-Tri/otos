@@ -1,55 +1,361 @@
 <style>
-    /* Minimal, non-conflicting shared Quill toolbar CSS.
-       Keep variables here and basic container styles. Specific toolbar
-       visual tuning should be done per-page (e.g. question_form.html)
-       using the .qf-force-light modifier to avoid duplicate dark-mode rules. */
+    /* Shared Quill and editor UI styles (extracted for reuse) */
     :root {
+        /* Light theme colors */
         --qf-bg-primary: #ffffff;
         --qf-bg-secondary: #f8fafc;
         --qf-text-primary: #1f2937;
+        --qf-text-secondary: #6b7280;
         --qf-border: #e5e7eb;
         --qf-border-focus: #3b82f6;
-        --qf-toolbar-icon: #374151;
-        --qf-toolbar-accent: #3b82f6;
+        --qf-placeholder: rgba(107, 114, 128, 0.7);
     }
 
     .dark {
-        --qf-bg-primary: #111827;
+        /* Dark theme colors */
+        --qf-bg-primary: #1f2937;
         --qf-bg-secondary: #374151;
         --qf-text-primary: #f9fafb;
+        --qf-text-secondary: #d1d5db;
         --qf-border: #4b5563;
         --qf-border-focus: #60a5fa;
-        --qf-toolbar-icon: rgba(255,255,255,0.92);
-        --qf-toolbar-accent: #60a5fa;
+        --qf-placeholder: rgba(209, 213, 219, 0.7);
+        --qf-toolbar-icon: #e5e7eb;
     }
 
-    /* Basic editor container rules (non-opinionated) */
+    /* Quill Rich Text Editor Styling */
     #quill-editor .ql-toolbar.ql-snow {
-        background: var(--qf-bg-secondary);
-        border: 1px solid var(--qf-border);
-        border-radius: 0.5rem 0.5rem 0 0;
-        border-bottom: none;
+        background: var(--qf-bg-secondary) !important;
+        border: 1px solid var(--qf-border) !important;
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none !important;
+    }
+
+    .dark #quill-editor .ql-toolbar.ql-snow,
+    html.dark #quill-editor .ql-toolbar.ql-snow,
+    [data-theme="dark"] #quill-editor .ql-toolbar.ql-snow {
+        background: #374151 !important;
+        border-color: #6b7280 !important;
+    }
+
+    .dark #quill-editor .ql-toolbar,
+    html.dark #quill-editor .ql-toolbar,
+    [data-theme="dark"] #quill-editor .ql-toolbar {
+        background: rgba(255,255,255,0.03) !important;
+        border: 1px solid rgba(255,255,255,0.06) !important;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.35) inset !important;
+        color: rgba(255,255,255,0.92) !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button,
+    .dark #quill-editor .ql-toolbar .ql-picker-label {
+        color: rgba(255,255,255,0.92) !important;
+        opacity: 1 !important;
+        transition: background 120ms ease, color 120ms ease, stroke 120ms ease;
+    }
+
+    .dark #quill-editor .ql-toolbar svg,
+    .dark #quill-editor .ql-toolbar svg * {
+        stroke: currentColor !important;
+        fill: none !important;
+        opacity: 0.95 !important;
+        filter: none !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button:hover,
+    .dark #quill-editor .ql-toolbar .ql-active {
+        background: rgba(255,255,255,0.06) !important;
+        color: var(--qf-border-focus, #60a5fa) !important;
+    }
+
+    /* Force-light variant */
+    #quill-editor .ql-toolbar.force-light {
+        background: #ffffff !important;
+        color: #1f2937 !important;
+    }
+    #quill-editor .ql-toolbar.force-light svg,
+    #quill-editor .ql-toolbar.force-light svg * {
+        stroke: currentColor !important;
+        fill: none !important;
+        opacity: 1 !important;
     }
 
     #quill-editor .ql-container.ql-snow {
-        background: var(--qf-bg-primary);
-        border: 1px solid var(--qf-border);
-        border-radius: 0 0 0.5rem 0.5rem;
-        border-top: none;
+        background: var(--qf-bg-primary) !important;
+        border: 1px solid var(--qf-border) !important;
+        border-radius: 0 0 0.5rem 0.5rem !important;
+        border-top: none !important;
     }
 
     #quill-editor .ql-editor {
-        min-height: 220px;
-        background: var(--qf-bg-primary);
-        color: var(--qf-text-primary);
-        font-size: 15px;
-        line-height: 1.6;
-        padding: 12px;
+        min-height: 280px !important;
+        background: var(--qf-bg-primary) !important;
+        color: var(--qf-text-primary) !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+        font-size: 15px !important;
+        line-height: 1.6 !important;
+        padding: 16px !important;
     }
 
-    /* Keep icon rules minimal here; detailed stroke/fill control is done per-page */
-    #quill-editor .ql-toolbar svg { stroke: var(--qf-toolbar-icon); fill: none; }
+    #quill-editor .ql-toolbar button,
+    #quill-editor .ql-toolbar .ql-picker-label {
+        color: var(--qf-text-primary) !important;
+    }
 
-    /* Provide a small selector for a forced light toolbar — styled by pages */
-    #quill-editor .ql-toolbar.qf-force-light { }
+    #quill-editor .ql-toolbar button:hover,
+    #quill-editor .ql-toolbar .ql-picker-label:hover {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: var(--qf-border-focus) !important;
+    }
+
+    #quill-editor .ql-toolbar .ql-active {
+        background: rgba(59, 130, 246, 0.15) !important;
+        color: var(--qf-border-focus) !important;
+    }
+
+    #quill-editor .ql-toolbar .ql-active svg,
+    #quill-editor .ql-toolbar .ql-active svg * {
+        stroke: var(--qf-border-focus) !important;
+        fill: none !important;
+        stroke-width: 1.8 !important;
+    }
+
+    /* Theme classes applied by JS */
+    #quill-editor .ql-toolbar.qf-theme-dark button,
+    #quill-editor .ql-toolbar.qf-theme-dark .ql-picker-label {
+        color: #ffffff !important;
+        background: rgba(255,255,255,0.03) !important;
+    }
+
+    #quill-editor .ql-toolbar.qf-theme-light button,
+    #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label {
+        color: #374151 !important;
+        background: transparent !important;
+    }
+
+    #quill-editor .ql-toolbar svg {
+        stroke: currentColor !important;
+        fill: currentColor !important;
+    }
+
+    /* High specificity dark mode toolbar rules */
+    .dark #quill-editor .ql-toolbar button,
+    .dark #quill-editor .ql-toolbar .ql-picker-label,
+    html.dark #quill-editor .ql-toolbar button,
+    html.dark #quill-editor .ql-toolbar .ql-picker-label,
+    [data-theme="dark"] #quill-editor .ql-toolbar button,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label {
+        color: #ffffff !important;
+        border: 1px solid transparent !important;
+        border-radius: 0.25rem !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button:hover,
+    .dark #quill-editor .ql-toolbar .ql-picker-label:hover {
+        background: rgba(96, 165, 250, 0.25) !important;
+        border-color: rgba(96, 165, 250, 0.5) !important;
+        color: #ffffff !important;
+    }
+
+    .dark #quill-editor .ql-toolbar .ql-active {
+        background: rgba(96, 165, 250, 0.3) !important;
+        border-color: rgba(96, 165, 250, 0.6) !important;
+        color: var(--qf-border-focus) !important;
+    }
+
+    .dark #quill-editor .ql-toolbar .ql-active svg,
+    html.dark #quill-editor .ql-toolbar .ql-active svg,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg,
+    .dark #quill-editor .ql-toolbar .ql-active svg *,
+    html.dark #quill-editor .ql-toolbar .ql-active svg *,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg * {
+        stroke: var(--qf-border-focus) !important;
+        fill: none !important;
+        stroke-width: 1.8 !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button svg,
+    .dark #quill-editor .ql-toolbar .ql-picker-label svg {
+        stroke: rgba(255,255,255,0.88) !important;
+        opacity: 0.8 !important;
+        transition: stroke 140ms ease, opacity 140ms ease, stroke-width 140ms ease;
+        fill: none !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button:hover svg,
+    .dark #quill-editor .ql-toolbar .ql-active svg {
+        stroke: var(--qf-border-focus) !important;
+        opacity: 1 !important;
+        stroke-width: 1.9 !important;
+    }
+
+    .dark #quill-editor .ql-toolbar button.ql-disabled svg,
+    .dark #quill-editor .ql-toolbar .ql-picker-label.ql-disabled svg {
+        opacity: 0.28 !important;
+        stroke: rgba(255,255,255,0.5) !important;
+    }
+
+    .dark #quill-editor .ql-toolbar svg,
+    html.dark #quill-editor .ql-toolbar svg,
+    [data-theme="dark"] #quill-editor .ql-toolbar svg {
+        stroke: #ffffff !important;
+        fill: none !important;
+        opacity: 1 !important;
+        color: #ffffff !important;
+    }
+
+    /* Light mode reset */
+    html:not(.dark) #quill-editor .ql-toolbar svg,
+    html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg,
+    body:not(.dark) #quill-editor .ql-toolbar svg {
+        stroke: #374151 !important;
+        fill: none !important;
+        color: #374151 !important;
+        filter: none !important;
+    }
+
+    html:not(.dark) #quill-editor .ql-toolbar button,
+    html:not(.dark) #quill-editor .ql-toolbar .ql-picker-label,
+    html:not([data-theme="dark"]) #quill-editor .ql-toolbar button,
+    html:not([data-theme="dark"]) #quill-editor .ql-toolbar .ql-picker-label,
+    body:not(.dark) #quill-editor .ql-toolbar button,
+    body:not(.dark) #quill-editor .ql-toolbar .ql-picker-label {
+        color: #374151 !important;
+        background: transparent !important;
+    }
+
+    /* Force-light / forced theme overrides */
+    #quill-editor .ql-toolbar.ql-snow.force-light,
+    #quill-editor .ql-toolbar.force-light,
+    #quill-editor .ql-toolbar.qf-theme-light,
+    html #quill-editor .ql-toolbar.ql-snow.force-light,
+    body #quill-editor .ql-toolbar.ql-snow.force-light {
+        background: #ffffff !important;
+        border-color: var(--qf-border, #e5e7eb) !important;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.04) inset !important;
+    }
+
+    #quill-editor .ql-toolbar.ql-snow.force-light button,
+    #quill-editor .ql-toolbar.force-light button,
+    #quill-editor .ql-toolbar.qf-theme-light button,
+    #quill-editor .ql-toolbar.ql-snow.force-light .ql-picker-label,
+    #quill-editor .ql-toolbar.force-light .ql-picker-label,
+    #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label {
+        color: #111827 !important;
+        background: transparent !important;
+    }
+
+    #quill-editor .ql-toolbar.ql-snow.force-light svg,
+    #quill-editor .ql-toolbar.force-light svg,
+    #quill-editor .ql-toolbar.qf-theme-light svg,
+    #quill-editor .ql-toolbar.ql-snow.force-light svg *,
+    #quill-editor .ql-toolbar.force-light svg *,
+    #quill-editor .ql-toolbar.qf-theme-light svg * {
+        stroke: #111827 !important;
+        fill: none !important;
+        color: #111827 !important;
+        opacity: 1 !important;
+        filter: none !important;
+    }
+
+    #quill-editor .ql-toolbar.force-light button:hover svg,
+    #quill-editor .ql-toolbar.qf-theme-light button:hover svg,
+    #quill-editor .ql-toolbar.force-light .ql-active svg,
+    #quill-editor .ql-toolbar.qf-theme-light .ql-active svg {
+        stroke: var(--qf-border-focus, #3b82f6) !important;
+        opacity: 1 !important;
+    }
+
+    /* Final hover/active strong overrides */
+    #quill-editor .ql-toolbar button:hover,
+    #quill-editor .ql-toolbar .ql-active,
+    .dark #quill-editor .ql-toolbar button:hover,
+    .dark #quill-editor .ql-toolbar .ql-active,
+    html.dark #quill-editor .ql-toolbar button:hover,
+    html.dark #quill-editor .ql-toolbar .ql-active,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active {
+        color: var(--qf-border-focus, #3b82f6) !important;
+        background: rgba(255,255,255,0.04) !important;
+    }
+
+    #quill-editor .ql-toolbar button:hover svg,
+    #quill-editor .ql-toolbar .ql-active svg,
+    .dark #quill-editor .ql-toolbar button:hover svg,
+    .dark #quill-editor .ql-toolbar .ql-active svg,
+    html.dark #quill-editor .ql-toolbar button:hover svg,
+    html.dark #quill-editor .ql-toolbar .ql-active svg,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg {
+        stroke: currentColor !important;
+        stroke: var(--qf-border-focus, #3b82f6) !important;
+        opacity: 1 !important;
+        stroke-width: 1.9 !important;
+        fill: none !important;
+    }
+
+    #quill-editor .ql-toolbar button.ql-disabled svg,
+    .dark #quill-editor .ql-toolbar button.ql-disabled svg {
+        opacity: 0.28 !important;
+        stroke: rgba(255,255,255,0.5) !important;
+    }
+
+    /* Target svg children on hover/active */
+    html.dark #quill-editor .ql-toolbar button:hover svg path,
+    html.dark #quill-editor .ql-toolbar button:hover svg line,
+    html.dark #quill-editor .ql-toolbar button:hover svg rect,
+    html.dark #quill-editor .ql-toolbar button:hover svg circle,
+    html.dark #quill-editor .ql-toolbar button:hover svg polygon,
+    html.dark #quill-editor .ql-toolbar .ql-active svg path,
+    html.dark #quill-editor .ql-toolbar .ql-active svg line,
+    html.dark #quill-editor .ql-toolbar .ql-active svg rect,
+    html.dark #quill-editor .ql-toolbar .ql-active svg circle,
+    html.dark #quill-editor .ql-toolbar .ql-active svg polygon,
+    .dark #quill-editor .ql-toolbar button:hover svg path,
+    .dark #quill-editor .ql-toolbar button:hover svg line,
+    .dark #quill-editor .ql-toolbar button:hover svg rect,
+    .dark #quill-editor .ql-toolbar button:hover svg circle,
+    .dark #quill-editor .ql-toolbar button:hover svg polygon,
+    .dark #quill-editor .ql-toolbar .ql-active svg path,
+    .dark #quill-editor .ql-toolbar .ql-active svg line,
+    .dark #quill-editor .ql-toolbar .ql-active svg rect,
+    .dark #quill-editor .ql-toolbar .ql-active svg circle,
+    .dark #quill-editor .ql-toolbar .ql-active svg polygon,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg path,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg line,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg rect,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg circle,
+    [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg polygon,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg path,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg line,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg rect,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg circle,
+    [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg polygon {
+        stroke: var(--qf-border-focus, #60a5fa) !important;
+        opacity: 1 !important;
+        stroke-width: 1.9 !important;
+        fill: none !important;
+    }
+
+    /* Classes added by JS after SVG sanitization */
+    #quill-editor .ql-toolbar .qf-svg-icon,
+    #quill-editor .ql-toolbar .qf-svg-icon *,
+    #quill-editor .ql-toolbar .qf-svg-child {
+        stroke: currentColor !important;
+        fill: none !important;
+        opacity: 0.95 !important;
+        transition: stroke 140ms ease, opacity 140ms ease, stroke-width 120ms ease;
+    }
+
+    #quill-editor .ql-toolbar button:hover .qf-svg-icon,
+    #quill-editor .ql-toolbar .ql-active .qf-svg-icon,
+    .dark #quill-editor .ql-toolbar button:hover .qf-svg-icon,
+    .dark #quill-editor .ql-toolbar .ql-active .qf-svg-icon,
+    html.dark #quill-editor .ql-toolbar button:hover .qf-svg-icon,
+    html.dark #quill-editor .ql-toolbar .ql-active .qf-svg-icon {
+        stroke: var(--qf-border-focus, #60a5fa) !important;
+        opacity: 1 !important;
+        stroke-width: 1.9 !important;
+    }
 </style>

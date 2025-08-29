@@ -92,67 +92,57 @@ document.addEventListener('DOMContentLoaded', function() {
                                   document.body.classList.contains('dark') ||
                                   !!document.querySelector('[data-theme="dark"]');
 
-            // Apply .qf-force-light to toolbar when in dark mode to force a white toolbar.
-            // This is a lightweight toggle that cleans inline styles and lets CSS control visuals.
-            function applyForceLightToToolbar() {
+            setTimeout(function tryToolbarInit(retry = 0) {
                 const toolbar = document.querySelector('#quill-editor .ql-toolbar');
-                if (!toolbar) return null;
-
-                // Remove previously set inline styles that block CSS rules
-                toolbar.querySelectorAll('*').forEach(el => {
-                    try { el.removeAttribute('style'); } catch (e) {}
-                });
-
-                // Use the canonical modifier class; pages will style .qf-force-light via CSS
-                toolbar.classList.add('qf-force-light');
-                toolbar.classList.remove('force-light'); // normalize any old class names
-
-                // Clean up text/bg utility classes to avoid Tailwind/Flowbite tug-of-war
-                toolbar.querySelectorAll('[class*="text-"]').forEach(el => {
-                    el.classList.remove(...Array.from(el.classList).filter(c => c.startsWith('text-')));
-                });
-
-                // Ensure buttons are focusable and not visually disabled
-                toolbar.querySelectorAll('button, .ql-picker-label').forEach(button => {
-                    try { button.removeAttribute('disabled'); } catch (e) {}
-                    try { button.removeAttribute('aria-disabled'); } catch (e) {}
-                    if (button.tabIndex < 0) button.tabIndex = 0;
-                });
-
-                return toolbar;
-            }
-
-            // Initial attempt (retry a few times if Quill toolbar isn't injected yet)
-            (function initialToolbarApply(attempt = 0) {
-                const t = applyForceLightToToolbar();
-                if (!t && attempt < 6) setTimeout(() => initialToolbarApply(attempt + 1), 120);
-            })();
-
-            // Observe theme changes to reapply when necessary
-            const themeObserver = new MutationObserver((mutations) => {
-                let docClassChanged = false;
-                for (const m of mutations) {
-                    if (m.type === 'attributes' && (m.attributeName === 'class' || m.attributeName === 'data-theme')) {
-                        docClassChanged = true;
-                        break;
-                    }
+                if (!toolbar && retry < 5) {
+                    return setTimeout(() => tryToolbarInit(retry + 1), 120);
                 }
-                if (!docClassChanged) return;
 
-                const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark') || !!document.querySelector('[data-theme="dark"]');
-                const toolbar = document.querySelector('#quill-editor .ql-toolbar');
-                if (!toolbar) return;
-
-                if (isDark) {
-                    applyForceLightToToolbar();
-                } else {
-                    // Remove the forced-light modifier so page CSS can return to normal
-                    toolbar.classList.remove('qf-force-light');
+                if (!initialIsDark) {
+                    return;
                 }
-            });
 
-            themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'], attributeOldValue: true });
-            themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'], attributeOldValue: true });
+                if (toolbar) {
+                    toolbar.classList.add('force-light', 'qf-theme-light');
+                    toolbar.classList.remove('qf-theme-dark');
+
+                    toolbar.style.setProperty('background-color', '#ffffff', 'important');
+                    toolbar.style.setProperty('border-color', 'var(--qf-border, #e5e7eb)', 'important');
+                    toolbar.style.setProperty('box-shadow', '0 1px 0 rgba(0,0,0,0.04) inset', 'important');
+                    toolbar.style.setProperty('pointer-events', 'auto', 'important');
+                    toolbar.style.setProperty('position', 'relative', 'important');
+                    toolbar.style.setProperty('z-index', '9999', 'important');
+
+                    toolbar.querySelectorAll('[class*="text-"]').forEach(el => el.classList.remove(...Array.from(el.classList).filter(c => c.startsWith('text-'))));
+
+                    const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
+                    buttons.forEach(button => {
+                        button.style.setProperty('color', '#111827', 'important');
+                        button.style.setProperty('background', 'transparent', 'important');
+                        button.style.setProperty('border', 'none', 'important');
+                        button.style.setProperty('pointer-events', 'auto', 'important');
+                        try { button.removeAttribute('disabled'); } catch(e){}
+                        try { button.removeAttribute('aria-disabled'); } catch(e){}
+                        if (button.tabIndex < 0) button.tabIndex = 0;
+
+                        button.classList.remove(...Array.from(button.classList).filter(c => c.startsWith('text-') || c.startsWith('bg-') || c.startsWith('hover:')));
+
+                        const svgs = button.querySelectorAll('svg');
+                        svgs.forEach(svg => {
+                            try { svg.removeAttribute('style'); } catch(e){}
+                            try { svg.removeAttribute('stroke'); svg.removeAttribute('fill'); } catch(e){}
+                            svg.classList.add('qf-svg-icon');
+
+                            const children = svg.querySelectorAll('*');
+                            children.forEach(child => {
+                                try { child.removeAttribute('style'); } catch(e){}
+                                try { child.removeAttribute('stroke'); child.removeAttribute('fill'); } catch(e){}
+                                child.classList.add('qf-svg-child');
+                            });
+                        });
+                    });
+                }
+            }, 100);
 
             // Observer for theme changes and toolbar DOM changes
             const observer = new MutationObserver(function(mutations) {
