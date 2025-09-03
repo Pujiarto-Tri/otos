@@ -1,87 +1,241 @@
 {% load humanize %}
 <!-- Public Home for Non-Authenticated Users -->
-<div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
-    <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
-    <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
-    
-    <div class="relative z-10 text-center">
-        <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-            <span class="text-white text-4xl">👤</span>
+
+<!-- Hero Section -->
+<section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl">
+	<div class="absolute inset-0 opacity-20">
+		<svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1440 560">
+			<path fill="currentColor" d="M0,64L80,106.7C160,149,320,235,480,234.7C640,235,800,149,960,144C1120,139,1280,213,1360,250.7L1440,288L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
+		</svg>
+	</div>
+	<div class="relative z-10 px-6 py-16 sm:px-12 lg:px-16">
+		<div class="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+			<div>
+				<div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur-sm">
+					<span class="text-yellow-300">✨</span>
+					<span class="text-sm">Bimbel UTBK & Mandiri • SMA/SMK/MA</span>
         </div>
-        <h2 class="text-3xl md:text-4xl font-bold mb-4">Selamat Datang di Sistem Ujian</h2>
-        <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Bergabunglah dengan platform ujian online terbaik. Akses dashboard personal Anda dan mulai belajar!
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{% url 'login' %}" class="px-8 py-4 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105">
-                <div class="flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
-                    </svg>
-                    Masuk
-                </div>
-            </a>
-            <a href="{% url 'register' %}" class="px-8 py-4 bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/30 transition-all duration-300 font-bold text-lg">
-                <div class="flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                    </svg>
-                    Daftar
-                </div>
-            </a>
+				<h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">
+					Raih PTN Impian dengan Brainest
+				</h1>
+				<p class="mt-4 text-white/90 text-lg max-w-xl">
+					Belajar terstruktur, latihan soal adaptif, dan analisis nilai UTBK/mandiri. Siap bertarung untuk masuk perguruan tinggi negeri.
+				</p>
+				<div class="mt-8 flex flex-col sm:flex-row gap-4">
+					<a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-xl bg-white text-blue-700 px-6 py-3 font-semibold shadow-lg hover:shadow-xl hover:bg-gray-50 transition">
+						Mulai Gratis
+						<svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+					</a>
+					<a href="#pricing" class="inline-flex items-center justify-center rounded-xl bg-white/20 border border-white/30 text-white px-6 py-3 font-semibold hover:bg-white/30 transition">
+						Lihat Paket
+					</a>
+				</div>
+				<div class="mt-6 flex items-center gap-6 text-sm text-white/80">
+					<div class="flex items-center gap-2"><span class="text-emerald-300">✓</span> Tryout UTBK mingguan</div>
+					<div class="flex items-center gap-2"><span class="text-emerald-300">✓</span> Pembahasan lengkap</div>
+					<div class="flex items-center gap-2"><span class="text-emerald-300">✓</span> Rekomendasi Universitas</div>
+				</div>
+			</div>
+			<div class="hidden lg:block">
+				<div class="relative">
+					<div class="absolute -inset-4 rounded-2xl bg-white/10 blur-2xl"></div>
+					<div class="relative rounded-2xl bg-white/10 border border-white/20 p-4 backdrop-blur-md">
+						<div class="grid grid-cols-2 gap-4">
+							<div class="rounded-xl bg-white/80 text-gray-800 p-4 shadow-sm">
+								<div class="text-xs text-gray-500">Skor Prediksi</div>
+								<div class="text-3xl font-bold">742</div>
+								<div class="mt-1 text-emerald-600 text-xs">+12 dari minggu lalu</div>
+							</div>
+							<div class="rounded-xl bg-white/80 text-gray-800 p-4 shadow-sm">
+								<div class="text-xs text-gray-500">Rangking</div>
+								<div class="text-3xl font-bold">Top 8%</div>
+								<div class="mt-1 text-blue-600 text-xs">Nasional</div>
+							</div>
+							<div class="col-span-2 rounded-xl bg-white/80 text-gray-800 p-4 shadow-sm">
+								<div class="flex items-center justify-between">
+									<div class="text-sm">Kemajuan Mingguan</div>
+									<div class="text-xs text-gray-500">TPS • Lit. B. Indonesia • Matematika</div>
+								</div>
+								<div class="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+									<div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2.5 rounded-full" style="width: 68%"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Trust / Stats -->
+<section class="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-5 shadow border border-gray-200 dark:border-gray-700 text-center">
+		<div class="text-2xl font-bold text-blue-600">50K+</div>
+		<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Soal Latihan</div>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-5 shadow border border-gray-200 dark:border-gray-700 text-center">
+		<div class="text-2xl font-bold text-blue-600">1,500+</div>
+		<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Siswa Aktif</div>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-5 shadow border border-gray-200 dark:border-gray-700 text-center">
+		<div class="text-2xl font-bold text-blue-600">Top 10%</div>
+		<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Rata-rata Ranking</div>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-5 shadow border border-gray-200 dark:border-gray-700 text-center">
+		<div class="text-2xl font-bold text-blue-600">24/7</div>
+		<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Akses Materi</div>
+	</div>
+</section>
+
+<!-- Features -->
+<section class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="flex items-center gap-3 mb-2">
+			<div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+				</svg>
+			</div>
+			<h3 class="font-semibold text-lg dark:text-white">Tryout UTBK Adaptif</h3>
+		</div>
+		<p class="mt-6 text-sm text-gray-600 dark:text-gray-400">Paket TPS, Literasi, dan Matematika dengan tingkat kesulitan menyesuaikan performa.</p>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="flex items-center gap-3 mb-2">
+			<div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>
+			</div>
+			<h3 class="font-semibold text-lg dark:text-white">Pembahasan Interaktif</h3>
+		</div>
+		<p class="mt-6 text-sm text-gray-600 dark:text-gray-400">Rasionalisasi langkah demi langkah, tips cepat, dan perangkap soal.</p>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="flex items-center gap-3 mb-2">
+			<div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.79-3 4s1.343 4 3 4 3-1.79 3-4-1.343-4-3-4z"/></svg>
+			</div>
+			<h3 class="font-semibold text-lg dark:text-white">Analitik & Rekomendasi</h3>
+		</div>
+		<p class="mt-6 text-sm text-gray-600 dark:text-gray-400">Prediksi skor, rekomendasi jurusan/PTN, dan saran belajar personal.</p>
+	</div>
+</section>
+
+<!-- Steps -->
+<section class="mt-12 rounded-2xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+	<h3 class="text-xl font-bold dark:text-white">Cara Mulai</h3>
+	<div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+		<div class="flex items-start gap-4">
+			<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">1</div>
+			<div>
+				<div class="font-semibold dark:text-white">Daftar Akun</div>
+				<div class="text-sm text-gray-600 dark:text-gray-400">Buat akun dan pilih paket sesuai target.</div>
+			</div>
+		</div>
+		<div class="flex items-start gap-4">
+			<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">2</div>
+			<div>
+				<div class="font-semibold dark:text-white">Ikuti Tryout</div>
+				<div class="text-sm text-gray-600 dark:text-gray-400">Kerjakan simulasi UTBK/mandiri dan evaluasi hasil.</div>
+			</div>
+		</div>
+		<div class="flex items-start gap-4">
+			<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">3</div>
+			<div>
+				<div class="font-semibold dark:text-white">Upgrade Skor</div>
+				<div class="text-sm text-gray-600 dark:text-gray-400">Ikuti rekomendasi belajar untuk naik peringkat.</div>
         </div>
     </div>
 </div>
+</section>
 
-<!-- Featured Packages Preview -->
+<!-- Testimonials -->
+<section class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="text-sm text-gray-600 dark:text-gray-400">“Soalnya mirip UTBK asli. Skor aku naik signifikan!”</div>
+		<div class="mt-3 font-semibold dark:text-white">Alya • SMA 12</div>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="text-sm text-gray-600 dark:text-gray-400">“Pembahasan jelas, bikin paham konsep. Recommended.”</div>
+		<div class="mt-3 font-semibold dark:text-white">Rafi • SMK 7</div>
+	</div>
+	<div class="rounded-xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+		<div class="text-sm text-gray-600 dark:text-gray-400">“Fitur prediksi jurusan ngebantu banget tentuin target.”</div>
+		<div class="mt-3 font-semibold dark:text-white">Naya • MA 3</div>
+	</div>
+</section>
+
+<!-- Pricing / Featured Packages Preview -->
+<section id="pricing" class="mt-12">
+	<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Paket Berlangganan</h3>
 {% if featured_packages %}
-<div class="mt-12">
-    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-        💎 Paket Berlangganan Unggulan
-    </h3>
     <div class="grid grid-cols-1 md:grid-cols-{{ featured_packages|length }} gap-6 mb-8">
         {% for package in featured_packages %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 ring-2 ring-blue-500 dark:ring-blue-400">
-            <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4">
-                ⭐ Terpopuler
-            </div>
-            
-            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ package.name }}</h4>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                <span class="text-lg text-gray-500 dark:text-gray-400">Rp</span>
+			<div class="relative rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow p-6 overflow-hidden">
+				<div class="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-blue-500/10"></div>
+				<div class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4">Unggulan</div>
+				<h4 class="text-lg font-bold text-gray-900 dark:text-white">{{ package.name }}</h4>
+				<div class="mt-2 text-3xl font-extrabold text-gray-900 dark:text-white">
+					<span class="text-base text-gray-500 dark:text-gray-400 align-top">Rp</span>
                 {{ package.price|floatformat:0|intcomma }}
             </div>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">{{ package.duration_days }} hari akses</p>
-            
-            <div class="mb-6">
-                <ul class="space-y-2">
+				<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ package.duration_days }} hari akses</p>
+				<ul class="mt-4 space-y-2">
                     {% for feature in package.get_features_list|slice:":4" %}
-                    <li class="flex items-center text-sm">
-                        <span class="text-green-500 mr-2">✅</span>
-                        <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span>
-                    </li>
+					<li class="flex items-center text-sm"><span class="text-emerald-500 mr-2">✓</span> <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span></li>
                     {% endfor %}
                 </ul>
-            </div>
-            
-            <a href="{% url 'register' %}" 
-               class="w-full inline-flex items-center justify-center px-4 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <span class="mr-2 text-2xl">👁️</span>
+				<a href="{% url 'register' %}" class="mt-6 w-full inline-flex items-center justify-center px-4 py-3 text-base font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl shadow transition">
                 Daftar & Berlangganan
             </a>
         </div>
         {% endfor %}
     </div>
-    
     <div class="text-center">
-        <a href="{% url 'subscription_packages' %}" 
-           class="inline-flex items-center px-6 py-3 text-lg font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl transition-all duration-300">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
+			<a href="{% url 'subscription_packages' %}" class="inline-flex items-center px-6 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl transition">
             Lihat Semua Paket
         </a>
     </div>
-</div>
-{% endif %}
+	{% else %}
+		<div class="text-center text-sm text-gray-600 dark:text-gray-400">Paket akan tersedia segera.</div>
+	{% endif %}
+</section>
+
+<!-- FAQ -->
+<section class="mt-12 rounded-2xl bg-white dark:bg-gray-800 p-6 shadow border border-gray-200 dark:border-gray-700">
+	<h3 class="text-xl font-bold dark:text-white">Pertanyaan Umum</h3>
+	<div class="mt-4 divide-y divide-gray-200 dark:divide-gray-700" id="faq-accordion" data-accordion="collapse">
+		<div class="py-4">
+			<button class="group flex w-full items-center justify-between" type="button" data-accordion-target="#faq1" aria-expanded="false" aria-controls="faq1">
+				<span class="font-medium text-left dark:text-white">Apakah ada kelas live?</span>
+				<svg class="w-5 h-5 shrink-0 text-gray-700 dark:text-white transform transition-transform duration-200 group-aria-expanded:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			<div id="faq1" class="hidden mt-2 text-sm text-gray-600 dark:text-gray-400">Ya Untuk Premium Class ada Live Class Setiap Hari.</div>
+		</div>
+		<div class="py-4">
+			<button class="group flex w-full items-center justify-between" type="button" data-accordion-target="#faq2" aria-expanded="false" aria-controls="faq2">
+				<span class="font-medium text-left dark:text-white">Apakah bisa bayar per bulan?</span>
+				<svg class="w-5 h-5 shrink-0 text-gray-700 dark:text-white transform transition-transform duration-200 group-aria-expanded:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			<div id="faq2" class="hidden mt-2 text-sm text-gray-600 dark:text-gray-400">Tersedia paket fleksibel, silakan cek halaman paket untuk detail.</div>
+		</div>
+	</div>
+</section>
+
+<!-- Final CTA -->
+<section class="mt-12 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 shadow">
+	<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+		<div>
+			<h3 class="text-2xl font-bold">Siap Naik Skor UTBK?</h3>
+			<p class="text-white/90">Gabung sekarang, mulai latihan pertama Anda hari ini.</p>
+		</div>
+		<div class="flex gap-3">
+			<a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-xl bg-white text-blue-700 px-6 py-3 font-semibold shadow hover:bg-gray-50">Daftar</a>
+			<a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-white/20 border border-white/30 text-white px-6 py-3 font-semibold hover:bg-white/30">Masuk</a>
+		</div>
+	</div>
+</section>
