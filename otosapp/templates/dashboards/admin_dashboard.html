@@ -4,10 +4,10 @@
 
 <!-- Overview Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    {% include 'components/stat_card.html' with title='Total Pendapatan' prefix='Rp ' value=admin_stats.total_revenue|floatformat:"0"|intcomma gradient='from-green-400 to-green-600' icon='💰' %}
-    {% include 'components/stat_card.html' with title='Pendapatan Bulan Ini' prefix='Rp ' value=admin_stats.current_month_revenue|floatformat:"0"|intcomma gradient='from-blue-400 to-blue-600' icon='📅' %}
-    {% include 'components/stat_card.html' with title='Total Users' value=admin_stats.total_users gradient='from-purple-400 to-purple-600' icon='👥' %}
-    {% include 'components/stat_card.html' with title='Langganan Aktif' value=admin_stats.active_subscriptions gradient='from-orange-400 to-orange-600' icon='📜' %}
+    {% include 'components/admin/admin_stat_card.html' with title='Total Pendapatan' prefix='Rp ' value=admin_stats.total_revenue|floatformat:"0"|intcomma icon='💰' subtext=admin_stats.total_revenue_change %}
+    {% include 'components/admin/admin_stat_card.html' with title='Pendapatan Bulan Ini' prefix='Rp ' value=admin_stats.current_month_revenue|floatformat:"0"|intcomma icon='📅' subtext=admin_stats.current_month_revenue_change %}
+    {% include 'components/admin/admin_stat_card.html' with title='Total Users' value=admin_stats.total_users icon='👥' subtext=admin_stats.new_users_today %}
+    {% include 'components/admin/admin_stat_card.html' with title='Langganan Aktif' value=admin_stats.active_subscriptions icon='📜' subtext=admin_stats.subscriptions_change %}
 </div>
 
 <!-- Payment & Subscription Analytics -->

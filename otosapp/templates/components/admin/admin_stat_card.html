@@ -1,0 +1,15 @@
+{# Admin-styled stat card modeled after public_home cards #}
+<div class="rounded-xl bg-white/80 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">{{ title }}</div>
+      <div class="text-3xl font-bold mt-1 text-gray-900 dark:text-white">{{ prefix|default:"" }}{{ value }}</div>
+      {% if subtext %}<div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ subtext }}</div>{% endif %}
+    </div>
+    {% if icon %}
+    <div class="w-12 h-12 bg-white/20 dark:bg-white/10 rounded-lg flex items-center justify-center text-2xl text-gray-700 dark:text-gray-200">
+      {{ icon|safe }}
+    </div>
+    {% endif %}
+  </div>
+</div>
