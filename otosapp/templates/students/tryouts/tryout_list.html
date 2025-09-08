@@ -390,6 +390,7 @@
                         <div>
                             <h5 class="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-3">Perhatian Penting!</h5>
                             <ul class="space-y-2 text-sm text-amber-700 dark:text-amber-300">
+                                <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Disarankan untuk menggunakan Komputer/Laptop atau Tablet/Ipad</li>
                                 <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Timer akan mulai berjalan segera setelah Anda mengklik "Mulai Sekarang"</li>
                                 <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Anda dapat keluar dan masuk kembali, namun timer tetap berjalan</li>
                                 <li class="flex items-start"><svg class="w-4 h-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>Ujian akan otomatis berakhir ketika waktu habis</li>
@@ -402,10 +403,11 @@
                 <!-- Ready Check -->
                 <div class="text-center mb-8">
                     <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">Apakah Anda sudah siap untuk memulai tryout ini?</p>
-                    <div class="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span class="text-sm font-medium text-green-700 dark:text-green-300">Semua informasi telah dibaca</span>
-                    </div>
+                        <button id="confirm-read-btn" type="button" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors" aria-pressed="false" aria-describedby="confirm-read-hint">
+                            <svg id="confirm-read-icon" class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                            <span id="confirm-read-text">Saya sudah membaca semua informasi</span>
+                        </button>
+                        <div id="confirm-read-hint" class="mt-2 text-xs text-gray-500 dark:text-gray-400">Tombol "Mulai Sekarang" akan aktif setelah konfirmasi.</div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -488,6 +490,52 @@ document.addEventListener('DOMContentLoaded', function() {
             hideStartWarning();
         }
     });
+    // Confirmation flow: require user to confirm they read info before enabling start
+    const confirmBtn = document.getElementById('confirm-read-btn');
+    const confirmIcon = document.getElementById('confirm-read-icon');
+    const confirmText = document.getElementById('confirm-read-text');
+    const startNowBtn = document.getElementById('start-now-button');
+
+    function setConfirmed(confirmed) {
+        confirmBtn.setAttribute('aria-pressed', confirmed ? 'true' : 'false');
+        if (confirmed) {
+            confirmBtn.classList.remove('bg-gray-100', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+            confirmBtn.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-300');
+            confirmIcon.style.display = 'inline-block';
+            confirmText.textContent = 'Dikonfirmasi: Siap memulai';
+            // enable start button
+            startNowBtn.removeAttribute('disabled');
+            startNowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            confirmBtn.classList.add('bg-gray-100', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+            confirmBtn.classList.remove('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-300');
+            confirmIcon.style.display = 'none';
+            confirmText.textContent = 'Saya sudah membaca semua informasi';
+            // disable start button
+            startNowBtn.setAttribute('disabled', 'disabled');
+            startNowBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    // initialize disabled state
+    setConfirmed(false);
+
+    confirmBtn.addEventListener('click', function() {
+        const pressed = confirmBtn.getAttribute('aria-pressed') === 'true';
+        setConfirmed(!pressed);
+    });
+
+    // reset confirmation when opening modal
+    const originalShowStartWarning = showStartWarning;
+    window.showStartWarning = function(button) {
+        // reset confirm state each time modal opens
+        setConfirmed(false);
+        // set modal data and show
+        originalShowStartWarning(button);
+    };
+    // also reset when modal closed
+    const closeButtons = document.querySelectorAll('[onclick="hideStartWarning()"]');
+    closeButtons.forEach(btn => btn.addEventListener('click', function() { setConfirmed(false); }));
 });
 </script>
 
