@@ -33,7 +33,8 @@ module.exports = {
     'border-yellow-700',
     'dark:bg-yellow-900/30',
     'dark:text-yellow-400',
-    'dark:border-yellow-700'
+    'dark:border-yellow-700',
+    'rotate-180'
   ],
 
   darkMode: 'class',
