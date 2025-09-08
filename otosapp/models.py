@@ -133,9 +133,9 @@ class Role(models.Model):
 
 class Category(models.Model):
     SCORING_METHODS = [
-        ('default', 'Default (100/jumlah soal)'),
-        ('custom', 'Custom (nilai per soal)'),
-        ('utbk', 'UTBK (difficulty-based)'),
+        ('default', 'Default'),
+        ('custom', 'Custom'),
+        ('utbk', 'UTBK'),
     ]
     
     category_name = models.CharField(max_length=200)
