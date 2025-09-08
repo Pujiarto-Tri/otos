@@ -140,6 +140,33 @@
 									{% endfor %}
 								</ul>
 								{% endif %}
+
+								{# Show question explanation/pembahasan if available. q may be a plain question or an Answer proxy; try multiple sources. #}
+								{# Robustly resolve explanation: prefer q.explanation, then q.question_obj.explanation, then q.question.explanation. Use 'in' to avoid missing-key lookups. #}
+								{% if q.explanation %}
+								<details class="mt-3 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-md border border-gray-100 dark:border-gray-700">
+									<summary class="cursor-pointer outline-none text-sm font-semibold text-blue-600 dark:text-blue-400">Lihat Pembahasan</summary>
+									<div class="mt-2 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+										{{ q.explanation|safe }}
+									</div>
+								</details>
+								{% elif 'question_obj' in q and q.question_obj.explanation %}
+								<details class="mt-3 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-md border border-gray-100 dark:border-gray-700">
+									<summary class="cursor-pointer outline-none text-sm font-semibold text-blue-600 dark:text-blue-400">Lihat Pembahasan</summary>
+									<div class="mt-2 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+										{{ q.question_obj.explanation|safe }}
+									</div>
+								</details>
+								{% elif 'question' in q and q.question.explanation %}
+								<details class="mt-3 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-md border border-gray-100 dark:border-gray-700">
+									<summary class="cursor-pointer outline-none text-sm font-semibold text-blue-600 dark:text-blue-400">Lihat Pembahasan</summary>
+									<div class="mt-2 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+										{{ q.question.explanation|safe }}
+									</div>
+								</details>
+								{% else %}
+								<div class="mt-3 text-sm text-gray-500 dark:text-gray-400 italic">Pembahasan belum tersedia.</div>
+								{% endif %}
 							</div>
 							<div class="w-28 text-right">
 								{% if q.is_correct %}
