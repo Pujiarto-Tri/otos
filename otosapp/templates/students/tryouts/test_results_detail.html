@@ -52,11 +52,49 @@
 
 			// initialize default
 			document.addEventListener('DOMContentLoaded', () => showTab('packages'));
+
+			// When a category/subtest card is clicked, show only questions for that category
+			function filterQuestionsFromElement(el){
+				const cat = el.dataset.cat || '';
+				filterQuestions(cat);
+				// mark active card
+				document.querySelectorAll('.subtest-card').forEach(c => c.classList.remove('ring-2','ring-blue-400'));
+				if (el) el.classList.add('ring-2','ring-blue-400');
+			}
+
+			function filterQuestions(cat){
+				// open Per Soal tab
+				showTab('categories');
+				const qCards = document.querySelectorAll('.question-card');
+				let any=false;
+				qCards.forEach(card => {
+					const c = card.dataset.cat || '';
+					if (!cat || c === cat){
+						card.classList.remove('hidden');
+						any = true;
+					} else {
+						card.classList.add('hidden');
+					}
+				});
+				if (any){
+					const first = document.querySelector('.question-card:not(.hidden)');
+					if (first) first.scrollIntoView({behavior:'smooth', block:'start'});
+				}
+			}
+
+			// Reset filter and remove active indicator
+			function resetQuestionFilter(){
+				document.querySelectorAll('.question-card').forEach(card => card.classList.remove('hidden'));
+				document.querySelectorAll('.subtest-card').forEach(c => c.classList.remove('ring-2','ring-blue-400'));
+				// show all questions in the "Per Soal" tab
+				showTab('categories');
+			}
 			</script>
 				<div class="mt-4 flex justify-center mb-8">
 					<div class="bg-gray-100 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-1 rounded-lg shadow-sm">
 						<button id="packages-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-white bg-blue-600 shadow-sm hover:bg-blue-700" onclick="showTab('packages')">Per Subtest</button>
 						<button id="categories-tab" class="px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" onclick="showTab('categories')">Per Soal</button>
+						<button class="ml-2 px-4 py-2 text-sm text-gray-600 bg-white rounded-md shadow-sm hover:bg-gray-50" onclick="resetQuestionFilter()">Tampilkan Semua</button>
 					</div>
 				</div>
 			<!-- Single Results container: summary + placeholders for other sections -->
@@ -76,7 +114,9 @@
 					<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Per Subtest</h3>
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{% for stat in stats_by_category %}
-						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 transform hover:scale-[1.01] transition">
+						{# subtest card: store category/name in data-cat and make clickable to filter questions #}
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 transform hover:scale-[1.01] transition cursor-pointer subtest-card" onclick="filterQuestionsFromElement(this)"
+							data-cat="{% if stat.category_name %}{{ stat.category_name }}{% elif stat.name %}{{ stat.name }}{% else %}{% endif %}">
 							{% if stat.category_name %}
 							<div class="mb-3">
 								<span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700/60 dark:text-slate-100">{{ stat.category_name }}</span>
@@ -117,7 +157,16 @@
 				<h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Per Soal</h3>
 				<div class="space-y-4">
 					{% for q in questions %}
-					<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+					{# compute a category label for client-side filtering using explicit branches to avoid template tag mismatch #}
+					{% if q.category_name %}
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 question-card" data-cat="{{ q.category_name }}">
+					{% elif q.question_obj and q.question_obj.category %}
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 question-card" data-cat="{{ q.question_obj.category.category_name }}">
+					{% elif q.question and q.question.category %}
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 question-card" data-cat="{{ q.question.category.category_name }}">
+					{% else %}
+						<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700 question-card" data-cat="">
+					{% endif %}
 						<div class="flex items-start gap-4">
 							<div class="w-10 flex-shrink-0">
 								<div class="text-xs text-gray-500 dark:text-gray-400">No</div>
