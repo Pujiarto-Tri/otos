@@ -101,6 +101,47 @@
                     const perFieldError = document.getElementById('adminPhoneFieldError');
                     if (perFieldError){ perFieldError.classList.add('hidden'); perFieldError.textContent = ''; }
                 });
+                // If current user is Operator, prevent assigning Admin role via the form UI
+                try {
+                    const currentUserRole = '{% if user.role.role_name %}{{ user.role.role_name|escapejs }}{% else %}{{ user.role|default:''|escapejs }}{% endif %}';
+                    if (currentUserRole === 'Operator') {
+                        const roleField = form.querySelector('[name="role"]');
+                        if (roleField && roleField.tagName.toLowerCase() === 'select') {
+                            // find option labelled 'Admin' (case-insensitive)
+                            let adminOption = null;
+                            for (const opt of Array.from(roleField.options)) {
+                                if (opt.text && opt.text.trim().toLowerCase() === 'admin') {
+                                    adminOption = opt;
+                                    break;
+                                }
+                            }
+                            if (adminOption) {
+                                // disable and hide the Admin option so operator cannot pick it
+                                adminOption.disabled = true;
+                                try { adminOption.hidden = true; } catch(e){}
+
+                                // if Admin is currently selected (editing existing user), switch to first non-admin option
+                                if (roleField.value === adminOption.value) {
+                                    const fallback = Array.from(roleField.options).find(o => !o.disabled && o.value !== adminOption.value);
+                                    if (fallback) {
+                                        roleField.value = fallback.value;
+                                        // show a small inline warning
+                                        let warn = document.getElementById('role-operator-warning');
+                                        if (!warn) {
+                                            warn = document.createElement('p');
+                                            warn.id = 'role-operator-warning';
+                                            warn.className = 'text-sm text-yellow-600 mt-2';
+                                            warn.textContent = 'Operator tidak dapat memberikan role Admin; role otomatis diubah.';
+                                            roleField.parentNode.appendChild(warn);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('role-restriction error', err);
+                }
             })();
         </script>
     </div>

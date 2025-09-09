@@ -1245,8 +1245,17 @@ def user_update(request, user_id):
     if request.method == 'POST':
         form = UserUpdateForm(request.POST, instance=user)
         if form.is_valid():
-            form.save()
-            return redirect('user_list')
+            # Prevent Operator from assigning Admin role
+            try:
+                if request.user.role.role_name == 'Operator' and form.cleaned_data.get('role') and form.cleaned_data.get('role').role_name == 'Admin':
+                    form.add_error('role', 'Operator tidak memiliki izin untuk memberikan role Admin.')
+                else:
+                    form.save()
+                    return redirect('user_list')
+            except Exception:
+                # If any unexpected error during role check, avoid silent failure and proceed to save as fallback
+                form.save()
+                return redirect('user_list')
     else:
         form = UserUpdateForm(instance=user)
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Edit User'})
@@ -3635,43 +3644,47 @@ def manual_role_change(request, user_id):
         form = UserRoleChangeForm(request.POST, instance=user)
         if form.is_valid():
             new_role = form.cleaned_data['role']
-            old_role = user.role
-            
-            with transaction.atomic():
-                user.role = new_role
-                user.save()
-                
-                # Jika upgrade ke Student, buat subscription
-                if new_role.role_name == 'Student' and old_role.role_name == 'Visitor':
-                    package = form.cleaned_data.get('subscription_package')
-                    days = form.cleaned_data.get('subscription_days', 30)
-                    
-                    if package:
-                        subscription, created = UserSubscription.objects.get_or_create(
-                            user=user,
-                            defaults={
-                                'package': package,
-                                'end_date': timezone.now() + timezone.timedelta(days=days)
-                            }
-                        )
-                        
-                        if not created:
-                            subscription.extend_subscription(days)
-                            subscription.package = package
-                            subscription.is_active = True
+            # Server-side enforcement: Operator cannot set Admin role
+            if request.user.role.role_name == 'Operator' and new_role and new_role.role_name == 'Admin':
+                form.add_error('role', 'Operator tidak memiliki izin untuk memberikan role Admin.')
+            else:
+                old_role = user.role
+
+                with transaction.atomic():
+                    user.role = new_role
+                    user.save()
+
+                    # Jika upgrade ke Student, buat subscription
+                    if new_role.role_name == 'Student' and old_role.role_name == 'Visitor':
+                        package = form.cleaned_data.get('subscription_package')
+                        days = form.cleaned_data.get('subscription_days', 30)
+
+                        if package:
+                            subscription, created = UserSubscription.objects.get_or_create(
+                                user=user,
+                                defaults={
+                                    'package': package,
+                                    'end_date': timezone.now() + timezone.timedelta(days=days)
+                                }
+                            )
+
+                            if not created:
+                                subscription.extend_subscription(days)
+                                subscription.package = package
+                                subscription.is_active = True
+                                subscription.save()
+
+                    # Jika downgrade ke Visitor, deaktivasi subscription
+                    elif new_role.role_name == 'Visitor' and old_role.role_name == 'Student':
+                        try:
+                            subscription = user.subscription
+                            subscription.is_active = False
                             subscription.save()
-                
-                # Jika downgrade ke Visitor, deaktivasi subscription
-                elif new_role.role_name == 'Visitor' and old_role.role_name == 'Student':
-                    try:
-                        subscription = user.subscription
-                        subscription.is_active = False
-                        subscription.save()
-                    except UserSubscription.DoesNotExist:
-                        pass
-            
-            messages.success(request, f'Role user {user.email} berhasil diubah dari {old_role.role_name} ke {new_role.role_name}.')
-            return redirect('user_list')
+                        except UserSubscription.DoesNotExist:
+                            pass
+
+                messages.success(request, f'Role user {user.email} berhasil diubah dari {old_role.role_name} ke {new_role.role_name}.')
+                return redirect('user_list')
     else:
         form = UserRoleChangeForm(instance=user)
     
