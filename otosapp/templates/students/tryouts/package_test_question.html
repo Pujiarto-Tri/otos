@@ -196,6 +196,21 @@
 
     <!-- Navigation Section -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <!-- Subtest selector (for package tests) -->
+        {% if is_package and package_subtests %}
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div>
+                <label for="subtest-select" class="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-2">Pilih Subtest:</label>
+                <select id="subtest-select" class="inline-block px-3 py-2 border rounded bg-white dark:bg-gray-800 text-sm">
+                    <option value="all">Semua Subtest</option>
+                    {% for s in package_subtests %}
+                    <option value="{{ s.start }}-{{ s.start|add:s.count|add:'-1' }}" {% if current_question_number >= s.start and current_question_number < s.start|add:s.count %}selected{% endif %}>{{ s.category_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="text-sm text-gray-500">Navigasi menampilkan hanya soal subtest yang dipilih</div>
+        </div>
+        {% endif %}
         <!-- Navigation Header -->
         <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
@@ -1193,6 +1208,114 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update navigation colors
     updateNavigationColors();
+
+    // Subtest filtering: if package_subtests present, wire the select to filter nav
+    const subtestSelect = document.getElementById('subtest-select');
+    if (subtestSelect) {
+        function applySubtestFilter() {
+            try {
+                const val = subtestSelect.value;
+                if (val === 'all') {
+                    document.querySelectorAll('.nav-button').forEach(b => { b.style.removeProperty('display'); b.removeAttribute('aria-hidden'); });
+                } else {
+                    const [startStr, endStr] = val.split('-');
+                    const start = parseInt(startStr, 10);
+                    const end = parseInt(endStr, 10);
+                    document.querySelectorAll('.nav-button').forEach(b => {
+                        const idx = parseInt(b.dataset.questionIndex, 10);
+                        const match = (idx >= start && idx <= end);
+                        if (match) { b.style.removeProperty('display'); b.removeAttribute('aria-hidden'); } else { b.style.setProperty('display','none','important'); b.setAttribute('aria-hidden','true'); }
+                    });
+                }
+            } catch (err) {
+                console.error('applySubtestFilter error', err);
+            }
+        }
+        subtestSelect.addEventListener('change', applySubtestFilter);
+        // apply initial filter on load
+        applySubtestFilter();
+    } else {
+        // no subtest-select present
+    }
+
+    // Intercept Next navigation to warn when crossing subtest boundary
+    const answerForm = document.getElementById('answer-form');
+    const nextButton = answerForm.querySelector('button[name="action"][value="next"]');
+    // Build mapping from question index to subtest range from server-provided package_subtests
+    let subtestRanges = [];
+    {% if is_package and package_subtests %}
+    subtestRanges = [
+        {% for s in package_subtests %}{ start: {{ s.start }}, end: {{ s.start|add:s.count|add:'-1' }}, name: '{{ s.category_name|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}
+    ];
+    {% endif %}
+
+    function findSubtestForIndex(idx){
+        for (const r of subtestRanges) if (idx >= r.start && idx <= r.end) return r;
+        return null;
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener('click', function(e){
+            // determine target index
+            const target = {{ current_question_number }} + 1;
+            const currentSub = findSubtestForIndex({{ current_question_number }});
+            const targetSub = findSubtestForIndex(target);
+            if (currentSub && targetSub && currentSub.name !== targetSub.name) {
+                // show modal asking to continue to next subtest
+                e.preventDefault();
+                showNextSubtestModal(currentSub.name, targetSub.name, function(){
+                    // when confirmed, add hidden flags and submit the form programmatically
+                    let existingConfirm = answerForm.querySelector('input[name="confirm_next_subtest"]');
+                    if (!existingConfirm) {
+                        existingConfirm = document.createElement('input');
+                        existingConfirm.type = 'hidden'; existingConfirm.name = 'confirm_next_subtest'; existingConfirm.value = '1';
+                        answerForm.appendChild(existingConfirm);
+                    } else {
+                        existingConfirm.value = '1';
+                    }
+
+                    // Ensure action='next' is present (programmatic submit doesn't include clicked button value)
+                    let actionHidden = answerForm.querySelector('input[name="action"]');
+                    if (!actionHidden) {
+                        actionHidden = document.createElement('input');
+                        actionHidden.type = 'hidden'; actionHidden.name = 'action'; actionHidden.value = 'next';
+                        answerForm.appendChild(actionHidden);
+                    } else {
+                        actionHidden.value = 'next';
+                    }
+
+                    answerForm.submit();
+                });
+            }
+            // otherwise allow normal submit
+        });
+    }
+
+    // Modal for confirming moving to next subtest
+    function showNextSubtestModal(fromName, toName, onConfirm){
+        // create a simple modal using existing modal styles
+        let modal = document.getElementById('next-subtest-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'next-subtest-modal';
+            modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-2xl">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Lanjut ke Subtest Berikutnya?</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Anda akan berpindah dari subtest <strong id="modal-from"></strong> ke <strong id="modal-to"></strong>. Lanjutkan?</p>
+                    <div class="flex justify-end gap-3">
+                        <button id="modal-cancel" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded">Batal</button>
+                        <button id="modal-confirm" class="px-4 py-2 bg-blue-600 text-white rounded">Lanjutkan</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+        modal.querySelector('#modal-from').textContent = fromName;
+        modal.querySelector('#modal-to').textContent = toName;
+        modal.classList.remove('hidden');
+        modal.querySelector('#modal-cancel').onclick = function(){ modal.classList.add('hidden'); };
+        modal.querySelector('#modal-confirm').onclick = function(){ modal.classList.add('hidden'); if (onConfirm) onConfirm(); };
+    }
 });
 </script>
 

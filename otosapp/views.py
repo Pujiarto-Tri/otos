@@ -4829,6 +4829,22 @@ def take_package_test_question(request, package_id, question):
         'remaining_time': test.get_remaining_time() if test.start_time else 0,
     'is_package': True,
     }
+    # Build per-subtest metadata (start index and question count) for client-side navigation
+    try:
+        package_subtests = []
+        running = 1
+        for pc in package.tryoutpackagecategory_set.all().order_by('order'):
+            qcount = Question.objects.filter(category=pc.category).count()
+            package_subtests.append({
+                'category_id': pc.category.id,
+                'category_name': pc.category.category_name,
+                'start': running,
+                'count': qcount,
+            })
+            running += qcount
+        context['package_subtests'] = package_subtests
+    except Exception:
+        context['package_subtests'] = []
     
     return render(request, 'students/tryouts/package_test_question.html', context)
 
