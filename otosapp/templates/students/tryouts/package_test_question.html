@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
+{% load media_helpers %}
 
 {% block title %}{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %} - Soal {{ current_question_number }}{% endblock %}
 
@@ -51,7 +52,7 @@
                         <div class="text-xl font-semibold text-gray-800 dark:text-white leading-relaxed ckeditor-content">{{ question.question_text|safe }}</div>
                         {% if question.question_image %}
                         <div class="mt-4">
-                            <img src="{{ question.question_image.url }}" alt="Question Image" class="max-w-full w-full h-auto rounded-lg shadow-sm object-contain max-h-40 sm:max-h-60 md:max-h-80 lg:max-h-96">
+                            <img src="{{ question.question_image|safe_image_url }}" alt="Question Image" class="max-w-full w-full h-auto rounded-lg shadow-sm object-contain max-h-40 sm:max-h-60 md:max-h-80 lg:max-h-96">
                         </div>
                         {% endif %}
                     </div>
@@ -72,7 +73,7 @@
                             {{ choice.choice_text|safe }}
                             {% if choice.choice_image %}
                             <div class="mt-3">
-                                <img src="{{ choice.choice_image.url }}" alt="Choice Image" class="max-w-full sm:max-w-sm h-auto rounded-lg border border-gray-200 dark:border-gray-600 object-contain">
+                                <img src="{{ choice.choice_image|safe_image_url }}" alt="Choice Image" class="max-w-full sm:max-w-sm h-auto rounded-lg border border-gray-200 dark:border-gray-600 object-contain">
                             </div>
                             {% endif %}
                         </div>

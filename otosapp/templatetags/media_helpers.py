@@ -44,11 +44,29 @@ def safe_image_url(image_field):
         if hasattr(image_field, 'url'):
             # Untuk path relatif yang mungkin tidak ada di Vercel
             url = image_field.url
+            # Debug: print untuk melihat URL yang dihasilkan
+            if settings.DEBUG:
+                print(f"DEBUG safe_image_url: {image_field.name} -> {url}")
+            
             if url.startswith('/media/'):
-                # Jika masih menggunakan /media/ path di production, 
+                # Jika masih menggunakan /media/ path di production Vercel, 
                 # kemungkinan file tidak ada - return placeholder
-                return "/static/images/no-image.svg"
+                if getattr(settings, 'VERCEL', False) or os.environ.get('VERCEL'):
+                    return "/static/images/no-image.svg"
             return url
+        
+        # Fallback ke string value
+        image_str = str(image_field)
+        if image_str.startswith('http'):
+            return image_str
+        else:
+            return "/static/images/no-image.svg"
+        
+    except Exception as e:
+        # Jika error (file tidak ada), return placeholder
+        if settings.DEBUG:
+            print(f"DEBUG safe_image_url error: {e}")
+        return "/static/images/no-image.svg"
         
         # Fallback ke string value
         image_str = str(image_field)

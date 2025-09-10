@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load media_helpers %}
 
 {% block title %}Verifikasi Pembayaran - {{ payment.user.first_name }} {{ payment.user.last_name }}{% endblock %}
 
@@ -154,10 +155,10 @@
                         Bukti Pembayaran
                     </h2>
                     <div class="text-center">
-                        <img src="{{ payment.proof_image.url }}" 
+                        <img src="{{ payment.proof_image|safe_image_url }}" 
                              alt="Bukti Pembayaran" 
                              class="max-w-full h-auto rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                             onclick="viewImageModal('{{ payment.proof_image.url }}')">
+                             onclick="viewImageModal('{{ payment.proof_image|safe_image_url }}')">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
                             Klik gambar untuk memperbesar
                         </p>

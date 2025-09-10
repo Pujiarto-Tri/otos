@@ -1,4 +1,5 @@
 {% load humanize %}
+{% load media_helpers %}
 {% extends 'base.html' %}
 
 {% block title %}Subscription Details - Admin{% endblock %}
@@ -50,7 +51,7 @@
                     <div class="flex-shrink-0 h-16 w-16">
                         {% if user.profile_picture %}
                             <img class="h-16 w-16 rounded-full object-cover" 
-                                 src="{{ user.profile_picture.url }}" 
+                                 src="{{ user.profile_picture|safe_image_url }}" 
                                  alt="Profile">
                         {% else %}
                             <div class="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
@@ -264,7 +265,7 @@
                 <div class="mt-4">
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Proof:</span>
                     <div class="mt-2">
-                        <img src="{{ payment_proof.proof_image.url }}" 
+                        <img src="{{ payment_proof.proof_image|safe_image_url }}" 
                              alt="Payment Proof" 
                              class="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-600"
                              onclick="window.open(this.src, '_blank')">

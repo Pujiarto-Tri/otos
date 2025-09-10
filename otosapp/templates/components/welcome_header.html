@@ -1,3 +1,4 @@
+{% load media_helpers %}
 <!-- Welcome Header Component -->
 <div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
     <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
@@ -23,7 +24,7 @@
             {% if not hide_profile %}
             <div class="hidden md:block">
                 {% if user.profile_picture %}
-                    <img class="w-20 h-20 rounded-full object-cover border-4 border-white/20 backdrop-blur-sm" src="{{ user.profile_picture.url }}" alt="Profile photo">
+                    <img class="w-20 h-20 rounded-full object-cover border-4 border-white/20 backdrop-blur-sm" src="{{ user.profile_picture|safe_image_url }}" alt="Profile photo">
                 {% else %}
                     <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-4 border-white/20">
                         <span class="text-white text-4xl">👤</span>
