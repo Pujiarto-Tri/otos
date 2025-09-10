@@ -38,6 +38,48 @@
                 Login
             </button>
         </form>
+        <script>
+            (function(){
+                // Wrap password inputs into a relative wrapper and add a toggle button inside.
+                const form = document.querySelector('form');
+                if (!form) return;
+                const showSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
+                const hideSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.36-3.423M6.22 6.22A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.964 9.964 0 01-4.22 5.571M3 3l18 18"/></svg>';
+
+                form.querySelectorAll('input[type="password"]').forEach(function(input){
+                    const parent = input.parentElement;
+                    if (!parent) return;
+
+                    if (parent.querySelector('button[data-pw-toggle]')) return;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative';
+
+                    parent.replaceChild(wrapper, input);
+                    wrapper.appendChild(input);
+
+                    if (!input.classList.contains('pr-10')) {
+                        input.classList.add('pr-10');
+                    }
+
+                    const btn = document.createElement('button');
+                    btn.setAttribute('type', 'button');
+                    btn.setAttribute('aria-label', 'Show password');
+                    btn.setAttribute('data-pw-toggle', 'true');
+                    btn.className = 'absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 dark:text-gray-300 focus:outline-none';
+                    btn.innerHTML = showSvg;
+                    btn.addEventListener('click', function(e){
+                        e.preventDefault();
+                        const isPwd = input.type === 'password';
+                        input.type = isPwd ? 'text' : 'password';
+                        btn.innerHTML = isPwd ? hideSvg : showSvg;
+                        btn.setAttribute('aria-label', isPwd ? 'Hide password' : 'Show password');
+                    });
+
+                    wrapper.appendChild(btn);
+                });
+            })();
+        </script>
         <div class="mt-6 text-center">
             <a href="{% url 'register' %}" class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
                 Belum punya akun? Daftar di sini
