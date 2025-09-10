@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -155,15 +159,14 @@ elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
     os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # If running on Vercel and BLOB_READ_WRITE_TOKEN or VERCEL_BLOB_TOKEN is present, use custom VercelBlobStorage
-if (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
-    blob_token = os.environ.get('BLOB_READ_WRITE_TOKEN') or os.environ.get('VERCEL_BLOB_TOKEN')
-    if blob_token:
-        DEFAULT_FILE_STORAGE = 'otosapp.storage.VercelBlobStorage'
-        # MEDIA_URL will be determined by the storage implementation (Vercel returns public URLs)
-    else:
-        # Use ephemeral storage on Vercel if no blob token
-        MEDIA_ROOT = '/tmp/media'
-        os.makedirs(MEDIA_ROOT, exist_ok=True)
+blob_token = os.environ.get('BLOB_READ_WRITE_TOKEN') or os.environ.get('VERCEL_BLOB_TOKEN')
+if (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')) and blob_token:
+    DEFAULT_FILE_STORAGE = 'otosapp.storage.VercelBlobStorage'
+    # MEDIA_URL will be determined by the storage implementation (Vercel returns public URLs)
+elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
+    # Use ephemeral storage on Vercel if no blob token
+    MEDIA_ROOT = '/tmp/media'
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'

@@ -66,14 +66,10 @@ class VercelBlobStorage(FileSystemStorage):
                     # If no JSON response, assume the URL is the public URL
                     return url
             else:
-                print(f"Vercel Blob upload failed: {response.status_code} - {response.text}")
-                print("Falling back to local storage")
                 # Fallback to local storage
                 return super()._save(name, content)
                 
-        except Exception as e:
-            print(f"Error uploading to Vercel Blob: {e}")
-            print("Falling back to local storage")
+        except Exception:
             # Fallback to local storage
             return super()._save(name, content)
 
