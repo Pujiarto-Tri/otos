@@ -25,7 +25,7 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, storage=get_storage)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, storage=get_storage, max_length=500)
 
     groups = models.ManyToManyField(
         Group,
@@ -471,7 +471,7 @@ class Question(models.Model):
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
     choice_text = models.TextField('Text')
-    choice_image = models.ImageField(upload_to='choice_images/', blank=True, null=True)
+    choice_image = models.ImageField(upload_to='choice_images/', blank=True, null=True, storage=get_storage, max_length=500)
     is_correct = models.BooleanField(default=False)
 
     def delete_media_files(self):
@@ -1153,7 +1153,7 @@ class PaymentProof(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_proofs')
     package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE)
-    proof_image = models.ImageField(upload_to='payment_proofs/', verbose_name="Bukti Pembayaran", storage=get_storage)
+    proof_image = models.ImageField(upload_to='payment_proofs/', verbose_name="Bukti Pembayaran", storage=get_storage, max_length=500)
     payment_method = models.CharField(max_length=100, verbose_name="Metode Pembayaran")
     payment_date = models.DateTimeField(verbose_name="Tanggal Pembayaran")
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Jumlah Bayar")
