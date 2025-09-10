@@ -20,54 +20,95 @@ class UniqueFileSystemStorage(FileSystemStorage):
 
 
 class VercelBlobStorage(FileSystemStorage):
-    """A minimal Django storage backend that uploads files to Vercel Blob via its API.
-
-    This implementation is intentionally small: it uploads the file bytes to
-    Vercel Blob using a POST to create an upload, then a PUT to the returned
-    upload URL. It stores the returned `url` (public URL) as the file's name/path.
-    """
+    """Django storage backend for Vercel Blob with local fallback."""
 
     def __init__(self, *args, **kwargs):
-        # keep local tmp storage for temp saves
         super().__init__(*args, **kwargs)
-        self.token = os.environ.get('VERCEL_BLOB_TOKEN')
-        self.api_base = 'https://api.vercel.com/v1/blob'
-
-    def _get_upload_create(self, name):
-        """Call Vercel to create an upload session. Returns JSON."""
-        if not self.token:
-            raise RuntimeError('VERCEL_BLOB_TOKEN not set')
-        endpoint = f'{self.api_base}/uploads'
-        headers = {'Authorization': f'Bearer {self.token}', 'Content-Type': 'application/json'}
-        resp = requests.post(endpoint, headers=headers, json={'name': name})
-        resp.raise_for_status()
-        return resp.json()
-
-    def _upload_bytes(self, upload_info, content_bytes):
-        # upload_info expected to contain 'uploadURL' or similar keys returned by Vercel
-        upload_url = upload_info.get('uploadURL') or upload_info.get('url') or upload_info.get('upload_url')
-        if not upload_url:
-            raise RuntimeError('Vercel upload URL not found in response')
-        # PUT the bytes directly to the upload URL
-        put_resp = requests.put(upload_url, data=content_bytes)
-        put_resp.raise_for_status()
-        return put_resp
+        # Try BLOB_READ_WRITE_TOKEN first (official env var), then VERCEL_BLOB_TOKEN as fallback
+        self.token = os.environ.get('BLOB_READ_WRITE_TOKEN') or os.environ.get('VERCEL_BLOB_TOKEN')
+        self.use_vercel = bool(self.token and len(self.token) > 30)  # Basic token validation
+        
+        if not self.use_vercel:
+            print("Warning: Vercel Blob token not found or invalid, falling back to local storage")
 
     def _save(self, name, content):
-        # content may be a File-like object
+        """Save file to Vercel Blob or fall back to local storage."""
+        if not self.use_vercel:
+            # Fallback to local storage
+            return super()._save(name, content)
+        
+        # Read content
         content.seek(0)
-        data = content.read()
-        if hasattr(data, 'read'):
-            data = data.read()
-        # create upload session
-        info = self._get_upload_create(name)
-        # send bytes
-        self._upload_bytes(info, data)
-        # Vercel returns a public url (try multiple keys)
-        public_url = info.get('url') or info.get('fileUrl') or info.get('cdnUrl')
-        # Fallback: if no public_url, use a placeholder path using returned id
-        if not public_url:
-            public_url = urljoin('https://vercel.storage/', info.get('id', name))
+        file_content = content.read()
+        
+        try:
+            # Use PUT method to upload directly
+            url = f'https://blob.vercel-storage.com/{name}'
+            headers = {
+                'Authorization': f'Bearer {self.token}',
+            }
+            
+            # Detect content type
+            import mimetypes
+            content_type, _ = mimetypes.guess_type(name)
+            if content_type:
+                headers['Content-Type'] = content_type
+            
+            response = requests.put(url, data=file_content, headers=headers)
+            
+            if response.status_code in [200, 201]:
+                try:
+                    result = response.json()
+                    # Return the public URL as the stored name
+                    public_url = result.get('url', url)
+                    return public_url
+                except Exception:
+                    # If no JSON response, assume the URL is the public URL
+                    return url
+            else:
+                print(f"Vercel Blob upload failed: {response.status_code} - {response.text}")
+                print("Falling back to local storage")
+                # Fallback to local storage
+                return super()._save(name, content)
+                
+        except Exception as e:
+            print(f"Error uploading to Vercel Blob: {e}")
+            print("Falling back to local storage")
+            # Fallback to local storage
+            return super()._save(name, content)
 
-        # We return the storage name. To keep Django FileField behaviour, return a path-like string
-        return public_url
+    def url(self, name):
+        """Return the URL for the file."""
+        if not name:
+            return ''
+        # If name is already a full URL (from Vercel Blob), return it
+        if name.startswith('http'):
+            return name
+        # Otherwise use default behavior
+        return super().url(name)
+
+    def exists(self, name):
+        """Check if file exists."""
+        if name and name.startswith('http'):
+            # For Vercel URLs, try a HEAD request
+            try:
+                response = requests.head(name, timeout=5)
+                return response.status_code == 200
+            except:
+                return True  # Assume it exists if we can't check
+        return super().exists(name)
+
+    def path(self, name):
+        """For URLs, return the name itself."""
+        if name and name.startswith('http'):
+            return name
+        return super().path(name)
+
+    def delete(self, name):
+        """Delete file."""
+        if name and name.startswith('http'):
+            # For Vercel URLs, we could implement delete API call here
+            # For now, just log that it can't be deleted
+            print(f"Cannot delete Vercel Blob file: {name}")
+            return
+        return super().delete(name)
