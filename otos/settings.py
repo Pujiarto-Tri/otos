@@ -154,6 +154,11 @@ elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
     MEDIA_ROOT = '/tmp/media'
     os.makedirs(MEDIA_ROOT, exist_ok=True)
 
+# If running on Vercel and VERCEL_BLOB_TOKEN is present, use custom VercelBlobStorage
+if (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')) and os.environ.get('VERCEL_BLOB_TOKEN'):
+    DEFAULT_FILE_STORAGE = 'otosapp.storage.VercelBlobStorage'
+    # MEDIA_URL will be determined by the storage implementation (Vercel returns public URLs)
+
 # WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
