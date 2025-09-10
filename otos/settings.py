@@ -153,8 +153,13 @@ if AWS_STORAGE_BUCKET_NAME:
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', None)
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')) and os.environ.get('BLOB_READ_WRITE_TOKEN'):
+    # Use Vercel Blob storage on Vercel
+    DEFAULT_FILE_STORAGE = 'otosapp.storage.VercelBlobStorage'
+    MEDIA_ROOT = '/tmp/media'
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 elif (os.environ.get('VERCEL') or os.environ.get('VERCEL_URL')):
-    # Use ephemeral storage on Vercel
+    # Use ephemeral storage on Vercel if no Blob token
     MEDIA_ROOT = '/tmp/media'
     os.makedirs(MEDIA_ROOT, exist_ok=True)
 

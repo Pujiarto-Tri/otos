@@ -7,13 +7,25 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from .utils import generate_unique_filename
 
+
+# Import storage
+def get_storage():
+    """Get the appropriate storage backend"""
+    try:
+        from .storage import VercelBlobStorage
+        return VercelBlobStorage()
+    except:
+        from django.core.files.storage import default_storage
+        return default_storage
+
+
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True, verbose_name='Phone Number')
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, storage=get_storage)
 
     groups = models.ManyToManyField(
         Group,
@@ -1141,7 +1153,7 @@ class PaymentProof(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_proofs')
     package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE)
-    proof_image = models.ImageField(upload_to='payment_proofs/', verbose_name="Bukti Pembayaran")
+    proof_image = models.ImageField(upload_to='payment_proofs/', verbose_name="Bukti Pembayaran", storage=get_storage)
     payment_method = models.CharField(max_length=100, verbose_name="Metode Pembayaran")
     payment_date = models.DateTimeField(verbose_name="Tanggal Pembayaran")
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Jumlah Bayar")
