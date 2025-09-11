@@ -61,12 +61,12 @@
     <div class="flex justify-center mb-8">
         <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
             <button id="packages-tab" 
-                class="px-6 py-2 text-sm font-medium rounded-md transition-colors text-white bg-blue-600" 
+                class="px-6 py-2 text-sm font-medium rounded-md transition-colors text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg" 
                 onclick="showTab('packages')">
                 📦 Paket Simulasi UTBK
             </button>
             <button id="categories-tab" 
-                class="px-6 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" 
+                class="px-6 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700" 
                 onclick="showTab('categories')">
                 📚 Paket Subtest
             </button>
@@ -393,14 +393,23 @@ function showTab(tabName) {
             // Active tab styling
             tab.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
             if (tabName === 'packages') {
+                // For packages tab, use green gradient when active
                 tab.classList.add('text-white', 'bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'shadow-lg');
             } else {
+                // For categories tab, use blue gradient when active
                 tab.classList.add('text-white', 'bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'shadow-lg');
             }
         } else {
             // Inactive tab styling
-            tab.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
-            tab.classList.remove('text-white', 'bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'from-blue-500', 'to-indigo-600', 'shadow-lg');
+            if (tabName === 'packages' && tab.id === 'categories-tab') {
+                // Categories tab when packages is active
+                tab.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
+                tab.classList.remove('text-white', 'bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'shadow-lg');
+            } else if (tabName === 'categories' && tab.id === 'packages-tab') {
+                // Packages tab when categories is active
+                tab.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
+                tab.classList.remove('text-white', 'bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'shadow-lg');
+            }
         }
     });
 }
