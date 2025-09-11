@@ -6,6 +6,14 @@ register = template.Library()
 def get_item(dictionary, key):
     return dictionary.get(key)
 
+@register.filter
+def get_choice_image(dictionary, choice_number):
+    """Get choice image URL by choice number"""
+    if not dictionary:
+        return ''
+    key = f'choice_image_{choice_number}'
+    return dictionary.get(key, '')
+
 
 @register.filter
 def mul(value, arg):

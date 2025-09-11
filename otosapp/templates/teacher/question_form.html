@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}{% if question %}Edit Question{% else %}Create Question{% endif %}{% endblock %}
 
@@ -199,7 +200,7 @@
                               <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="uploadChoiceImage(this, {{ forloop.counter }})">
                               <p id="choice-image-status-{{ forloop.counter }}" class="mt-1 text-xs"></p>
                               <div class="hidden">{{ form.choice_image }}</div>
-                              <input type="hidden" id="choice-image-url-{{ forloop.counter }}" name="choice_image_{{ forloop.counter }}">
+                              <input type="hidden" id="choice-image-url-{{ forloop.counter }}" name="choice_image_{{ forloop.counter }}" value="{{ initial_choice_images|get_choice_image:forloop.counter }}">
                             </div>
                           </div>
                         </div>
@@ -386,6 +387,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusEl = document.getElementById(`choice-image-status-${choiceNumber}`);
     if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-xs'; }
   };
+
+  // Load existing choice images on page load
+  function loadExistingChoiceImages() {
+    document.querySelectorAll('input[id*="choice-image-url-"]').forEach(hiddenInput => {
+      if (hiddenInput.value) {
+        const choiceNumber = hiddenInput.id.split('-').pop();
+        const preview = document.getElementById(`choice-image-preview-${choiceNumber}`);
+        const uploadArea = document.getElementById(`choice-upload-area-${choiceNumber}`);
+        
+        if (preview) {
+          const img = preview.querySelector('img');
+          if (img) {
+            img.src = hiddenInput.value;
+          }
+          preview.classList.remove('hidden');
+        }
+        if (uploadArea) {
+          uploadArea.classList.add('hidden');
+        }
+      }
+    });
+  }
+
+  // Call on page load
+  loadExistingChoiceImages();
 
   // Correct answer visual feedback (simplified)
   function handleCorrectAnswerChange(checkbox) {

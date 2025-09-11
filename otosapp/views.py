@@ -923,6 +923,10 @@ def teacher_question_update(request, question_id):
                     except Exception:
                         # Fallback if URL generation fails
                         initial_data[f'choice_image_{i}'] = f'/media/{image_name}'
+        
+        # DEBUG: Print initial data for debugging
+        print(f'\n[DEBUG] teacher_question_update GET - Question ID: {question.id}')
+        print(f'[DEBUG] Initial choice images data: {initial_data}')
 
     return render(request, 'teacher/question_form.html', {
         'form': form, 
