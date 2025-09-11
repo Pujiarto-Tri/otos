@@ -7,6 +7,22 @@
     <!-- Flowbite WYSIWYG Editor -->
     <!-- Flowbite: UI components (relies on Tailwind) -->
     <script src="https://unpkg.com/flowbite@1.7.0/dist/flowbite.min.js"></script>
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        startup: {
+          ready: () => {
+            MathJax.startup.defaultReady();
+            console.log('MathJax loaded and ready for LaTeX rendering');
+          }
+        }
+      };
+    </script>
     <style>
         .section-fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -373,6 +389,18 @@
                                                             </button>
                                                             <div id="tooltip-math-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
                                                                 Insert Math Symbols
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+
+                                                            <!-- LaTeX Formula Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-latex-admin" data-wysiwyg-action="latex" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                                </svg>
+                                                                <span class="sr-only">LaTeX Formula</span>
+                                                            </button>
+                                                            <div id="tooltip-latex-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Insert LaTeX Formula
                                                                 <div class="tooltip-arrow" data-popper-arrow></div>
                                                             </div>
                                                         </div>
@@ -801,6 +829,18 @@
                                                             </button>
                                                             <div id="tooltip-math-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
                                                                 Insert Math Symbols
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+
+                                                            <!-- LaTeX Formula Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-latex-exp-admin" data-wysiwyg-action="latex" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                                </svg>
+                                                                <span class="sr-only">LaTeX Formula</span>
+                                                            </button>
+                                                            <div id="tooltip-latex-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Insert LaTeX Formula
                                                                 <div class="tooltip-arrow" data-popper-arrow></div>
                                                             </div>
                                                         </div>
@@ -1417,6 +1457,75 @@ document.addEventListener('DOMContentLoaded', function() {
         closeMathSymbolsModal();
       }
     });
+
+    // Handle LaTeX formula buttons
+    document.querySelectorAll('[data-wysiwyg-action="latex"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Find the associated editor
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for LaTeX button:', this);
+          return;
+        }
+
+        // Prompt for LaTeX formula
+        const latex = prompt('Enter LaTeX formula (e.g., x^2 + y^2 = z^2, \\frac{a}{b}, \\sqrt{x}):');
+        if (!latex) return;
+        
+        // Create math container with LaTeX
+        const mathContainer = document.createElement('span');
+        mathContainer.className = 'latex-formula';
+        mathContainer.style.display = 'inline-block';
+        mathContainer.style.margin = '2px 5px';
+        mathContainer.style.padding = '3px 8px';
+        mathContainer.style.backgroundColor = '#f0f9ff';
+        mathContainer.style.border = '1px solid #0ea5e9';
+        mathContainer.style.borderRadius = '4px';
+        mathContainer.style.fontFamily = 'monospace';
+        mathContainer.style.fontSize = '14px';
+        mathContainer.style.color = '#0369a1';
+        
+        // Add LaTeX notation with proper delimiters
+        mathContainer.textContent = `$${latex}$`;
+        
+        // Focus the editor and insert at cursor position
+        editor.focus();
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.insertNode(mathContainer);
+          range.collapse(false);
+        } else {
+          editor.appendChild(mathContainer);
+        }
+        
+        // Update textarea
+        const questionTextarea = document.getElementById('id_question_text');
+        const explanationTextarea = document.getElementById('id_explanation');
+        
+        if (editor.id === 'wysiwyg-question-text-admin') {
+          questionTextarea.value = editor.innerHTML;
+        } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+          explanationTextarea.value = editor.innerHTML;
+        }
+        
+        // Trigger input event
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        // Re-render MathJax for the new LaTeX
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([mathContainer]).catch((err) => console.log(err.message));
+        }
+        
+        showNotification('LaTeX formula inserted!', 'success');
+      });
+    });
   }
 
   // Initialize special actions
@@ -1429,12 +1538,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Log toolbar buttons found
   const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
   const imageButtons = document.querySelectorAll('[data-wysiwyg-action="image"]');
-  const mathButtons = document.querySelectorAll('[data-wysiwyg-action="math"]');
+  const mathButtons = document.querySelectorAll('[data-wysiwyg-action="math-symbols"]');
+  const latexButtons = document.querySelectorAll('[data-wysiwyg-action="latex"]');
   
   console.log('🎛️ ADMIN Toolbar buttons found:', {
     formatButtons: formatButtons.length,
     imageButtons: imageButtons.length,
-    mathButtons: mathButtons.length
+    mathButtons: mathButtons.length,
+    latexButtons: latexButtons.length
   });
   
   // Initialize Python environment info display (legacy code removed)
