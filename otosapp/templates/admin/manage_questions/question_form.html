@@ -1066,31 +1066,57 @@
 
                     console.log('Quill editor initialized successfully');
                     
-                    // Observer for theme changes
+                    // Observer for theme changes with throttling to prevent infinite loops
+                    let isFixingIcons = false;
+                    let fixIconsTimeout = null;
+                    
                     const observer = new MutationObserver(function(mutations) {
+                        // Prevent infinite loops
+                        if (isFixingIcons) {
+                            return;
+                        }
+                        
                         let shouldRefix = false;
                         
                         mutations.forEach(function(mutation) {
                             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                                 const target = mutation.target;
                                 if (target === document.documentElement || target === document.body) {
-                                    console.log('Theme change detected on:', target.tagName);
-                                    console.log('  Old classes:', mutation.oldValue);
-                                    console.log('  New classes:', target.className);
-                                    shouldRefix = true;
+                                    // Only refix if actual theme change detected
+                                    const oldClasses = mutation.oldValue || '';
+                                    const newClasses = target.className;
+                                    const hadDark = oldClasses.includes('dark');
+                                    const hasDark = newClasses.includes('dark');
+                                    
+                                    if (hadDark !== hasDark) {
+                                        console.log('Actual theme change detected:', hadDark ? 'dark->light' : 'light->dark');
+                                        shouldRefix = true;
+                                    }
                                 }
                             }
                             
-                            // Also watch for DOM changes in toolbar area
+                            // Skip toolbar DOM changes that we ourselves cause
                             if (mutation.type === 'childList' && mutation.target.closest('.ql-toolbar')) {
-                                console.log('Toolbar DOM change detected');
-                                shouldRefix = true;
+                                const target = mutation.target;
+                                // Don't refix if we're just adding/removing our own classes
+                                if (!target.classList.contains('qf-reflow') && !isFixingIcons) {
+                                    console.log('External toolbar DOM change detected');
+                                    shouldRefix = true;
+                                }
                             }
                         });
                         
                         if (shouldRefix) {
-                            console.log('Theme change or toolbar update detected, re-fixing icons...');
-                            setTimeout(() => window.fixQuillIcons(), 100);
+                            // Clear any pending fix
+                            if (fixIconsTimeout) {
+                                clearTimeout(fixIconsTimeout);
+                            }
+                            
+                            // Throttle fixes to prevent spam
+                            fixIconsTimeout = setTimeout(() => {
+                                console.log('Theme change detected, re-fixing icons...');
+                                window.fixQuillIcons();
+                            }, 200);
                         }
                     });
                     
@@ -1117,6 +1143,13 @@
                     
                     // Debug function for manual icon fix (can be called from console)
                     window.fixQuillIcons = function() {
+                        // Prevent infinite loops
+                        if (isFixingIcons) {
+                            console.log('Already fixing icons, skipping...');
+                            return;
+                        }
+                        
+                        isFixingIcons = true;
                         console.log('=== Debug Quill Icons Fix ===');
                         
                         // Check current theme
@@ -1198,6 +1231,12 @@
                         }
                         
                         console.log(`Icons fix completed for ${isDarkMode ? 'dark' : 'light'} mode!`);
+                        
+                        // Reset flag after a short delay to allow DOM changes to settle
+                        setTimeout(() => {
+                            isFixingIcons = false;
+                        }, 100);
+                        
                         return toolbar;
                     };
                     
@@ -1294,6 +1333,11 @@
                     
                     // Persistent icon fix - runs periodically to ensure icons match current theme
                     window.persistentIconFix = function() {
+                        // Skip if already fixing icons
+                        if (isFixingIcons) {
+                            return;
+                        }
+                        
                         const isDarkMode = document.documentElement.classList.contains('dark') || 
                                          document.body.classList.contains('dark') ||
                                          document.querySelector('[data-theme="dark"]');
@@ -1328,11 +1372,20 @@
                         }
                     };
                     
-                    // Run periodic check every 2 seconds
-                    setInterval(window.persistentIconFix, 2000);
+                    // Run periodic check every 5 seconds (reduced frequency)
+                    let periodicCheckInterval = setInterval(() => {
+                        if (!isFixingIcons) {
+                            window.persistentIconFix();
+                        }
+                    }, 5000);
                     
                     // Auto-fix on initialization if in dark mode
                     const checkAndFixIcons = () => {
+                        // Skip if already fixing
+                        if (isFixingIcons) {
+                            return false;
+                        }
+                        
                         const isDarkMode = document.documentElement.classList.contains('dark') || 
                                          document.body.classList.contains('dark') ||
                                          document.querySelector('[data-theme="dark"]');
@@ -1344,10 +1397,21 @@
                         return false;
                     };
                     
-                    // Multiple retry attempts with better timing
+                    // Multiple retry attempts with better timing (reduced attempts)
                     const attemptFix = (attempt = 1) => {
+                        if (isFixingIcons) {
+                            return;
+                        }
+                        
                         console.log(`Auto-fix attempt ${attempt}`);
                         const result = checkAndFixIcons();
+                        
+                        if (!result && attempt < 2) { // Reduced from 3 to 2
+                            setTimeout(() => attemptFix(attempt + 1), 1000 * attempt); // Increased delay
+                        } else if (result) {
+                            console.log('Icons successfully fixed on attempt', attempt);
+                        }
+                    };
                         
                         if (!result && attempt < 3) {
                             setTimeout(() => attemptFix(attempt + 1), 500 * attempt);
