@@ -5037,9 +5037,16 @@ def image_upload(request):
         from .utils import generate_unique_filename
         filename = generate_unique_filename(uploaded_file.name)
         
-        # Save file
-        file_path = default_storage.save(f'uploads/{filename}', ContentFile(uploaded_file.read()))
-        file_url = default_storage.url(file_path)
+        # Use VercelBlobStorage for Quill image uploads
+        try:
+            from .storage import VercelBlobStorage
+            storage = VercelBlobStorage()
+        except Exception:
+            storage = default_storage
+        
+        # Save file using appropriate storage
+        file_path = storage.save(f'uploads/{filename}', ContentFile(uploaded_file.read()))
+        file_url = storage.url(file_path)
         
         return JsonResponse({'url': file_url})
         
