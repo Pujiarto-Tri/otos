@@ -244,6 +244,18 @@
                             Insert LaTeX Formula
                             <div class="tooltip-arrow" data-popper-arrow></div>
                           </div>
+
+                          <!-- LaTeX Guide Button -->
+                          <button type="button" data-tooltip-target="tooltip-latex-guide" data-wysiwyg-action="latex-guide" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                            </svg>
+                            <span class="sr-only">LaTeX Guide</span>
+                          </button>
+                          <div id="tooltip-latex-guide" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            LaTeX Help Guide
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -529,6 +541,18 @@
                             Insert LaTeX Formula
                             <div class="tooltip-arrow" data-popper-arrow></div>
                           </div>
+
+                          <!-- LaTeX Guide Button -->
+                          <button type="button" data-tooltip-target="tooltip-latex-guide-exp" data-wysiwyg-action="latex-guide" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                            </svg>
+                            <span class="sr-only">LaTeX Guide</span>
+                          </button>
+                          <div id="tooltip-latex-guide-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            LaTeX Help Guide
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -693,6 +717,233 @@
           </div>
 
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LaTeX Guide Modal -->
+<div id="latexGuideModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-6xl max-h-full">
+    <!-- Modal content -->
+    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <!-- Modal header -->
+      <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+          📖 LaTeX Guide - Panduan Penulisan Formula Matematika
+        </h3>
+        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onclick="closeLatexGuideModal()">
+          <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+          </svg>
+          <span class="sr-only">Close modal</span>
+        </button>
+      </div>
+      <!-- Modal body -->
+      <div class="p-4 md:p-5 space-y-6 max-h-96 overflow-y-auto">
+        
+        <!-- Dasar-dasar LaTeX -->
+        <div class="space-y-3">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">🎯 Dasar-dasar LaTeX</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">LaTeX menggunakan tanda $ untuk mengapit formula matematika. Contoh: <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">$x^2 + y^2 = z^2$</code></p>
+        </div>
+
+        <!-- Grid dengan contoh -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Eksponen dan Subskrip -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">⬆️ Eksponen & Subskrip</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>x^2</code>
+                <span>→ x²</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>x^{2n+1}</code>
+                <span>→ x^(2n+1)</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>x_1</code>
+                <span>→ x₁</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>x_{i,j}</code>
+                <span>→ x_(i,j)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pecahan -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">➗ Pecahan</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\frac{a}{b}</code>
+                <span>→ a/b</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\frac{x+1}{x-1}</code>
+                <span>→ (x+1)/(x-1)</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\frac{1}{2}</code>
+                <span>→ ½</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Akar -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">√ Akar</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\sqrt{x}</code>
+                <span>→ √x</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\sqrt[3]{x}</code>
+                <span>→ ∛x</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\sqrt{x^2+y^2}</code>
+                <span>→ √(x²+y²)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trigonometri -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">📐 Trigonometri</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\sin x</code>
+                <span>→ sin x</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\cos \theta</code>
+                <span>→ cos θ</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\tan^{-1} x</code>
+                <span>→ tan⁻¹ x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logaritma -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">📊 Logaritma</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\log x</code>
+                <span>→ log x</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\ln x</code>
+                <span>→ ln x</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\log_2 x</code>
+                <span>→ log₂ x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Integral dan Turunan -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">∫ Kalkulus</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\int x dx</code>
+                <span>→ ∫ x dx</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\int_0^1 x dx</code>
+                <span>→ ∫₀¹ x dx</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\frac{dy}{dx}</code>
+                <span>→ dy/dx</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\sum_{i=1}^n i</code>
+                <span>→ Σᵢ₌₁ⁿ i</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriks -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">🔢 Matriks</h5>
+            <div class="space-y-2 text-sm">
+              <div class="bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\begin{matrix} a & b \\ c & d \end{matrix}</code>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}</code>
+              </div>
+            </div>
+          </div>
+
+          <!-- Simbol Khusus -->
+          <div class="space-y-3">
+            <h5 class="font-medium text-gray-900 dark:text-white">🔤 Huruf Yunani & Simbol</h5>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\alpha, \beta, \gamma</code>
+                <span>→ α, β, γ</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\pi, \theta, \phi</code>
+                <span>→ π, θ, φ</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\infty, \pm, \neq</code>
+                <span>→ ∞, ±, ≠</span>
+              </div>
+              <div class="flex justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <code>\leq, \geq, \approx</code>
+                <span>→ ≤, ≥, ≈</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contoh Lengkap -->
+        <div class="space-y-3 mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h4 class="text-lg font-medium text-blue-900 dark:text-blue-100">💡 Contoh Formula Lengkap</h4>
+          <div class="space-y-3 text-sm">
+            <div>
+              <strong>Rumus Kuadrat:</strong><br>
+              <code class="bg-white dark:bg-gray-800 px-2 py-1 rounded">x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}</code>
+            </div>
+            <div>
+              <strong>Teorema Pythagoras:</strong><br>
+              <code class="bg-white dark:bg-gray-800 px-2 py-1 rounded">a^2 + b^2 = c^2</code>
+            </div>
+            <div>
+              <strong>Integral Tentu:</strong><br>
+              <code class="bg-white dark:bg-gray-800 px-2 py-1 rounded">\int_0^{\pi} \sin x \, dx = 2</code>
+            </div>
+            <div>
+              <strong>Limit:</strong><br>
+              <code class="bg-white dark:bg-gray-800 px-2 py-1 rounded">\lim_{x \to 0} \frac{\sin x}{x} = 1</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="space-y-3 mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <h4 class="text-lg font-medium text-green-900 dark:text-green-100">💡 Tips Penting</h4>
+          <ul class="text-sm text-green-800 dark:text-green-200 space-y-1 list-disc list-inside">
+            <li>Gunakan kurung kurawal <code>{}</code> untuk mengelompokkan elemen yang panjang</li>
+            <li>Spasi diabaikan dalam LaTeX, gunakan <code>\,</code> atau <code>\ </code> untuk spasi paksa</li>
+            <li>Untuk tanda kurung besar, gunakan <code>\left(</code> dan <code>\right)</code></li>
+            <li>Preview formula sebelum menyimpan untuk memastikan tampilan yang benar</li>
+          </ul>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1123,7 +1374,44 @@ document.addEventListener('DOMContentLoaded', function() {
         showNotification('LaTeX formula inserted!', 'success');
       });
     });
+
+    // LaTeX Guide buttons
+    document.querySelectorAll('[data-wysiwyg-action="latex-guide"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('LaTeX Guide button clicked');
+        openLatexGuideModal();
+      });
+    });
   }
+
+  // LaTeX Guide Modal functions
+  function openLatexGuideModal() {
+    console.log('Opening LaTeX Guide modal');
+    const modal = document.getElementById('latexGuideModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeLatexGuideModal() {
+    console.log('Closing LaTeX Guide modal');
+    const modal = document.getElementById('latexGuideModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = 'auto';
+    }
+  }
+
+  // Close modal when clicking outside
+  document.getElementById('latexGuideModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeLatexGuideModal();
+    }
+  });
 
   // Initialize special actions
   initializeSpecialActions();
