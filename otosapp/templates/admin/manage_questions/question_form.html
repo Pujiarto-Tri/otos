@@ -941,7 +941,12 @@
             let quillEditor = null;
             let quillExplanation = null;
             
+            console.log('DEBUG: Looking for question textarea...');
+            console.log('Question textarea found:', questionTextarea);
+            console.log('Explanation textarea found:', explanationTextarea);
+            
             if (questionTextarea) {
+                console.log('Creating Quill editor container...');
                 // Create container for Quill editor
                 const editorContainer = document.createElement('div');
                 editorContainer.id = 'quill-editor';
