@@ -1689,25 +1689,6 @@
                     console.error('Error removing choice image:', error);
                     showNotification('Error removing image', 'error');
                 }
-
-                    // For multiple choice, ensure each visible choice has text or image
-                    const selectedType = document.querySelector('input[name="question_type"]:checked');
-                    if (selectedType && selectedType.value === 'multiple_choice') {
-                        const choiceItems = document.querySelectorAll('.choice-item');
-                        for (let idx = 0; idx < choiceItems.length; idx++) {
-                            const i = idx + 1;
-                            const textField = document.querySelector(`#id_choices-${idx}-choice_text`);
-                            const hiddenImageInput = document.getElementById(`choice-image-url-${i}`);
-                            const textVal = textField ? textField.value.trim() : '';
-                            const hasImage = hiddenImageInput && hiddenImageInput.value && hiddenImageInput.value.trim() !== '';
-                            if (!textVal && !hasImage) {
-                                e.preventDefault();
-                                showNotification('Each choice must have text or an image', 'error');
-                                if (textField) textField.focus();
-                                return;
-                            }
-                        }
-                    }
             };
 
             // Handle correct answer checkbox changes for visual feedback
