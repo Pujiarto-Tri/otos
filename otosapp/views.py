@@ -853,8 +853,35 @@ def teacher_question_update(request, question_id):
         form = QuestionUpdateForm(request.POST, instance=question)
         formset = ChoiceFormSet(request.POST, instance=question)
         if form.is_valid() and formset.is_valid():
-            form.save()
+            updated_question = form.save()
+            
+            # Save choices with choice image processing
+            choices = formset.save(commit=False)
+            for i, choice in enumerate(choices, 1):
+                # Check if there's an uploaded image URL for this choice
+                choice_image_url = request.POST.get(f'choice_image_{i}')
+                if choice_image_url:
+                    # Handle both Vercel Blob URLs and local media URLs
+                    import urllib.parse
+                    
+                    # Parse the URL
+                    parsed_url = urllib.parse.urlparse(choice_image_url)
+                    
+                    # If it's a Vercel Blob URL (starts with https://), store the full URL
+                    if choice_image_url.startswith('https://') and 'blob.vercel-storage.com' in choice_image_url:
+                        choice.choice_image = choice_image_url
+                    # Handle legacy local media URLs
+                    elif parsed_url.path.startswith('/media/'):
+                        file_path = parsed_url.path[7:]  # Remove '/media/' prefix
+                        # Check if file exists in default storage
+                        if default_storage.exists(file_path):
+                            choice.choice_image = file_path
+                
+                choice.save()
+            
+            # Save any remaining formset instances and handle deletions
             formset.save()
+            
             messages.success(request, 'Soal diperbarui.')
             return redirect('teacher_question_list', category_id=category.id)
         else:
@@ -878,8 +905,32 @@ def teacher_question_update(request, question_id):
     else:
         form = QuestionUpdateForm(instance=question)
         formset = ChoiceFormSet(instance=question)
+        
+        # Prepare initial data for choice images (for edit)
+        choices = question.choices.all()
+        initial_data = {}
+        for i, choice in enumerate(choices, 1):
+            if choice.choice_image:
+                # Handle both Vercel Blob URLs and legacy media URLs
+                image_name = choice.choice_image.name
+                if image_name.startswith('https://'):
+                    # Already a full URL (Vercel Blob)
+                    initial_data[f'choice_image_{i}'] = image_name
+                else:
+                    # Legacy media file - construct full URL
+                    try:
+                        initial_data[f'choice_image_{i}'] = choice.choice_image.url
+                    except Exception:
+                        # Fallback if URL generation fails
+                        initial_data[f'choice_image_{i}'] = f'/media/{image_name}'
 
-    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category, 'question': question})
+    return render(request, 'teacher/question_form.html', {
+        'form': form, 
+        'formset': formset, 
+        'category': category, 
+        'question': question,
+        'initial_choice_images': initial_data if 'initial_data' in locals() else {}
+    })
 
 
 @login_required
