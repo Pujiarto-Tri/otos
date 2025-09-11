@@ -374,6 +374,26 @@
   margin-bottom: 1rem;
 }
 
+/* Remove any blue styling from math formulas in question content */
+.ckeditor-content .math-formula,
+.ckeditor-content .latex-formula,
+.ckeditor-content span[data-latex] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: inherit !important;
+  display: inline !important;
+}
+
+/* Ensure no blue highlighting on any spans or special elements */
+.ckeditor-content span {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .ckeditor-content img {
   max-width: 100% !important;
   height: auto !important;
@@ -569,8 +589,27 @@
     }
     
     /* Ensure no unexpected blue boxes on any elements */
-    *:not(.nav-button):not(.bg-blue-500):not(.border-blue-600) {
+    *:not(.nav-button):not(.bg-blue-500):not(.border-blue-600):not([class*="from-blue"]):not([class*="to-blue"]) {
         box-shadow: none !important;
+    }
+    
+    /* Aggressively remove blue styling from content elements */
+    .ckeditor-content *:not(.bg-blue-500):not(.border-blue-600) {
+        background-color: transparent !important;
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    /* Specifically target math formula elements */
+    .math-formula, .latex-formula, span[data-latex], span[class*="math"], span[class*="formula"] {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: none !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 2px !important;
     }
 }
 </style>
@@ -1192,6 +1231,58 @@ function updateProgressBar(answeredCount, totalQuestions) {
         }, 220);
     }
 
+// Comprehensive cleanup function for blue elements
+function cleanupBlueElements() {
+    // Remove blue styling from all math formula elements
+    const mathSelectors = [
+        '.math-formula',
+        '.latex-formula',
+        'span[data-latex]',
+        'span[class*="math"]',
+        'span[class*="formula"]',
+        '.ckeditor-content span'
+    ];
+    
+    mathSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            // Remove blue classes
+            const blueClasses = ['bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-indigo-50', 'border-blue-600', 'border-indigo-200'];
+            blueClasses.forEach(cls => el.classList.remove(cls));
+            
+            // Remove blue inline styles
+            if (el.style.backgroundColor && (
+                el.style.backgroundColor.includes('blue') || 
+                el.style.backgroundColor.includes('rgb(59, 130, 246)') ||
+                el.style.backgroundColor.includes('rgb(239, 246, 255)') ||
+                el.style.backgroundColor.includes('#eff6ff') ||
+                el.style.backgroundColor.includes('#3b82f6')
+            )) {
+                el.style.backgroundColor = 'transparent';
+            }
+            
+            if (el.style.borderColor && (
+                el.style.borderColor.includes('blue') ||
+                el.style.borderColor.includes('rgb(59, 130, 246)')
+            )) {
+                el.style.borderColor = 'transparent';
+                el.style.border = 'none';
+            }
+            
+            // Remove other styling that might cause visual issues
+            if (!el.classList.contains('nav-button') && 
+                !el.classList.contains('bg-blue-500') && 
+                !el.closest('button')) {
+                el.style.boxShadow = 'none';
+                el.style.padding = '0';
+                el.style.margin = '0 1px';
+            }
+        });
+    });
+    
+    console.log('✅ Blue element cleanup completed');
+}
+
 // Inisialisasi saat halaman dimuat
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize timer
@@ -1222,6 +1313,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.style.background = 'transparent';
                 el.style.border = 'none';
                 el.style.boxShadow = 'none';
+            }
+        });
+        
+        // Clean up any math formula elements with blue styling in question content
+        const mathElements = document.querySelectorAll('.ckeditor-content .math-formula, .ckeditor-content .latex-formula, .ckeditor-content span[data-latex]');
+        mathElements.forEach(el => {
+            el.style.background = 'transparent';
+            el.style.backgroundColor = 'transparent';
+            el.style.border = 'none';
+            el.style.borderColor = 'transparent';
+            el.style.boxShadow = 'none';
+            el.style.padding = '0';
+            el.style.margin = '0';
+            el.classList.remove('bg-blue-500', 'border-blue-600', 'bg-indigo-50', 'border-indigo-200');
+        });
+        
+        // Remove blue styling from any spans in question content
+        const questionSpans = document.querySelectorAll('.ckeditor-content span');
+        questionSpans.forEach(span => {
+            if (span.style.backgroundColor && (span.style.backgroundColor.includes('blue') || span.style.backgroundColor.includes('rgb(59, 130, 246)'))) {
+                span.style.backgroundColor = 'transparent';
+                span.style.borderColor = 'transparent';
+                span.style.border = 'none';
             }
         });
     }, 100);
@@ -1285,6 +1399,44 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update navigation colors
     updateNavigationColors();
+    
+    // Additional cleanup for blue elements after everything is loaded
+    setTimeout(() => {
+        cleanupBlueElements();
+        
+        // Set up mutation observer to catch any dynamically added blue elements
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        // Check if the added node or its children have blue styling
+                        const blueElements = node.querySelectorAll ? 
+                            node.querySelectorAll('.math-formula, .latex-formula, span[data-latex], span[style*="blue"]') : [];
+                        
+                        [node, ...blueElements].forEach(el => {
+                            if (el && el.style && !el.classList.contains('nav-button')) {
+                                if (el.style.backgroundColor && el.style.backgroundColor.includes('blue')) {
+                                    el.style.backgroundColor = 'transparent';
+                                }
+                                if (el.style.borderColor && el.style.borderColor.includes('blue')) {
+                                    el.style.borderColor = 'transparent';
+                                    el.style.border = 'none';
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+    }, 500);
 
     // Subtest filtering: if package_subtests present, wire the select to filter nav
     const subtestSelect = document.getElementById('subtest-select');

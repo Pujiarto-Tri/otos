@@ -2044,11 +2044,6 @@ def take_test(request, category_id, question):
     from datetime import timedelta
 
     # DEBUG: trace invocation parameters to diagnose off-by-one skip
-    try:
-        print(f"[DEBUG take_test] user={getattr(request.user,'id',None)} category_id={category_id} question_param={question} GET_force_new={request.GET.get('force_new')} session_keys={list(request.session.keys())[:20]}")
-    except Exception:
-        pass
-
     category = get_object_or_404(Category, id=category_id)
     questions_qs = Question.objects.filter(category=category).order_by('id')
 
@@ -2076,6 +2071,10 @@ def take_test(request, category_id, question):
 
     # Allow caller to force creating a new test even if a recent submitted test exists
     force_new = request.GET.get('force_new') == '1'
+    # Don't force new test for AJAX requests - they should use existing session test
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        force_new = False
 
     if (session_key not in request.session or existing_test is None) or force_new:
         # If the user has JUST submitted a test for this category (e.g. clicked back after finishing),
@@ -2162,20 +2161,27 @@ def take_test(request, category_id, question):
         # Handle multiple choice answers
         if choice_id and current_question.is_multiple_choice():
             choice = get_object_or_404(Choice, id=choice_id, question=current_question)
-            existing_answers_qs = Answer.objects.filter(test=test, question=current_question)
-            if existing_answers_qs.count() > 1:
-                first_answer = existing_answers_qs.first()
-                existing_answers_qs.exclude(id=first_answer.id).delete()
-                first_answer.selected_choice = choice
-                first_answer.text_answer = None  # Clear text answer
-                first_answer.save()
-            elif existing_answers_qs.count() == 1:
-                ans = existing_answers_qs.first()
-                ans.selected_choice = choice
-                ans.text_answer = None  # Clear text answer
-                ans.save()
-            else:
-                Answer.objects.create(test=test, question=current_question, selected_choice=choice)
+            
+            # Use update_or_create to handle race conditions more reliably
+            try:
+                answer, created = Answer.objects.update_or_create(
+                    test=test, 
+                    question=current_question,
+                    defaults={
+                        'selected_choice': choice,
+                        'text_answer': None
+                    }
+                )
+                    
+                # Clean up any duplicate answers that might still exist
+                duplicate_answers = Answer.objects.filter(test=test, question=current_question).exclude(id=answer.id)
+                if duplicate_answers.exists():
+                    duplicate_answers.delete()
+                    
+            except Exception as e:
+                # Fall back to simple creation if there's an issue
+                Answer.objects.filter(test=test, question=current_question).delete()
+                answer = Answer.objects.create(test=test, question=current_question, selected_choice=choice)
 
             # Update session store
             test_session = request.session.get(session_key, {'answered_questions': {}})
@@ -2210,7 +2216,8 @@ def take_test(request, category_id, question):
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer saved'})
 
-        else:
+        # Only remove answer if explicitly requested or if no valid answer data was provided
+        elif action == 'clear' or (choice_id is None and text_answer is None and action != 'submit'):
             # remove existing answer
             existing_ans = Answer.objects.filter(test=test, question=current_question).first()
             if existing_ans:
@@ -2220,6 +2227,10 @@ def take_test(request, category_id, question):
                 request.session[session_key] = test_session
             if is_ajax:
                 return JsonResponse({'status': 'success', 'message': 'Answer removed'})
+
+        # If AJAX request without valid data, just return success to avoid errors
+        elif is_ajax:
+            return JsonResponse({'status': 'success', 'message': 'No action taken'})
 
         # Non-AJAX navigation handling
         if not is_ajax:
@@ -2297,11 +2308,18 @@ def submit_test(request, test_id):
     if request.method == 'POST':
         test = get_object_or_404(Test, id=test_id, student=request.user)
         
+        print(f"[DEBUG submit_test] Test {test_id}: Before submission - Answers count: {test.answers.count()}")
+        
         if not test.is_submitted:
             test.is_submitted = True
             test.end_time = timezone.now()
-            test.calculate_score()
-            test.save()
+            test.save()  # Save is_submitted and end_time first
+            
+            print(f"[DEBUG submit_test] Test {test_id}: After marking submitted - Answers count: {test.answers.count()}")
+            
+            test.calculate_score()  # This will call save() again with the score
+            
+            print(f"[DEBUG submit_test] Test {test_id}: After calculate_score - Answers count: {test.answers.count()}, Score: {test.score}")
             
             # Clear session - Use correct category_id from test
             test_category = test.categories.first()
@@ -2350,6 +2368,8 @@ def test_results(request, test_id):
     # Calculate score if not already calculated
     if test.answers.exists():
         test.calculate_score()
+        # Refresh test object from database to get updated score
+        test.refresh_from_db()
 
     # Get university recommendations for UTBK tests
     university_recommendations = []
@@ -2470,6 +2490,8 @@ def test_results_detail(request, test_id):
     # Calculate score if not already calculated
     if test.answers.exists():
         test.calculate_score()
+        # Refresh test object from database to get updated score
+        test.refresh_from_db()
     
     # Build full question list for this test (include unanswered questions)
     question_list = []
