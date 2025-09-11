@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
+from django.utils import timezone
 import re
 from django.conf import settings
 import os
@@ -154,6 +155,7 @@ class Category(models.Model):
     time_limit = models.IntegerField(default=60, help_text="Time limit in minutes (default: 60 minutes)")
     scoring_method = models.CharField(max_length=10, choices=SCORING_METHODS, default='default')
     passing_score = models.FloatField(default=75.0, help_text="Minimum score required to pass (0-100)")
+    release_date = models.DateTimeField(default=timezone.now, help_text="Tanggal rilis subtest ini")
     # Optional owner (teacher) who created/maintains this category
     created_by = models.ForeignKey(
         User,
@@ -340,6 +342,7 @@ class TryoutPackage(models.Model):
     description = models.TextField(blank=True, help_text="Deskripsi paket tryout")
     is_active = models.BooleanField(default=True, help_text="Apakah paket ini aktif dan tersedia untuk siswa")
     total_time = models.IntegerField(help_text="Total waktu pengerjaan dalam menit")
+    release_date = models.DateTimeField(default=timezone.now, help_text="Tanggal rilis paket tryout ini")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
