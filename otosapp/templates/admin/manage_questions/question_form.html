@@ -4,353 +4,70 @@
 {% block title %}{{ title|default:"Question Form" }}{% endblock %}
 
 {% block extrahead %}
-    <!-- Quill.js Rich Text Editor -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    <!-- Flowbite WYSIWYG Editor -->
     <!-- Flowbite: UI components (relies on Tailwind) -->
     <script src="https://unpkg.com/flowbite@1.7.0/dist/flowbite.min.js"></script>
     <style>
-        /* CSS Variables for consistent theming */
-        :root {
-            /* Light theme colors */
-            --qf-bg-primary: #ffffff;
-            --qf-bg-secondary: #f8fafc;
-            --qf-text-primary: #1f2937;
-            --qf-text-secondary: #6b7280;
-            --qf-border: #e5e7eb;
-            --qf-border-focus: #3b82f6;
-            --qf-placeholder: rgba(107, 114, 128, 0.7);
+        .section-fade-in { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* WYSIWYG Editor custom styles */
+        .wysiwyg-editor {
+            min-height: 200px;
         }
-
-        .dark {
-            /* Dark theme colors */
-            --qf-bg-primary: #1f2937;
-            --qf-bg-secondary: #374151;
-            --qf-text-primary: #f9fafb;
-            --qf-text-secondary: #d1d5db;
-            --qf-border: #4b5563;
-            --qf-border-focus: #60a5fa;
-            --qf-placeholder: rgba(209, 213, 219, 0.7);
-            --qf-toolbar-icon: #e5e7eb; /* Specific color for toolbar icons */
+        
+        .prose {
+            max-width: none;
         }
-
-        /* Quill Rich Text Editor Styling */
-        #quill-editor .ql-toolbar.ql-snow {
-            background: var(--qf-bg-secondary) !important;
-            border: 1px solid var(--qf-border) !important;
-            border-radius: 0.5rem 0.5rem 0 0 !important;
-            border-bottom: none !important;
+        
+        .prose p {
+            margin-bottom: 1em;
         }
-
-        /* Dark mode toolbar with better contrast */
-        .dark #quill-editor .ql-toolbar.ql-snow,
-        html.dark #quill-editor .ql-toolbar.ql-snow,
-        [data-theme="dark"] #quill-editor .ql-toolbar.ql-snow {
-            background: #374151 !important; /* Lighter than secondary bg for better contrast */
-            border-color: #6b7280 !important;
+        
+        .prose ul, .prose ol {
+            margin: 1em 0;
+            padding-left: 2em;
         }
-
-    /* Do not use filter invert; rely on stroke/fill rules to keep icons outlined and colored */
-
-        #quill-editor .ql-container.ql-snow {
-            background: var(--qf-bg-primary) !important;
-            border: 1px solid var(--qf-border) !important;
-            border-radius: 0 0 0.5rem 0.5rem !important;
-            border-top: none !important;
+        
+        .prose blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            margin: 1em 0;
+            font-style: italic;
         }
-
-        #quill-editor .ql-editor {
-            min-height: 280px !important;
-            background: var(--qf-bg-primary) !important;
-            color: var(--qf-text-primary) !important;
-            font-family: system-ui, -apple-system, sans-serif !important;
-            font-size: 15px !important;
-            line-height: 1.6 !important;
-            padding: 16px !important;
+        
+        .dark .prose blockquote {
+            border-left-color: #6b7280;
         }
-
-        /* Toolbar buttons and icons */
-        #quill-editor .ql-toolbar button,
-        #quill-editor .ql-toolbar .ql-picker-label {
-            color: var(--qf-text-primary) !important;
+        
+        /* Placeholder styling for empty WYSIWYG editors */
+        [data-wysiwyg="true"].is-empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            font-style: italic;
+            pointer-events: none;
+            position: absolute;
         }
-
-        #quill-editor .ql-toolbar button:hover,
-        #quill-editor .ql-toolbar .ql-picker-label:hover {
-            background: rgba(59, 130, 246, 0.1) !important;
-            color: var(--qf-border-focus) !important;
+        
+        .dark [data-wysiwyg="true"].is-empty:before {
+            color: #6b7280;
         }
-
-        #quill-editor .ql-toolbar .ql-active {
-            background: rgba(59, 130, 246, 0.15) !important;
-            color: var(--qf-border-focus) !important;
+        
+        /* Ensure proper focus outline for accessibility */
+        [data-wysiwyg="true"]:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
-
-        /* Make active toolbar icons visually distinct (outlined + accent stroke) */
-        #quill-editor .ql-toolbar .ql-active svg,
-        #quill-editor .ql-toolbar .ql-active svg * {
-            stroke: var(--qf-border-focus) !important;
-            fill: none !important; /* Keep outlined */
-            stroke-width: 1.8 !important;
+        
+        /* Format toolbar button active states */
+        [data-wysiwyg-toggle-format].active {
+            background-color: #dbeafe;
+            color: #1e40af;
         }
-
-        /* Theme classes applied by JS: allows CSS to drive visual states without inline styles */
-        #quill-editor .ql-toolbar.qf-theme-dark button,
-        #quill-editor .ql-toolbar.qf-theme-dark .ql-picker-label {
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.03) !important;
-        }
-
-        #quill-editor .ql-toolbar.qf-theme-dark button:hover,
-        #quill-editor .ql-toolbar.qf-theme-dark .ql-picker-label:hover {
-            color: var(--qf-border-focus) !important;
-        }
-
-        #quill-editor .ql-toolbar.qf-theme-light button,
-        #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label {
-            color: #374151 !important;
-            background: transparent !important;
-        }
-
-        #quill-editor .ql-toolbar.qf-theme-light button:hover,
-        #quill-editor .ql-toolbar.qf-theme-light .ql-picker-label:hover {
-            color: var(--qf-border-focus) !important;
-        }
-
-        #quill-editor .ql-toolbar svg {
-            stroke: currentColor !important;
-            fill: currentColor !important;
-        }
-
-        /* Dark mode specific toolbar styling for better icon visibility */
-        /* High specificity overrides for Flowbite dark mode */
-        .dark #quill-editor .ql-toolbar button,
-        .dark #quill-editor .ql-toolbar .ql-picker-label,
-        html.dark #quill-editor .ql-toolbar button,
-        html.dark #quill-editor .ql-toolbar .ql-picker-label,
-        [data-theme="dark"] #quill-editor .ql-toolbar button,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label {
-            color: #ffffff !important; /* Pure white for maximum contrast */
-            border: 1px solid transparent !important;
-            border-radius: 0.25rem !important;
-            background: rgba(255, 255, 255, 0.05) !important; /* Subtle background */
-        }
-
-        .dark #quill-editor .ql-toolbar button:hover,
-        .dark #quill-editor .ql-toolbar .ql-picker-label:hover,
-        html.dark #quill-editor .ql-toolbar button:hover,
-        html.dark #quill-editor .ql-toolbar .ql-picker-label:hover,
-        [data-theme="dark"] #quill-editor .ql-toolbar button:hover,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label:hover {
-            background: rgba(96, 165, 250, 0.25) !important; /* More visible hover */
-            border-color: rgba(96, 165, 250, 0.5) !important;
-            color: #ffffff !important; /* Keep white on hover */
-        }
-
-        .dark #quill-editor .ql-toolbar .ql-active,
-        html.dark #quill-editor .ql-toolbar .ql-active,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active {
-            background: rgba(96, 165, 250, 0.3) !important;
-            border-color: rgba(96, 165, 250, 0.6) !important;
-            color: var(--qf-border-focus) !important; /* Accent for active state */
-        }
-
-        /* Active icons in dark mode: accent stroke, no fill */
-        .dark #quill-editor .ql-toolbar .ql-active svg,
-        html.dark #quill-editor .ql-toolbar .ql-active svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg,
-        .dark #quill-editor .ql-toolbar .ql-active svg *,
-        html.dark #quill-editor .ql-toolbar .ql-active svg *,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg * {
-            stroke: var(--qf-border-focus) !important;
-            fill: none !important;
-            stroke-width: 1.8 !important;
-        }
-
-        /* Improve default icon visibility in dark mode: slightly brighter and smoother */
-        .dark #quill-editor .ql-toolbar button svg,
-        html.dark #quill-editor .ql-toolbar button svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar button svg,
-        .dark #quill-editor .ql-toolbar .ql-picker-label svg,
-        html.dark #quill-editor .ql-toolbar .ql-picker-label svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label svg {
-            stroke: rgba(255,255,255,0.88) !important; /* brighter than before */
-            opacity: 0.8 !important; /* inactive icons slightly dim */
-            transition: stroke 140ms ease, opacity 140ms ease, stroke-width 140ms ease;
-            fill: none !important;
-        }
-
-        /* Hover and active state should be full-bright and thicker stroke */
-        .dark #quill-editor .ql-toolbar button:hover svg,
-        .dark #quill-editor .ql-toolbar .ql-active svg,
-        html.dark #quill-editor .ql-toolbar button:hover svg,
-        html.dark #quill-editor .ql-toolbar .ql-active svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar button:hover svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-active svg {
-            stroke: var(--qf-border-focus) !important; /* accent color */
-            opacity: 1 !important;
-            stroke-width: 1.9 !important;
-        }
-
-        /* Disabled or unavailable toolbar items should be more muted */
-        .dark #quill-editor .ql-toolbar button.ql-disabled svg,
-        .dark #quill-editor .ql-toolbar .ql-picker-label.ql-disabled svg {
-            opacity: 0.28 !important;
-            stroke: rgba(255,255,255,0.5) !important;
-        }
-
-        .dark #quill-editor .ql-toolbar svg,
-        html.dark #quill-editor .ql-toolbar svg,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg {
-            stroke: #ffffff !important;
-            fill: none !important; /* Keep icons outlined (no fill) */
-            opacity: 1 !important; /* Ensure full opacity in dark mode */
-            color: #ffffff !important;
-        }
-
-        /* Ensure SVG paths inherit the color properly in dark mode */
-        .dark #quill-editor .ql-toolbar svg path,
-        .dark #quill-editor .ql-toolbar svg line,
-        .dark #quill-editor .ql-toolbar svg rect,
-        .dark #quill-editor .ql-toolbar svg circle,
-        .dark #quill-editor .ql-toolbar svg polygon,
-        html.dark #quill-editor .ql-toolbar svg path,
-        html.dark #quill-editor .ql-toolbar svg line,
-        html.dark #quill-editor .ql-toolbar svg rect,
-        html.dark #quill-editor .ql-toolbar svg circle,
-        html.dark #quill-editor .ql-toolbar svg polygon,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg path,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg line,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg rect,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg circle,
-        [data-theme="dark"] #quill-editor .ql-toolbar svg polygon {
-            stroke: #ffffff !important;
-            fill: none !important; /* Keep paths outlined */
-            color: #ffffff !important;
-        }
-
-        /* Override any Tailwind/Flowbite styles that might interfere */
-        .dark #quill-editor .ql-toolbar button[class*="text-"],
-        .dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
-        html.dark #quill-editor .ql-toolbar button[class*="text-"],
-        html.dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
-        [data-theme="dark"] #quill-editor .ql-toolbar button[class*="text-"],
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label[class*="text-"] {
-            color: #ffffff !important;
-        }
-
-        /* Light mode reset - ensure icons are dark (outlined) when switching back from dark mode */
-        html:not(.dark) #quill-editor .ql-toolbar svg,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg,
-        body:not(.dark) #quill-editor .ql-toolbar svg {
-            stroke: #374151 !important;
-            fill: none !important; /* Keep outlined icons */
-            color: #374151 !important;
-            filter: none !important; /* Remove any invert filters */
-        }
-
-        html:not(.dark) #quill-editor .ql-toolbar svg path,
-        html:not(.dark) #quill-editor .ql-toolbar svg line,
-        html:not(.dark) #quill-editor .ql-toolbar svg rect,
-        html:not(.dark) #quill-editor .ql-toolbar svg circle,
-        html:not(.dark) #quill-editor .ql-toolbar svg polygon,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg path,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg line,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg rect,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg circle,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar svg polygon,
-        body:not(.dark) #quill-editor .ql-toolbar svg path,
-        body:not(.dark) #quill-editor .ql-toolbar svg line,
-        body:not(.dark) #quill-editor .ql-toolbar svg rect,
-        body:not(.dark) #quill-editor .ql-toolbar svg circle,
-        body:not(.dark) #quill-editor .ql-toolbar svg polygon {
-            stroke: #374151 !important;
-            fill: none !important; /* Keep outlined icons */
-            color: #374151 !important;
-        }
-
-        html:not(.dark) #quill-editor .ql-toolbar button,
-        html:not(.dark) #quill-editor .ql-toolbar .ql-picker-label,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar button,
-        html:not([data-theme="dark"]) #quill-editor .ql-toolbar .ql-picker-label,
-        body:not(.dark) #quill-editor .ql-toolbar button,
-        body:not(.dark) #quill-editor .ql-toolbar .ql-picker-label {
-            color: #374151 !important;
-            background: transparent !important;
-        }
-        html.dark #quill-editor .ql-toolbar .ql-picker-label[class*="text-"],
-        [data-theme="dark"] #quill-editor .ql-toolbar button[class*="text-"],
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label[class*="text-"] {
-            color: #ffffff !important;
-        }
-
-        /* Specific targeting for stroke and fill attributes */
-        .dark #quill-editor .ql-toolbar .ql-stroke,
-        html.dark #quill-editor .ql-toolbar .ql-stroke,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-stroke {
-            stroke: #ffffff !important;
-        }
-
-        /* Ensure any elements using .ql-fill are not forced to a solid fill; keep outlines */
-        .dark #quill-editor .ql-toolbar .ql-fill,
-        html.dark #quill-editor .ql-toolbar .ql-fill,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-fill {
-            fill: none !important;
-        }
-
-        /* Force override for any inherited styles - keep fills none */
-        .dark #quill-editor .ql-toolbar button *,
-        .dark #quill-editor .ql-toolbar .ql-picker-label *,
-        html.dark #quill-editor .ql-toolbar button *,
-        html.dark #quill-editor .ql-toolbar .ql-picker-label *,
-        [data-theme="dark"] #quill-editor .ql-toolbar button *,
-        [data-theme="dark"] #quill-editor .ql-toolbar .ql-picker-label * {
-            color: #ffffff !important;
-            stroke: #ffffff !important;
-            fill: none !important; /* Prevent icons from becoming filled */
-        }
-
-        /* Dark mode picker options */
-        .dark #quill-editor .ql-picker-options {
-            background: #374151 !important; /* Darker background for dropdowns */
-            border: 1px solid #4b5563 !important;
-        }
-
-        .dark #quill-editor .ql-picker-item {
-            color: #e5e7eb !important;
-        }
-
-        .dark #quill-editor .ql-picker-item:hover {
-            background: #4b5563 !important;
-            color: #f3f4f6 !important;
-        }
-
-        /* Dropdown pickers for Quill toolbar */
-        #quill-editor .ql-picker-options {
-            background: var(--qf-bg-primary) !important;
-            border: 1px solid var(--qf-border) !important;
-            border-radius: 0.375rem !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-        }
-
-        #quill-editor .ql-picker-item {
-            color: var(--qf-text-primary) !important;
-        }
-
-        #quill-editor .ql-picker-item:hover {
-            background: var(--qf-bg-secondary) !important;
-        }
-
-        #quill-editor .ql-picker-label {
-            color: var(--qf-text-primary) !important;
-        }
-
-        /* Placeholder text */
-        #quill-editor .ql-editor.ql-blank::before {
-            color: var(--qf-placeholder) !important;
-            font-style: italic !important;
+        
+        .dark [data-wysiwyg-toggle-format].active {
+            background-color: #1e3a8a;
+            color: #bfdbfe;
         }
 
         /* Text inputs and textareas */
@@ -358,41 +75,43 @@
         input[type="text"],
         select,
         .choice-item textarea {
-            background: var(--qf-bg-primary) !important;
-            color: var(--qf-text-primary) !important;
-            border: 1px solid var(--qf-border) !important;
-            border-radius: 0.5rem !important;
-            padding: 0.75rem !important;
-            font-size: 14px !important;
-            transition: border-color 0.2s ease-in-out !important;
+            background: #ffffff;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-size: 14px;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        .dark textarea,
+        .dark input[type="text"],
+        .dark select,
+        .dark .choice-item textarea {
+            background: #1f2937;
+            color: #f9fafb;
+            border-color: #4b5563;
         }
 
         textarea:focus,
         input[type="text"]:focus,
         select:focus,
         .choice-item textarea:focus {
-            outline: none !important;
-            border-color: var(--qf-border-focus) !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         textarea::placeholder,
         input[type="text"]::placeholder,
         .choice-item textarea::placeholder {
-            color: var(--qf-placeholder) !important;
+            color: #9ca3af;
         }
 
-        /* Fallback textarea styling */
-        .textarea-fallback {
-            background: var(--qf-bg-primary) !important;
-            color: var(--qf-text-primary) !important;
-            border: 1px solid var(--qf-border) !important;
-            border-radius: 0.5rem !important;
-            padding: 16px !important;
-            min-height: 280px !important;
-            font-family: system-ui, -apple-system, sans-serif !important;
-            font-size: 15px !important;
-            line-height: 1.6 !important;
+        .dark textarea::placeholder,
+        .dark input[type="text"]::placeholder,
+        .dark .choice-item textarea::placeholder {
+            color: #6b7280;
         }
 
         /* Choice checkbox styling */
@@ -409,72 +128,100 @@
 
         /* Correct answer visual states */
         .choice-item.correct-answer {
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
-            border: 3px solid #10b981 !important;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
-            transform: scale(1.02) !important;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 3px solid #10b981;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            transform: scale(1.02);
         }
 
         .choice-item.correct-answer .choice-header {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
         }
 
         .choice-item.correct-answer textarea {
-            border: 2px solid #10b981 !important;
-            background-color: rgba(255, 255, 255, 0.98) !important;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+            border: 2px solid #10b981;
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
         .dark .choice-item.correct-answer textarea {
-            background-color: rgba(31, 41, 55, 0.98) !important;
+            background-color: rgba(31, 41, 55, 0.98);
         }
 
         /* Dark theme adjustments for correct answer (softer, more readable) */
         .dark .choice-item.correct-answer {
-            background: rgba(6, 95, 70, 0.22) !important; /* emerald-800 with opacity */
-            border-color: #059669 !important; /* emerald-600 */
-            box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18) !important;
+            background: rgba(6, 95, 70, 0.22);
+            border-color: #059669;
+            box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18);
         }
 
         .dark .choice-item.correct-answer .choice-header {
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%) !important; /* emerald-800 → emerald-700 */
-            color: #e5fff4 !important; /* soft mint text */
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            color: #e5fff4;
         }
 
         .dark .choice-item.correct-answer .choice-status,
         .dark .choice-item.correct-answer h4 {
-            color: #e5fff4 !important; /* improve contrast on dark */
+            color: #e5fff4;
         }
 
         .dark .choice-item.correct-answer .choice-badge {
-            background-color: #059669 !important; /* emerald-600 */
-            color: #ecfdf5 !important; /* emerald-50 */
+            background-color: #059669;
+            color: #ecfdf5;
         }
 
         /* Layout and small animations */
-        .section-fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .choice-item { transition: all 0.2s ease-in-out; }
-        .choice-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .choice-item { 
+            transition: all 0.2s ease-in-out; 
+        }
+        
+        .choice-item:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        }
 
         /* Modal and thumbnail */
-        #imageModal { backdrop-filter: blur(4px); }
-        #modalImage { transition: transform 0.2s ease-in-out; cursor: zoom-in; }
-        #modalImage:hover { transform: scale(1.02); }
-        .choice-item img { transition: all 0.2s ease-in-out; }
-        .choice-item img:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        #imageModal { 
+            backdrop-filter: blur(4px); 
+        }
+        
+        #modalImage { 
+            transition: transform 0.2s ease-in-out; 
+            cursor: zoom-in; 
+        }
+        
+        #modalImage:hover { 
+            transform: scale(1.02); 
+        }
+        
+        .choice-item img { 
+            transition: all 0.2s ease-in-out; 
+        }
+        
+        .choice-item img:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+        }
 
         /* Responsive tweaks */
         @media (max-width: 768px) {
-            #quill-editor .ql-editor { min-height: 180px !important; }
-            .choice-item { padding: 0.5rem !important; }
+            .wysiwyg-editor { 
+                min-height: 180px; 
+            }
+            .choice-item { 
+                padding: 0.5rem; 
+            }
         }
 
         /* Dark mode adjustments for previews */
-        .dark #imageModal .modal-panel { background-color: #0f172a; }
-        .dark .choice-item img { box-shadow: 0 4px 14px rgba(255,255,255,0.03); }
+        .dark #imageModal .modal-panel { 
+            background-color: #0f172a; 
+        }
+        
+        .dark .choice-item img { 
+            box-shadow: 0 4px 14px rgba(255,255,255,0.03); 
+        }
     </style>
 {% endblock %}
 
@@ -527,12 +274,118 @@
                                         </p>
                                     </div>
                                     <div class="px-6 py-4">
-                                        <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                        <div class="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
                                             <label for="id_question_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Question Text
                                                 <span class="text-red-500">*</span>
                                             </label>
-                                            {{ form.question_text }}
+                                            
+                                            <!-- Flowbite WYSIWYG Editor for Question Text -->
+                                            <div class="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                                <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-600">
+                                                    <div class="flex flex-wrap items-center divide-gray-200 sm:divide-x sm:rtl:divide-x-reverse dark:divide-gray-600">
+                                                        <div class="flex items-center space-x-1 rtl:space-x-reverse sm:pe-4">
+                                                            <button type="button" data-tooltip-target="tooltip-bold-admin" data-wysiwyg-toggle-format="bold" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"/>
+                                                                </svg>
+                                                                <span class="sr-only">Bold</span>
+                                                            </button>
+                                                            <div id="tooltip-bold-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Bold
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-italic-admin" data-wysiwyg-toggle-format="italic" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"/>
+                                                                </svg>
+                                                                <span class="sr-only">Italic</span>
+                                                            </button>
+                                                            <div id="tooltip-italic-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Italic
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-underline-admin" data-wysiwyg-toggle-format="underline" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"/>
+                                                                </svg>
+                                                                <span class="sr-only">Underline</span>
+                                                            </button>
+                                                            <div id="tooltip-underline-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Underline
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex flex-wrap items-center space-x-1 rtl:space-x-reverse sm:ps-4">
+                                                            <button type="button" data-tooltip-target="tooltip-list-admin" data-wysiwyg-toggle-format="unorderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"/>
+                                                                </svg>
+                                                                <span class="sr-only">Bullet list</span>
+                                                            </button>
+                                                            <div id="tooltip-list-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Bullet list
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-ordered-list-admin" data-wysiwyg-toggle-format="orderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h8m-8 6h8m-8 6h8M4 16a2 2 0 1 1 3.321 1.5L4 20h5M4 5l2-1v6m-2 0h4"/>
+                                                                </svg>
+                                                                <span class="sr-only">Ordered list</span>
+                                                            </button>
+                                                            <div id="tooltip-ordered-list-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Ordered list
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-blockquote-admin" data-wysiwyg-toggle-format="blockquote" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path fill-rule="evenodd" d="M6 6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L6 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2H6Zm7 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L13 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2h-3Z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                                <span class="sr-only">Blockquote</span>
+                                                            </button>
+                                                            <div id="tooltip-blockquote-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Blockquote
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            
+                                                            <!-- Separator -->
+                                                            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                                                            
+                                                            <!-- Image Upload Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-image-admin" data-wysiwyg-action="image" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path fill-rule="evenodd" d="M13 10a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H14a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                                                                    <path fill-rule="evenodd" d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12c0 .556-.227 1.06-.593 1.422A.999.999 0 0 1 20.5 20H4a2.002 2.002 0 0 1-2-2V6Zm6.892 12 3.833-5.356-3.99-4.322a1 1 0 0 0-1.549.097L4 12.879V6h16v9.95l-3.257-3.619a1 1 0 0 0-1.557.088L11.2 18H8.892Z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                                <span class="sr-only">Upload Image</span>
+                                                            </button>
+                                                            <div id="tooltip-image-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Upload Image
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+
+                                                            <!-- Math Symbols Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-math-admin" data-wysiwyg-action="math-symbols" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M9 7H7v2H5V7H3V5h2V3h2v2h2v2Zm2 12h10v-2H11v2Zm0-4h10v-2H11v2Zm0-4h10V9H11v2Z"/>
+                                                                </svg>
+                                                                <span class="sr-only">Math Symbols</span>
+                                                            </button>
+                                                            <div id="tooltip-math-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Insert Math Symbols
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
+                                                    <div id="wysiwyg-question-text-admin" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Type your question here...">{{ form.question_text.value|default:"" }}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Hidden textarea for form submission -->
+                                            <textarea id="id_question_text" name="question_text" class="hidden">{{ form.question_text.value|default:"" }}</textarea>
+                                            
                                             {% if form.question_text.errors %}
                                                 {% for error in form.question_text.errors %}
                                                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
@@ -850,11 +703,117 @@
                                         </p>
                                     </div>
                                     <div class="px-6 py-4">
-                                        <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                                        <div class="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
                                             <label for="id_explanation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Pembahasan
                                             </label>
-                                            {{ form.explanation }}
+                                            
+                                            <!-- Flowbite WYSIWYG Editor for Explanation -->
+                                            <div class="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                                <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-600">
+                                                    <div class="flex flex-wrap items-center divide-gray-200 sm:divide-x sm:rtl:divide-x-reverse dark:divide-gray-600">
+                                                        <div class="flex items-center space-x-1 rtl:space-x-reverse sm:pe-4">
+                                                            <button type="button" data-tooltip-target="tooltip-bold-exp-admin" data-wysiwyg-toggle-format="bold" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"/>
+                                                                </svg>
+                                                                <span class="sr-only">Bold</span>
+                                                            </button>
+                                                            <div id="tooltip-bold-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Bold
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-italic-exp-admin" data-wysiwyg-toggle-format="italic" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"/>
+                                                                </svg>
+                                                                <span class="sr-only">Italic</span>
+                                                            </button>
+                                                            <div id="tooltip-italic-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Italic
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-underline-exp-admin" data-wysiwyg-toggle-format="underline" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"/>
+                                                                </svg>
+                                                                <span class="sr-only">Underline</span>
+                                                            </button>
+                                                            <div id="tooltip-underline-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Underline
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex flex-wrap items-center space-x-1 rtl:space-x-reverse sm:ps-4">
+                                                            <button type="button" data-tooltip-target="tooltip-list-exp-admin" data-wysiwyg-toggle-format="unorderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"/>
+                                                                </svg>
+                                                                <span class="sr-only">Bullet list</span>
+                                                            </button>
+                                                            <div id="tooltip-list-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Bullet list
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-ordered-list-exp-admin" data-wysiwyg-toggle-format="orderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h8m-8 6h8m-8 6h8M4 16a2 2 0 1 1 3.321 1.5L4 20h5M4 5l2-1v6m-2 0h4"/>
+                                                                </svg>
+                                                                <span class="sr-only">Ordered list</span>
+                                                            </button>
+                                                            <div id="tooltip-ordered-list-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Ordered list
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            <button type="button" data-tooltip-target="tooltip-blockquote-exp-admin" data-wysiwyg-toggle-format="blockquote" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path fill-rule="evenodd" d="M6 6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L6 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2H6Zm7 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L13 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2h-3Z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                                <span class="sr-only">Blockquote</span>
+                                                            </button>
+                                                            <div id="tooltip-blockquote-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Blockquote
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                            
+                                                            <!-- Separator -->
+                                                            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                                                            
+                                                            <!-- Image Upload Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-image-exp-admin" data-wysiwyg-action="image" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path fill-rule="evenodd" d="M13 10a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H14a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                                                                    <path fill-rule="evenodd" d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12c0 .556-.227 1.06-.593 1.422A.999.999 0 0 1 20.5 20H4a2.002 2.002 0 0 1-2-2V6Zm6.892 12 3.833-5.356-3.99-4.322a1 1 0 0 0-1.549.097L4 12.879V6h16v9.95l-3.257-3.619a1 1 0 0 0-1.557.088L11.2 18H8.892Z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                                <span class="sr-only">Upload Image</span>
+                                                            </button>
+                                                            <div id="tooltip-image-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Upload Image
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+
+                                                            <!-- Math Symbols Button -->
+                                                            <button type="button" data-tooltip-target="tooltip-math-exp-admin" data-wysiwyg-action="math-symbols" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M9 7H7v2H5V7H3V5h2V3h2v2h2v2Zm2 12h10v-2H11v2Zm0-4h10v-2H11v2Zm0-4h10V9H11v2Z"/>
+                                                                </svg>
+                                                                <span class="sr-only">Math Symbols</span>
+                                                            </button>
+                                                            <div id="tooltip-math-exp-admin" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                Insert Math Symbols
+                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
+                                                    <div id="wysiwyg-explanation-admin" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Tulis pembahasan (opsional)...">{{ form.explanation.value|default:"" }}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Hidden textarea for form submission -->
+                                            <textarea id="id_explanation" name="explanation" class="hidden">{{ form.explanation.value|default:"" }}</textarea>
+                                            
                                             {% if form.explanation.errors %}
                                                 {% for error in form.explanation.errors %}
                                                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
@@ -929,561 +888,559 @@
     </div>
 </div>
 
+<!-- Math Symbols Modal -->
+<div id="mathSymbolsModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-4xl max-h-full">
+    <!-- Modal content -->
+    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <!-- Modal header -->
+      <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Math Symbols
+        </h3>
+        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onclick="closeMathSymbolsModal()">
+          <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+          </svg>
+          <span class="sr-only">Close modal</span>
+        </button>
+      </div>
+      <!-- Modal body -->
+      <div class="p-4 md:p-5 space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          
+          <!-- Operasi Dasar -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Operasi Dasar</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="+">+</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="−">−</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="×">×</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="÷">÷</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="=">= </button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≠">≠</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="±">±</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∓">∓</button>
+            </div>
+          </div>
+
+          <!-- Perbandingan -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Perbandingan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="<"><</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol=">">></button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≤">≤</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≥">≥</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≈">≈</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≡">≡</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∝">∝</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∞">∞</button>
+            </div>
+          </div>
+
+          <!-- Eksponen & Akar -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Eksponen & Akar</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="²">²</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="³">³</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ⁿ">ⁿ</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="√">√</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∛">∛</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∜">∜</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ⁱ">ⁱ</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ᵏ">ᵏ</button>
+            </div>
+          </div>
+
+          <!-- Pecahan & Desimal -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Pecahan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="½">½</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅓">⅓</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅔">⅔</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="¼">¼</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="¾">¾</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅕">⅕</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅖">⅖</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅘">⅘</button>
+            </div>
+          </div>
+
+          <!-- Trigonometri -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Trigonometri</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="sin">sin</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="cos">cos</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="tan">tan</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="cot">cot</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="sec">sec</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="csc">csc</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="°">°</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="π">π</button>
+            </div>
+          </div>
+
+          <!-- Logaritma -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Logaritma</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="log">log</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ln">ln</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="lg">lg</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="e">e</button>
+            </div>
+          </div>
+
+          <!-- Himpunan -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Himpunan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∈">∈</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∉">∉</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⊂">⊂</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⊃">⊃</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∪">∪</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∩">∩</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∅">∅</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ℕ">ℕ</button>
+            </div>
+          </div>
+
+          <!-- Lainnya -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Lainnya</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∑">∑</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∏">∏</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∫">∫</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∂">∂</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∆">∆</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∇">∇</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="α">α</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="β">β</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
-    <!-- Quill.js Rich Text Editor Initialization -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Quill Rich Text Editor
-            const questionTextarea = document.querySelector('#id_question_text');
-            const explanationTextarea = document.querySelector('#id_explanation');
-            let quillEditor = null;
-            let quillExplanation = null;
-            
-            console.log('DEBUG: Looking for question textarea...');
-            console.log('Question textarea found:', questionTextarea);
-            console.log('Explanation textarea found:', explanationTextarea);
-            
-            if (questionTextarea) {
-                console.log('Creating Quill editor container...');
-                // Create container for Quill editor
-                const editorContainer = document.createElement('div');
-                editorContainer.id = 'quill-editor';
-                editorContainer.className = 'qf-editor-container rounded-lg shadow-sm';
-                questionTextarea.parentNode.insertBefore(editorContainer, questionTextarea);
-                
-                // Initialize Quill
-                try {
-                    console.log('Initializing Quill editor...');
-                    quillEditor = new Quill('#quill-editor', {
-                        theme: 'snow',
-                        modules: {
-                            toolbar: [
-                                ['bold', 'italic', 'underline'],
-                                ['link', 'blockquote'],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                ['image'],
-                                ['clean']
-                            ]
-                        },
-                        placeholder: 'Type your question here...'
-                    });
-                    
-                    console.log('Quill editor created:', quillEditor);
-                    console.log('Quill container:', document.querySelector('#quill-editor'));
-                    console.log('Quill toolbar:', document.querySelector('#quill-editor .ql-toolbar'));
-                    console.log('Quill toolbar buttons:', document.querySelectorAll('#quill-editor .ql-toolbar button'));
-                    
-                    // Custom Image Upload Handler
-                    quillEditor.getModule('toolbar').addHandler('image', function() {
-                        const input = document.createElement('input');
-                        input.setAttribute('type', 'file');
-                        input.setAttribute('accept', 'image/*');
-                        input.click();
-                        
-                        input.onchange = function() {
-                            const file = input.files[0];
-                            if (file) {
-                                // Show upload progress
-                                const range = quillEditor.getSelection();
-                                quillEditor.insertText(range.index, 'Uploading image...', 'italic', true);
-                                
-                                const formData = new FormData();
-                                formData.append('upload', file);
-                                
-                                // Add CSRF token
-                                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                                
-                                fetch('/admin/image-upload/', {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-CSRFToken': csrfToken
-                                    },
-                                    body: formData
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    // Remove progress text
-                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
-                                    
-                                    if (data.url) {
-                                        // Insert image at cursor position
-                                        quillEditor.insertEmbed(range.index, 'image', data.url);
-                                        quillEditor.setSelection(range.index + 1);
-                                    } else {
-                                        showNotification('Image upload failed: ' + (data.error || 'Unknown error'), 'error');
-                                    }
-                                })
-                                .catch(error => {
-                                    // Remove progress text
-                                    quillEditor.deleteText(range.index, 'Uploading image...'.length);
-                                    console.error('Upload failed:', error);
-                                    showNotification('Image upload failed. Please try again.', 'error');
-                                });
-                            }
-                        };
-                    });
-                    
-                    // Set initial content if textarea has value
-                    if (questionTextarea.value) {
-                        quillEditor.root.innerHTML = questionTextarea.value;
-                    }
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 ADMIN WYSIWYG Editor Initialization Started');
+  
+  // Initialize Flowbite WYSIWYG editors
+  const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+  const explanationEditor = document.querySelector('#wysiwyg-explanation-admin');
+  const questionTextarea = document.querySelector('#id_question_text');
+  const explanationTextarea = document.querySelector('#id_explanation');
 
-                    // Sync editor content with textarea
-                    quillEditor.on('text-change', function() {
-                        questionTextarea.value = quillEditor.root.innerHTML;
-                    });
+  console.log('📝 ADMIN Editor Elements Found:', {
+    questionEditor: !!questionEditor,
+    explanationEditor: !!explanationEditor,
+    questionTextarea: !!questionTextarea,
+    explanationTextarea: !!explanationTextarea
+  });
 
-                    // Hide original textarea (Quill is the visible editor)
-                    questionTextarea.style.display = 'none';
+  // Flowbite WYSIWYG Editor initialization
+  function initializeWysiwygEditor(editor, textarea) {
+    if (!editor || !textarea) return;
 
-                    // Force dark mode icon styling after Quill initialization
-                    setTimeout(function() {
-                        const isDarkMode = document.documentElement.classList.contains('dark') || 
-                                         document.body.classList.contains('dark') ||
-                                         document.querySelector('[data-theme="dark"]');
-                        
-                        if (isDarkMode) {
-                            const toolbar = document.querySelector('#quill-editor .ql-toolbar');
-                            if (toolbar) {
-                                // Force white icons in dark mode
-                                const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
-                                buttons.forEach(button => {
-                                    button.style.color = '#ffffff';
-                                    const svgs = button.querySelectorAll('svg, svg *');
-                                    svgs.forEach(svg => {
-                                        svg.style.stroke = '#ffffff';
-                                        svg.style.fill = '#ffffff';
-                                        svg.style.color = '#ffffff';
-                                        // Add filter as backup
-                                        svg.style.filter = 'brightness(0) invert(1)';
-                                    });
-                                });
-                                
-                                // Style the toolbar itself
-                                toolbar.style.backgroundColor = '#374151';
-                                toolbar.style.borderColor = '#6b7280';
-                            }
-                        }
-                    }, 100);
+    // Set initial content
+    if (textarea.value) {
+      editor.innerHTML = textarea.value;
+    }
 
-                    console.log('Quill editor initialized successfully');
-                    
-                    // Observer for theme changes with throttling to prevent infinite loops
-                    let isFixingIcons = false;
-                    let fixIconsTimeout = null;
-                    
-                    const observer = new MutationObserver(function(mutations) {
-                        // Prevent infinite loops
-                        if (isFixingIcons) {
-                            return;
-                        }
-                        
-                        let shouldRefix = false;
-                        
-                        mutations.forEach(function(mutation) {
-                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                                const target = mutation.target;
-                                if (target === document.documentElement || target === document.body) {
-                                    // Only refix if actual theme change detected
-                                    const oldClasses = mutation.oldValue || '';
-                                    const newClasses = target.className;
-                                    const hadDark = oldClasses.includes('dark');
-                                    const hasDark = newClasses.includes('dark');
-                                    
-                                    if (hadDark !== hasDark) {
-                                        console.log('Actual theme change detected:', hadDark ? 'dark->light' : 'light->dark');
-                                        shouldRefix = true;
-                                    }
-                                }
-                            }
-                            
-                            // Skip toolbar DOM changes that we ourselves cause
-                            if (mutation.type === 'childList' && mutation.target.closest('.ql-toolbar')) {
-                                const target = mutation.target;
-                                // Don't refix if we're just adding/removing our own classes
-                                if (!target.classList.contains('qf-reflow') && !isFixingIcons) {
-                                    console.log('External toolbar DOM change detected');
-                                    shouldRefix = true;
-                                }
-                            }
-                        });
-                        
-                        if (shouldRefix) {
-                            // Clear any pending fix
-                            if (fixIconsTimeout) {
-                                clearTimeout(fixIconsTimeout);
-                            }
-                            
-                            // Throttle fixes to prevent spam
-                            fixIconsTimeout = setTimeout(() => {
-                                console.log('Theme change detected, re-fixing icons...');
-                                window.fixQuillIcons();
-                            }, 200);
-                        }
-                    });
-                    
-                    // Start observing theme changes with oldValue tracking
-                    observer.observe(document.documentElement, {
-                        attributes: true,
-                        attributeOldValue: true,
-                        attributeFilter: ['class', 'data-theme']
-                    });
-                    observer.observe(document.body, {
-                        attributes: true,
-                        attributeOldValue: true,
-                        attributeFilter: ['class', 'data-theme']
-                    });
-                    
-                    // Also observe toolbar for DOM changes
-                    const toolbar = document.querySelector('.ql-toolbar');
-                    if (toolbar) {
-                        observer.observe(toolbar, {
-                            childList: true,
-                            subtree: true
-                        });
-                    }
-                    
-                    // Debug function for manual icon fix (can be called from console)
-                    window.fixQuillIcons = function() {
-                        // Prevent infinite loops
-                        if (isFixingIcons) {
-                            console.log('Already fixing icons, skipping...');
-                            return;
-                        }
-                        
-                        isFixingIcons = true;
-                        console.log('=== Debug Quill Icons Fix ===');
-                        
-                        // Check current theme
-                        const isDarkMode = document.documentElement.classList.contains('dark') || 
-                                         document.body.classList.contains('dark') ||
-                                         document.querySelector('[data-theme="dark"]');
-                        
-                        console.log('Current theme:', isDarkMode ? 'Dark' : 'Light');
-                        
-                        // Try multiple selectors
-                        const selectors = [
-                            '#quill-editor .ql-toolbar',
-                            '.ql-toolbar',
-                            '[class*="ql-toolbar"]',
-                            '.ql-snow .ql-toolbar'
-                        ];
-                        
-                        let toolbar = null;
-                        for (let selector of selectors) {
-                            toolbar = document.querySelector(selector);
-                            console.log(`Trying selector "${selector}":`, toolbar);
-                            if (toolbar) break;
-                        }
-                        
-                        if (!toolbar) {
-                            console.log('No toolbar found. Available Quill elements:');
-                            const quillElements = document.querySelectorAll('[id*="quill"], [class*="ql-"]');
-                            quillElements.forEach((el, i) => {
-                                console.log(`${i}: ${el.tagName}.${el.className}#${el.id}`, el);
-                            });
-                            return;
-                        }
-                        
-                        console.log('Found toolbar:', toolbar);
-                        
-                        // Use CSS classes instead of permanent inline styles so :hover and .ql-active
-                        // remain controllable by CSS when theme toggles.
-                        // Remove any previously injected inline styles that could block CSS state changes.
-                        try {
-                            toolbar.classList.toggle('qf-theme-dark', !!isDarkMode);
-                            toolbar.classList.toggle('qf-theme-light', !isDarkMode);
+    // Handle placeholder display
+    function updatePlaceholder() {
+      const isEmpty = editor.innerHTML.trim() === '' || editor.innerHTML === '<br>' || editor.innerHTML === '<p><br></p>';
+      if (isEmpty) {
+        editor.classList.add('is-empty');
+      } else {
+        editor.classList.remove('is-empty');
+      }
+    }
 
-                            // Remove inline toolbar colors if present so stylesheet rules take precedence
-                            toolbar.style.removeProperty('background-color');
-                            toolbar.style.removeProperty('border-color');
+    // Sync content to hidden textarea
+    function syncContent() {
+      textarea.value = editor.innerHTML;
+      updatePlaceholder();
+    }
 
-                            const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
-                            console.log(`Found ${buttons.length} buttons/pickers - cleaning inline styles`);
+    // Event listeners
+    editor.addEventListener('input', syncContent);
+    editor.addEventListener('paste', function(e) {
+      setTimeout(syncContent, 10); // Allow paste to complete
+    });
+    editor.addEventListener('focus', updatePlaceholder);
+    editor.addEventListener('blur', function() {
+      updatePlaceholder();
+      // Clean up empty paragraphs
+      if (editor.innerHTML === '<p><br></p>' || editor.innerHTML === '<br>') {
+        editor.innerHTML = '';
+      }
+      syncContent();
+    });
 
-                            buttons.forEach((button) => {
-                                // Remove inline styles previously set by JS so CSS :hover/.ql-active can work
-                                button.style.removeProperty('color');
-                                button.style.removeProperty('background');
-                                button.style.removeProperty('border');
-                                button.style.removeProperty('border-radius');
+    // Initial placeholder check
+    updatePlaceholder();
 
-                                // Clean up SVG inline styles to allow CSS-driven stroke/fill
-                                const svgElements = button.querySelectorAll('svg, .ql-stroke, .ql-fill');
-                                svgElements.forEach((svg) => {
-                                    svg.style.removeProperty('stroke');
-                                    svg.style.removeProperty('fill');
-                                    svg.style.removeProperty('color');
-                                    svg.style.removeProperty('filter');
-                                    svg.style.removeProperty('stroke-width');
+    return {
+      getContent: () => editor.innerHTML,
+      setContent: (content) => {
+        editor.innerHTML = content;
+        syncContent();
+      }
+    };
+  }
 
-                                    const children = svg.querySelectorAll('*');
-                                    children.forEach(child => {
-                                        child.style.removeProperty('stroke');
-                                        child.style.removeProperty('fill');
-                                    });
-                                });
-                            });
+  // Initialize both editors
+  const questionWysiwyg = initializeWysiwygEditor(questionEditor, questionTextarea);
+  const explanationWysiwyg = initializeWysiwygEditor(explanationEditor, explanationTextarea);
 
-                            // Ensure stylesheet has the right class-based selectors; toggle a reflow class
-                            toolbar.classList.add('qf-reflow');
-                            setTimeout(() => toolbar.classList.remove('qf-reflow'), 50);
-                        } catch (e) {
-                            console.warn('Error cleaning inline styles for Quill toolbar:', e);
-                        }
-                        
-                        console.log(`Icons fix completed for ${isDarkMode ? 'dark' : 'light'} mode!`);
-                        
-                        // Reset flag after a short delay to allow DOM changes to settle
-                        setTimeout(() => {
-                            isFixingIcons = false;
-                        }, 100);
-                        
-                        return toolbar;
-                    };
-                    
-                    // Debug function to find all Quill-related elements
-                    window.debugQuillElements = function() {
-                        console.log('=== Debug All Quill Elements ===');
-                        
-                        const allElements = document.querySelectorAll('*');
-                        const quillElements = [];
-                        
-                        allElements.forEach(el => {
-                            if (el.id && el.id.includes('quill')) {
-                                quillElements.push({type: 'id', selector: '#' + el.id, element: el});
-                            }
-                            if (el.className && el.className.toString().includes('ql-')) {
-                                quillElements.push({type: 'class', selector: '.' + el.className.toString().split(' ').find(c => c.includes('ql-')), element: el});
-                            }
-                        });
-                        
-                        console.log('Found Quill elements:', quillElements);
-                        
-                        // Check if textarea exists
-                        const textarea = document.querySelector('#id_question_text');
-                        console.log('Question textarea:', textarea);
-                        
-                        // Check if editor container exists
-                        const container = document.querySelector('#quill-editor');
-                        console.log('Quill container:', container);
-                        
-                        if (container) {
-                            console.log('Container children:', container.children);
-                        }
-                        
-                        return quillElements;
-                    };
-                    
-                    // Force re-initialize Quill if needed
-                    window.forceQuillInit = function() {
-                        console.log('=== Force Quill Re-initialization ===');
-                        
-                        const textarea = document.querySelector('#id_question_text');
-                        if (!textarea) {
-                            console.log('No textarea found');
-                            return;
-                        }
-                        
-                        // Remove existing Quill container if any
-                        const existingContainer = document.querySelector('#quill-editor');
-                        if (existingContainer) {
-                            existingContainer.remove();
-                        }
-                        
-                        // Show textarea temporarily
-                        textarea.style.display = 'block';
-                        
-                        // Create new container
-                        const newContainer = document.createElement('div');
-                        newContainer.id = 'quill-editor';
-                        newContainer.className = 'qf-editor-container rounded-lg shadow-sm';
-                        textarea.parentNode.insertBefore(newContainer, textarea);
-                        
-                        // Re-initialize Quill
-                        const newQuill = new Quill('#quill-editor', {
-                            theme: 'snow',
-                            modules: {
-                                toolbar: [
-                                    ['bold', 'italic', 'underline'],
-                                    ['link', 'blockquote'],
-                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                    [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                    ['image'],
-                                    ['clean']
-                                ]
-                            },
-                            placeholder: 'Type your question here...'
-                        });
-                        
-                        if (textarea.value) {
-                            newQuill.root.innerHTML = textarea.value;
-                        }
-                        
-                        newQuill.on('text-change', function() {
-                            textarea.value = newQuill.root.innerHTML;
-                        });
-                        
-                        textarea.style.display = 'none';
-                        
-                        // Fix icons immediately
-                        setTimeout(() => window.fixQuillIcons(), 100);
-                        
-                        console.log('Quill re-initialized');
-                        return newQuill;
-                    };
-                    
-                    // Persistent icon fix - runs periodically to ensure icons match current theme
-                    window.persistentIconFix = function() {
-                        // Skip if already fixing icons
-                        if (isFixingIcons) {
-                            return;
-                        }
-                        
-                        const isDarkMode = document.documentElement.classList.contains('dark') || 
-                                         document.body.classList.contains('dark') ||
-                                         document.querySelector('[data-theme="dark"]');
-                        
-                        const toolbar = document.querySelector('.ql-toolbar');
-                        if (toolbar) {
-                            const buttons = toolbar.querySelectorAll('button, .ql-picker-label');
-                            let needsFix = false;
-                            
-                            buttons.forEach(button => {
-                                // Remove lingering inline styles so CSS :hover and .ql-active work
-                                button.style.removeProperty('color');
-                                button.style.removeProperty('background');
-                                button.style.removeProperty('border');
+  // Flowbite WYSIWYG Toolbar functionality
+  function initializeToolbar() {
+    console.log('🎛️ ADMIN Initializing toolbar functionality...');
+    
+    const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
+    console.log('🔘 ADMIN Format buttons found:', formatButtons.length);
+    
+    formatButtons.forEach((button, index) => {
+      console.log(`🔘 ADMIN Button ${index + 1}:`, button.getAttribute('data-wysiwyg-toggle-format'));
+      
+      button.addEventListener('click', function(e) {
+        console.log('🖱️ ADMIN Button clicked:', this.getAttribute('data-wysiwyg-toggle-format'));
+        
+        e.preventDefault();
+        const format = this.getAttribute('data-wysiwyg-toggle-format');
+        
+        // Find the associated editor - look for the parent container with border class
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        console.log('🔍 ADMIN Editor lookup:', {
+          toolbar: toolbar ? 'found' : 'not found',
+          editorContainer: editorContainer ? 'found' : 'not found',
+          editor: editor ? editor.id : 'not found'
+        });
+        
+        if (!editor) {
+          console.warn('❌ ADMIN Editor not found for button:', this);
+          return;
+        }
 
-                                const svgElements = button.querySelectorAll('svg, .ql-stroke, .ql-fill');
-                                svgElements.forEach(svg => {
-                                    svg.style.removeProperty('stroke');
-                                    svg.style.removeProperty('fill');
-                                    svg.style.removeProperty('filter');
-                                    svg.style.removeProperty('stroke-width');
-                                    const children = svg.querySelectorAll('*');
-                                    children.forEach(child => {
-                                        child.style.removeProperty('stroke');
-                                        child.style.removeProperty('fill');
-                                    });
-                                });
-                            });
-                            
-                            // Allow CSS to determine if active/hover states are applied; still run a quick check
-                            setTimeout(() => window.fixQuillIcons(), 80);
-                        }
-                    };
-                    
-                    // Run periodic check every 5 seconds (reduced frequency)
-                    let periodicCheckInterval = setInterval(() => {
-                        if (!isFixingIcons) {
-                            window.persistentIconFix();
-                        }
-                    }, 5000);
-                    
-                    // Auto-fix on initialization if in dark mode
-                    const checkAndFixIcons = () => {
-                        // Skip if already fixing
-                        if (isFixingIcons) {
-                            return false;
-                        }
-                        
-                        const isDarkMode = document.documentElement.classList.contains('dark') || 
-                                         document.body.classList.contains('dark') ||
-                                         document.querySelector('[data-theme="dark"]');
-                        
-                        if (isDarkMode) {
-                            console.log('Dark mode detected, applying icon fixes...');
-                            return window.fixQuillIcons();
-                        }
-                        return false;
-                    };
-                    
-                    // Multiple retry attempts with better timing (reduced attempts)
-                    const attemptFix = (attempt = 1) => {
-                        if (isFixingIcons) {
-                            return;
-                        }
-                        
-                        console.log(`Auto-fix attempt ${attempt}`);
-                        const result = checkAndFixIcons();
-                        
-                        if (!result && attempt < 2) { // Reduced from 3 to 2
-                            setTimeout(() => attemptFix(attempt + 1), 1000 * attempt); // Increased delay
-                        } else if (result) {
-                            console.log('Icons successfully fixed on attempt', attempt);
-                        }
-                    };
-                        
-                        if (!result && attempt < 3) {
-                            setTimeout(() => attemptFix(attempt + 1), 500 * attempt);
-                        } else if (result) {
-                            console.log('Icons successfully fixed on attempt', attempt);
-                        }
-                    };
-                    
-                    // Initial fix attempt
-                    setTimeout(() => attemptFix(), 100);
-                    
-                } catch (error) {
-                    console.error('Quill initialization failed:', error);
-                    // Show textarea as fallback with consistent styling
-                    questionTextarea.style.display = 'block';
-                    questionTextarea.classList.add('textarea-fallback');
-                    if (editorContainer) {
-                        editorContainer.style.display = 'none';
-                    }
-                    showNotification('Rich text editor failed to load. Using fallback editor.', 'warning');
-                }
+        // Focus the editor
+        editor.focus();
+        
+        // Apply formatting based on Flowbite WYSIWYG commands
+        let success = false;
+        
+        try {
+          switch(format) {
+            case 'bold':
+              success = document.execCommand('bold', false, null);
+              break;
+            case 'italic':
+              success = document.execCommand('italic', false, null);
+              break;
+            case 'underline':
+              success = document.execCommand('underline', false, null);
+              break;
+            case 'unorderedList':
+              success = document.execCommand('insertUnorderedList', false, null);
+              break;
+            case 'orderedList':
+              success = document.execCommand('insertOrderedList', false, null);
+              break;
+            case 'blockquote':
+              success = document.execCommand('formatBlock', false, 'blockquote');
+              break;
+            case 'h1':
+              success = document.execCommand('formatBlock', false, 'h1');
+              break;
+            case 'h2':
+              success = document.execCommand('formatBlock', false, 'h2');
+              break;
+            case 'h3':
+              success = document.execCommand('formatBlock', false, 'h3');
+              break;
+            case 'paragraph':
+              success = document.execCommand('formatBlock', false, 'p');
+              break;
+          }
+        } catch (error) {
+          console.warn('❌ ADMIN execCommand failed:', error);
+        }
+        
+        // Update visual state of button with more visible colors for light theme
+        if (success) {
+          console.log('✅ ADMIN Format applied successfully:', format);
+          
+          // Toggle button state based on current format state
+          const isCurrentlyActive = this.classList.contains('text-white') && this.classList.contains('bg-blue-600');
+          
+          if (!isCurrentlyActive) {
+            // Remove existing states and add active state
+            this.classList.remove('text-blue-700', 'bg-gray-100');
+            this.classList.add('text-white', 'bg-blue-600');
+            this.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)';
+          } else {
+            // Remove active state if already active (toggle behavior)
+            this.classList.remove('text-white', 'bg-blue-600');
+            this.style.boxShadow = '';
+          }
+        } else {
+          console.log('❌ ADMIN Format application failed:', format);
+        }
+        
+        // Sync content to textarea
+        const textarea = editor.id === 'wysiwyg-question-text-admin' ? questionTextarea : explanationTextarea;
+        if (textarea) {
+          textarea.value = editor.innerHTML;
+        }
+        
+        // Trigger input event for any additional listeners
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
+
+    // Initialize text formatting buttons (for active state)
+    document.querySelectorAll('[data-wysiwyg-toggle-format]').forEach(button => {
+      const format = button.getAttribute('data-wysiwyg-toggle-format');
+      
+      // Add Flowbite button styling if not already present
+      if (!button.classList.contains('p-2')) {
+        button.classList.add('p-2', 'text-gray-500', 'rounded', 'cursor-pointer', 'hover:text-gray-900', 'hover:bg-gray-100', 'dark:text-gray-400', 'dark:hover:text-white', 'dark:hover:bg-gray-600');
+      }
+    });
+  }
+
+  // Initialize toolbar
+  initializeToolbar();
+
+  // Additional toolbar functionality for image upload and math
+  function initializeSpecialActions() {
+    // Handle image upload buttons
+    document.querySelectorAll('[data-wysiwyg-action="image"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Find the associated editor - look for the parent container
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for image button:', this);
+          return;
+        }
+        
+        // Create file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        
+        input.onchange = function() {
+          const file = input.files[0];
+          if (!file) return;
+          
+          // Show loading indicator
+          const loadingText = document.createElement('span');
+          loadingText.textContent = 'Uploading image...';
+          loadingText.style.color = '#6b7280';
+          loadingText.style.fontStyle = 'italic';
+          
+          // Insert loading text at cursor position
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(loadingText);
+            range.collapse(false);
+          }
+          
+          // Upload file
+          const formData = new FormData();
+          formData.append('upload', file);
+          formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+          
+          fetch('/admin/image-upload/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             }
-
-            // Initialize Quill for Explanation (optional)
-            if (explanationTextarea) {
-                // Create container for Quill editor
-                const explanationContainer = document.createElement('div');
-                explanationContainer.id = 'quill-explanation';
-                explanationContainer.className = 'qf-editor-container rounded-lg shadow-sm';
-                explanationTextarea.parentNode.insertBefore(explanationContainer, explanationTextarea);
-
-                try {
-                    quillExplanation = new Quill('#quill-explanation', {
-                        theme: 'snow',
-                        modules: {
-                            toolbar: [
-                                ['bold', 'italic', 'underline'],
-                                ['link', 'blockquote'],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                ['image'],
-                                ['clean']
-                            ]
-                        },
-                        placeholder: 'Tulis pembahasan (opsional)...'
-                    });
-
-                    if (explanationTextarea.value) {
-                        quillExplanation.root.innerHTML = explanationTextarea.value;
-                    }
-
-                    quillExplanation.on('text-change', function() {
-                        explanationTextarea.value = quillExplanation.root.innerHTML;
-                    });
-
-                    explanationTextarea.style.display = 'none';
-                } catch (error) {
-                    console.error('Quill initialization for explanation failed:', error);
-                    explanationTextarea.style.display = 'block';
-                    explanationTextarea.classList.add('textarea-fallback');
-                    if (explanationContainer) {
-                        explanationContainer.style.display = 'none';
-                    }
-                }
+          })
+          .then(response => response.json())
+          .then(data => {
+            // Remove loading text
+            if (loadingText.parentNode) {
+              loadingText.parentNode.removeChild(loadingText);
             }
             
-            // Question type functionality
+            if (data.url) {
+              // Create image element
+              const img = document.createElement('img');
+              img.src = data.url;
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.display = 'block';
+              img.style.margin = '10px 0';
+              img.style.borderRadius = '8px';
+              img.style.cursor = 'pointer';
+              img.onclick = function() {
+                window.openImageModal(data.url, 'Uploaded Image');
+              };
+              
+              // Insert image at cursor position
+              const selection = window.getSelection();
+              if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.insertNode(img);
+                range.collapse(false);
+              } else {
+                editor.appendChild(img);
+              }
+              
+              // Update textarea
+              const textarea = editor.id === 'wysiwyg-question-text-admin' ? questionTextarea : explanationTextarea;
+              if (textarea) {
+                textarea.value = editor.innerHTML;
+              }
+              
+              // Trigger input event
+              editor.dispatchEvent(new Event('input', { bubbles: true }));
+              
+              // Show success message
+              showNotification('Image uploaded successfully!', 'success');
+            } else {
+              showNotification('Failed to upload image: ' + (data.error || 'Unknown error'), 'error');
+            }
+          })
+          .catch(error => {
+            // Remove loading text
+            if (loadingText.parentNode) {
+              loadingText.parentNode.removeChild(loadingText);
+            }
+            console.error('Upload failed:', error);
+            showNotification('Image upload failed. Please try again.', 'error');
+          });
+        };
+        
+        // Trigger file selection
+        document.body.appendChild(input);
+        input.click();
+        document.body.removeChild(input);
+      });
+    });
+
+    // Handle math symbols buttons
+    document.querySelectorAll('[data-wysiwyg-action="math-symbols"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Find the associated editor
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for math symbols button:', this);
+          return;
+        }
+        
+        // Store the current editor for symbol insertion
+        window.currentMathEditor = editor;
+        
+        // Show math symbols modal
+        showMathSymbolsModal();
+      });
+    });
+    
+    // Math symbols modal functions
+    window.showMathSymbolsModal = function() {
+      const modal = document.getElementById('mathSymbolsModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+    
+    window.closeMathSymbolsModal = function() {
+      const modal = document.getElementById('mathSymbolsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+    
+    // Handle math symbol selection
+    document.querySelectorAll('.math-symbol-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const symbol = this.getAttribute('data-symbol');
+        
+        if (window.currentMathEditor && symbol) {
+          // Focus the editor
+          window.currentMathEditor.focus();
+          
+          // Insert symbol at cursor position
+          document.execCommand('insertText', false, symbol);
+          
+          // Sync content to textarea
+          const questionTextarea = document.getElementById('id_question_text');
+          const explanationTextarea = document.getElementById('id_explanation');
+          
+          if (window.currentMathEditor.id === 'wysiwyg-question-text-admin') {
+            questionTextarea.value = window.currentMathEditor.innerHTML;
+          } else if (window.currentMathEditor.id === 'wysiwyg-explanation-text-admin') {
+            explanationTextarea.value = window.currentMathEditor.innerHTML;
+          }
+          
+          // Close modal
+          closeMathSymbolsModal();
+          
+          // Show notification
+          showNotification('Math symbol inserted!', 'success');
+        }
+      });
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('mathSymbolsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeMathSymbolsModal();
+      }
+    });
+  }
+
+  // Initialize special actions
+  initializeSpecialActions();
+  
+  // Log initialization status
+  console.log('🔧 ADMIN Toolbar initialized');
+  console.log('✨ ADMIN Special actions initialized');
+
+  // Log toolbar buttons found
+  const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
+  const imageButtons = document.querySelectorAll('[data-wysiwyg-action="image"]');
+  const mathButtons = document.querySelectorAll('[data-wysiwyg-action="math"]');
+  
+  console.log('🎛️ ADMIN Toolbar buttons found:', {
+    formatButtons: formatButtons.length,
+    imageButtons: imageButtons.length,
+    mathButtons: mathButtons.length
+  });
+  
+  // Initialize Python environment info display (legacy code removed)
+  // Quill.js code has been replaced with Flowbite WYSIWYG
+            
+  // Question type functionality
             const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
             const choicesSection = document.getElementById('choicesSection');
             const essayAnswerSection = document.getElementById('essayAnswerSection');
@@ -1529,20 +1486,24 @@
                 form.addEventListener('submit', function(e) {
                     const category = document.querySelector('#id_category');
                     
-                    // Get content from Quill editor or textarea
+                    // Get content from Flowbite WYSIWYG editors
                     let questionContent = '';
-                    if (quillEditor) {
-                        questionContent = quillEditor.root.innerHTML.trim();
-                        // Also check for empty content (just HTML tags)
-                        const textContent = quillEditor.getText().trim();
-                        if (!textContent) questionContent = '';
+                    const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+                    if (questionEditor) {
+                        questionContent = questionEditor.innerHTML.trim();
+                        // Check for empty content (just HTML tags with no text)
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = questionContent;
+                        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                        if (!textContent.trim()) questionContent = '';
                     } else if (questionTextarea) {
                         questionContent = questionTextarea.value.trim();
                     }
 
-                    // Ensure explanation value is synced (optional field)
-                    if (quillExplanation && explanationTextarea) {
-                        explanationTextarea.value = quillExplanation.root.innerHTML;
+                    // Sync explanation content from Flowbite WYSIWYG to textarea
+                    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
+                    if (explanationEditor && explanationTextarea) {
+                        explanationTextarea.value = explanationEditor.innerHTML;
                     }
                     
                     if (!questionContent || (category && !category.value)) {

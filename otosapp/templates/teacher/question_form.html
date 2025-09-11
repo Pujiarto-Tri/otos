@@ -4,15 +4,70 @@
 {% block title %}{% if question %}Edit Question{% else %}Create Question{% endif %}{% endblock %}
 
 {% block extrahead %}
-    <!-- Quill.js Rich Text Editor -->
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML"></script>
+    <!-- Flowbite WYSIWYG Editor -->
     <script src="https://unpkg.com/flowbite@1.7.0/dist/flowbite.min.js"></script>
-  {% include 'includes/_quill_toolbar_css.html' %}
     <style>
       .section-fade-in { animation: fadeIn 0.25s ease-in-out; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      
+      /* WYSIWYG Editor custom styles */
+      .wysiwyg-editor {
+        min-height: 200px;
+      }
+      
+      .prose {
+        max-width: none;
+      }
+      
+      .prose p {
+        margin-bottom: 1em;
+      }
+      
+      .prose ul, .prose ol {
+        margin: 1em 0;
+        padding-left: 2em;
+      }
+      
+      .prose blockquote {
+        border-left: 4px solid #e5e7eb;
+        padding-left: 1em;
+        margin: 1em 0;
+        font-style: italic;
+      }
+      
+      .dark .prose blockquote {
+        border-left-color: #6b7280;
+      }
+      
+      /* Placeholder styling for empty WYSIWYG editors */
+      [data-wysiwyg="true"].is-empty:before {
+        content: attr(data-placeholder);
+        color: #9ca3af;
+        font-style: italic;
+        pointer-events: none;
+        position: absolute;
+      }
+      
+      .dark [data-wysiwyg="true"].is-empty:before {
+        color: #6b7280;
+      }
+      
+      /* Ensure proper focus outline for accessibility */
+      [data-wysiwyg="true"]:focus {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+      
+      /* Format toolbar button active states */
+      [data-wysiwyg-toggle-format].active {
+        background-color: #dbeafe;
+        color: #1e40af;
+      }
+      
+      .dark [data-wysiwyg-toggle-format].active {
+        background-color: #1e3a8a;
+        color: #bfdbfe;
+      }
     </style>
 {% endblock %}
 
@@ -61,11 +116,117 @@
                 </p>
               </div>
               <div class="px-6 py-4">
-                <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <div class="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
                   <label for="id_question_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Question Text <span class="text-red-500">*</span>
                   </label>
-                {{ form.question_text }}
+                  
+                  <!-- Flowbite WYSIWYG Editor for Question Text -->
+                  <div class="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                    <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-600">
+                      <div class="flex flex-wrap items-center divide-gray-200 sm:divide-x sm:rtl:divide-x-reverse dark:divide-gray-600">
+                        <div class="flex items-center space-x-1 rtl:space-x-reverse sm:pe-4">
+                          <button type="button" data-tooltip-target="tooltip-bold" data-wysiwyg-toggle-format="bold" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"/>
+                            </svg>
+                            <span class="sr-only">Bold</span>
+                          </button>
+                          <div id="tooltip-bold" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Bold
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-italic" data-wysiwyg-toggle-format="italic" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"/>
+                            </svg>
+                            <span class="sr-only">Italic</span>
+                          </button>
+                          <div id="tooltip-italic" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Italic
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-underline" data-wysiwyg-toggle-format="underline" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"/>
+                            </svg>
+                            <span class="sr-only">Underline</span>
+                          </button>
+                          <div id="tooltip-underline" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Underline
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                        </div>
+                        <div class="flex flex-wrap items-center space-x-1 rtl:space-x-reverse sm:ps-4">
+                          <button type="button" data-tooltip-target="tooltip-list" data-wysiwyg-toggle-format="unorderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"/>
+                            </svg>
+                            <span class="sr-only">Bullet list</span>
+                          </button>
+                          <div id="tooltip-list" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Bullet list
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-ordered-list" data-wysiwyg-toggle-format="orderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h8m-8 6h8m-8 6h8M4 16a2 2 0 1 1 3.321 1.5L4 20h5M4 5l2-1v6m-2 0h4"/>
+                            </svg>
+                            <span class="sr-only">Ordered list</span>
+                          </button>
+                          <div id="tooltip-ordered-list" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Ordered list
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-blockquote" data-wysiwyg-toggle-format="blockquote" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path fill-rule="evenodd" d="M6 6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L6 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2H6Zm7 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L13 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2h-3Z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="sr-only">Blockquote</span>
+                          </button>
+                          <div id="tooltip-blockquote" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Blockquote
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          
+                          <!-- Separator -->
+                          <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                          
+                          <!-- Image Upload Button -->
+                          <button type="button" data-tooltip-target="tooltip-image" data-wysiwyg-action="image" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path fill-rule="evenodd" d="M13 10a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H14a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                              <path fill-rule="evenodd" d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12c0 .556-.227 1.06-.593 1.422A.999.999 0 0 1 20.5 20H4a2.002 2.002 0 0 1-2-2V6Zm6.892 12 3.833-5.356-3.99-4.322a1 1 0 0 0-1.549.097L4 12.879V6h16v9.95l-3.257-3.619a1 1 0 0 0-1.557.088L11.2 18H8.892Z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="sr-only">Upload Image</span>
+                          </button>
+                          <div id="tooltip-image" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Upload Image
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+
+                          <!-- Math Symbols Button -->
+                          <button type="button" data-tooltip-target="tooltip-math" data-wysiwyg-action="math-symbols" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 7H7v2H5V7H3V5h2V3h2v2h2v2Zm2 12h10v-2H11v2Zm0-4h10v-2H11v2Zm0-4h10V9H11v2Z"/>
+                            </svg>
+                            <span class="sr-only">Math Symbols</span>
+                          </button>
+                          <div id="tooltip-math" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Insert Math Symbols
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
+                      <div id="wysiwyg-question-text" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Type your question here...">{{ form.question_text.value|default:"" }}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Hidden textarea for form submission -->
+                  <textarea id="id_question_text" name="question_text" class="hidden">{{ form.question_text.value|default:"" }}</textarea>
+                  
                   {% if form.question_text.errors %}
                     {% for error in form.question_text.errors %}
                       <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
@@ -230,9 +391,114 @@
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Tambahkan penjelasan mengapa jawabannya seperti itu. Kosongkan jika tidak diperlukan.</p>
               </div>
               <div class="px-6 py-4">
-                <div class ="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <div class="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
                   <label for="id_explanation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pembahasan</label>
-                  {{ form.explanation }}
+                  
+                  <!-- Flowbite WYSIWYG Editor for Explanation -->
+                  <div class="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                    <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-600">
+                      <div class="flex flex-wrap items-center divide-gray-200 sm:divide-x sm:rtl:divide-x-reverse dark:divide-gray-600">
+                        <div class="flex items-center space-x-1 rtl:space-x-reverse sm:pe-4">
+                          <button type="button" data-tooltip-target="tooltip-bold-exp" data-wysiwyg-toggle-format="bold" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"/>
+                            </svg>
+                            <span class="sr-only">Bold</span>
+                          </button>
+                          <div id="tooltip-bold-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Bold
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-italic-exp" data-wysiwyg-toggle-format="italic" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"/>
+                            </svg>
+                            <span class="sr-only">Italic</span>
+                          </button>
+                          <div id="tooltip-italic-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Italic
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-underline-exp" data-wysiwyg-toggle-format="underline" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"/>
+                            </svg>
+                            <span class="sr-only">Underline</span>
+                          </button>
+                          <div id="tooltip-underline-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Underline
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                        </div>
+                        <div class="flex flex-wrap items-center space-x-1 rtl:space-x-reverse sm:ps-4">
+                          <button type="button" data-tooltip-target="tooltip-list-exp" data-wysiwyg-toggle-format="unorderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"/>
+                            </svg>
+                            <span class="sr-only">Bullet list</span>
+                          </button>
+                          <div id="tooltip-list-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Bullet list
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-ordered-list-exp" data-wysiwyg-toggle-format="orderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h8m-8 6h8m-8 6h8M4 16a2 2 0 1 1 3.321 1.5L4 20h5M4 5l2-1v6m-2 0h4"/>
+                            </svg>
+                            <span class="sr-only">Ordered list</span>
+                          </button>
+                          <div id="tooltip-ordered-list-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Ordered list
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          <button type="button" data-tooltip-target="tooltip-blockquote-exp" data-wysiwyg-toggle-format="blockquote" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path fill-rule="evenodd" d="M6 6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L6 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2H6Zm7 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L13 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2h-3Z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="sr-only">Blockquote</span>
+                          </button>
+                          <div id="tooltip-blockquote-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Blockquote
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                          
+                          <!-- Separator -->
+                          <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                          
+                          <!-- Image Upload Button -->
+                          <button type="button" data-tooltip-target="tooltip-image-exp" data-wysiwyg-action="image" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path fill-rule="evenodd" d="M13 10a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H14a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                              <path fill-rule="evenodd" d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12c0 .556-.227 1.06-.593 1.422A.999.999 0 0 1 20.5 20H4a2.002 2.002 0 0 1-2-2V6Zm6.892 12 3.833-5.356-3.99-4.322a1 1 0 0 0-1.549.097L4 12.879V6h16v9.95l-3.257-3.619a1 1 0 0 0-1.557.088L11.2 18H8.892Z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="sr-only">Upload Image</span>
+                          </button>
+                          <div id="tooltip-image-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Upload Image
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+
+                          <!-- Math Symbols Button -->
+                          <button type="button" data-tooltip-target="tooltip-math-exp" data-wysiwyg-action="math-symbols" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 7H7v2H5V7H3V5h2V3h2v2h2v2Zm2 12h10v-2H11v2Zm0-4h10v-2H11v2Zm0-4h10V9H11v2Z"/>
+                            </svg>
+                            <span class="sr-only">Math Symbols</span>
+                          </button>
+                          <div id="tooltip-math-exp" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                            Insert Math Symbols
+                            <div class="tooltip-arrow" data-popper-arrow></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
+                      <div id="wysiwyg-explanation" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Tulis pembahasan (opsional)...">{{ form.explanation.value|default:"" }}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Hidden textarea for form submission -->
+                  <textarea id="id_explanation" name="explanation" class="hidden">{{ form.explanation.value|default:"" }}</textarea>
                 </div>
               </div>
             </div>
@@ -248,61 +514,616 @@
     </div>
   </div>
 </section>
+
+<!-- Math Symbols Modal -->
+<div id="mathSymbolsModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-4xl max-h-full">
+    <!-- Modal content -->
+    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <!-- Modal header -->
+      <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Math Symbols
+        </h3>
+        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onclick="closeMathSymbolsModal()">
+          <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+          </svg>
+          <span class="sr-only">Close modal</span>
+        </button>
+      </div>
+      <!-- Modal body -->
+      <div class="p-4 md:p-5 space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          
+          <!-- Operasi Dasar -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Operasi Dasar</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="+">+</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="−">−</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="×">×</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="÷">÷</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="=">= </button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≠">≠</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="±">±</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∓">∓</button>
+            </div>
+          </div>
+
+          <!-- Perbandingan -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Perbandingan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="<"><</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol=">">></button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≤">≤</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≥">≥</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≈">≈</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="≡">≡</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∝">∝</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∞">∞</button>
+            </div>
+          </div>
+
+          <!-- Eksponen & Akar -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Eksponen & Akar</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="²">²</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="³">³</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ⁿ">ⁿ</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="√">√</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∛">∛</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∜">∜</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ⁱ">ⁱ</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ᵏ">ᵏ</button>
+            </div>
+          </div>
+
+          <!-- Pecahan & Desimal -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Pecahan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="½">½</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅓">⅓</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅔">⅔</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="¼">¼</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="¾">¾</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅕">⅕</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅖">⅖</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⅘">⅘</button>
+            </div>
+          </div>
+
+          <!-- Trigonometri -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Trigonometri</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="sin">sin</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="cos">cos</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="tan">tan</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="cot">cot</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="sec">sec</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="csc">csc</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="°">°</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="π">π</button>
+            </div>
+          </div>
+
+          <!-- Logaritma -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Logaritma</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="log">log</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ln">ln</button>
+              <button type="button" class="math-symbol-btn p-2 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="lg">lg</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="e">e</button>
+            </div>
+          </div>
+
+          <!-- Himpunan -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Himpunan</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∈">∈</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∉">∉</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⊂">⊂</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="⊃">⊃</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∪">∪</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∩">∩</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∅">∅</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="ℕ">ℕ</button>
+            </div>
+          </div>
+
+          <!-- Lainnya -->
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 dark:text-white">Lainnya</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∑">∑</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∏">∏</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∫">∫</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∂">∂</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∆">∆</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="∇">∇</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="α">α</button>
+              <button type="button" class="math-symbol-btn p-2 text-lg border rounded hover:bg-gray-100 dark:hover:bg-gray-600" data-symbol="β">β</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 WYSIWYG Editor Initialization Started');
+  
+  // Initialize Flowbite WYSIWYG editors
+  const questionEditor = document.querySelector('#wysiwyg-question-text');
+  const explanationEditor = document.querySelector('#wysiwyg-explanation');
   const questionTextarea = document.querySelector('#id_question_text');
   const explanationTextarea = document.querySelector('#id_explanation');
-  let quillEditor = null;
-  let quillExplanation = null;
 
-  if (questionTextarea) {
-    const editorContainer = document.createElement('div');
-    editorContainer.id = 'quill-editor';
-    editorContainer.className = 'qf-editor-container rounded-lg shadow-sm';
-    questionTextarea.parentNode.insertBefore(editorContainer, questionTextarea);
-    try {
-      quillEditor = new Quill('#quill-editor', { theme: 'snow', modules: { toolbar: [['bold','italic','underline'], ['link','blockquote'], [{ list: 'ordered' }, { list: 'bullet' }], [{ indent: '-1' }, { indent: '+1' }], ['image'], ['clean']] }, placeholder: 'Type your question here...' });
-      if (questionTextarea.value) quillEditor.root.innerHTML = questionTextarea.value;
-      quillEditor.on('text-change', function(){ questionTextarea.value = quillEditor.root.innerHTML; });
-      questionTextarea.style.display = 'none';
-    } catch(e) { questionTextarea.style.display = 'block'; }
+  console.log('📝 Editor Elements Found:', {
+    questionEditor: !!questionEditor,
+    explanationEditor: !!explanationEditor,
+    questionTextarea: !!questionTextarea,
+    explanationTextarea: !!explanationTextarea
+  });
+
+  // Flowbite WYSIWYG Editor initialization
+  function initializeWysiwygEditor(editor, textarea) {
+    if (!editor || !textarea) return;
+
+    // Set initial content
+    if (textarea.value) {
+      editor.innerHTML = textarea.value;
+    }
+
+    // Handle placeholder display
+    function updatePlaceholder() {
+      const isEmpty = editor.innerHTML.trim() === '' || editor.innerHTML === '<br>' || editor.innerHTML === '<p><br></p>';
+      if (isEmpty) {
+        editor.classList.add('is-empty');
+      } else {
+        editor.classList.remove('is-empty');
+      }
+    }
+
+    // Sync content to hidden textarea
+    function syncContent() {
+      textarea.value = editor.innerHTML;
+      updatePlaceholder();
+    }
+
+    // Event listeners
+    editor.addEventListener('input', syncContent);
+    editor.addEventListener('paste', function(e) {
+      setTimeout(syncContent, 10); // Allow paste to complete
+    });
+    editor.addEventListener('focus', updatePlaceholder);
+    editor.addEventListener('blur', function() {
+      updatePlaceholder();
+      // Clean up empty paragraphs
+      if (editor.innerHTML === '<p><br></p>' || editor.innerHTML === '<br>') {
+        editor.innerHTML = '';
+      }
+      syncContent();
+    });
+
+    // Initial placeholder check
+    updatePlaceholder();
+
+    return {
+      getContent: () => editor.innerHTML,
+      setContent: (content) => {
+        editor.innerHTML = content;
+        syncContent();
+      }
+    };
   }
 
-  if (explanationTextarea) {
-    const explanationContainer = document.createElement('div');
-    explanationContainer.id = 'quill-explanation';
-    explanationContainer.className = 'qf-editor-container rounded-lg shadow-sm';
-    explanationTextarea.parentNode.insertBefore(explanationContainer, explanationTextarea);
-    try {
-      quillExplanation = new Quill('#quill-explanation', { theme: 'snow', modules: { toolbar: [['bold','italic','underline'], ['link','blockquote'], [{ list: 'ordered' }, { list: 'bullet' }], [{ indent: '-1' }, { indent: '+1' }], ['image'], ['clean']] }, placeholder: 'Tulis pembahasan (opsional)...' });
-      if (explanationTextarea.value) quillExplanation.root.innerHTML = explanationTextarea.value;
-      quillExplanation.on('text-change', function(){ explanationTextarea.value = quillExplanation.root.innerHTML; });
-      explanationTextarea.style.display = 'none';
-    } catch(e) { explanationTextarea.style.display = 'block'; }
+  // Initialize both editors
+  const questionWysiwyg = initializeWysiwygEditor(questionEditor, questionTextarea);
+  const explanationWysiwyg = initializeWysiwygEditor(explanationEditor, explanationTextarea);
+
+  // Flowbite WYSIWYG Toolbar functionality
+  function initializeToolbar() {
+    document.querySelectorAll('[data-wysiwyg-toggle-format]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const format = this.getAttribute('data-wysiwyg-toggle-format');
+        
+        // Find the associated editor - look for the parent container with border class
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for button:', this);
+          return;
+        }
+
+        // Focus the editor
+        editor.focus();
+        
+        // Apply formatting based on Flowbite WYSIWYG commands
+        let success = false;
+        
+        try {
+          switch(format) {
+            case 'bold':
+              success = document.execCommand('bold', false, null);
+              break;
+            case 'italic':
+              success = document.execCommand('italic', false, null);
+              break;
+            case 'underline':
+              success = document.execCommand('underline', false, null);
+              break;
+            case 'unorderedList':
+              success = document.execCommand('insertUnorderedList', false, null);
+              break;
+            case 'orderedList':
+              success = document.execCommand('insertOrderedList', false, null);
+              break;
+            case 'blockquote':
+              success = document.execCommand('formatBlock', false, 'blockquote');
+              break;
+            case 'h1':
+              success = document.execCommand('formatBlock', false, 'h1');
+              break;
+            case 'h2':
+              success = document.execCommand('formatBlock', false, 'h2');
+              break;
+            case 'h3':
+              success = document.execCommand('formatBlock', false, 'h3');
+              break;
+            case 'paragraph':
+              success = document.execCommand('formatBlock', false, 'p');
+              break;
+          }
+        } catch (error) {
+          console.warn('execCommand failed:', error);
+        }
+        
+        // Update visual state of button (Flowbite style)
+        if (success) {
+          this.classList.toggle('text-blue-700');
+          this.classList.toggle('bg-gray-100');
+        }
+        
+        // Sync content to textarea
+        const textarea = editor.id === 'wysiwyg-question-text' ? questionTextarea : explanationTextarea;
+        if (textarea) {
+          textarea.value = editor.innerHTML;
+        }
+        
+        // Trigger input event for any additional listeners
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
+
+    // Initialize text formatting buttons (for active state)
+    document.querySelectorAll('[data-wysiwyg-toggle-format]').forEach(button => {
+      const format = button.getAttribute('data-wysiwyg-toggle-format');
+      
+      // Add Flowbite button styling if not already present
+      if (!button.classList.contains('p-2')) {
+        button.classList.add('p-2', 'text-gray-500', 'rounded', 'cursor-pointer', 'hover:text-gray-900', 'hover:bg-gray-100', 'dark:text-gray-400', 'dark:hover:text-white', 'dark:hover:bg-gray-600');
+      }
+    });
   }
 
+  // Initialize toolbar
+  initializeToolbar();
+
+  // Additional toolbar functionality for image upload and math
+  function initializeSpecialActions() {
+    // Handle image upload buttons
+    document.querySelectorAll('[data-wysiwyg-action="image"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Find the associated editor - look for the parent container
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for image button:', this);
+          return;
+        }
+        
+        // Create file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        
+        input.onchange = function() {
+          const file = input.files[0];
+          if (!file) return;
+          
+          // Show loading indicator
+          const loadingText = document.createElement('span');
+          loadingText.textContent = 'Uploading image...';
+          loadingText.style.color = '#6b7280';
+          loadingText.style.fontStyle = 'italic';
+          
+          // Insert loading text at cursor position
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(loadingText);
+            range.collapse(false);
+          }
+          
+          // Upload file
+          const formData = new FormData();
+          formData.append('upload', file);
+          formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+          
+          fetch('/admin/image-upload/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+          })
+          .then(response => response.json())
+          .then(data => {
+            // Remove loading text
+            if (loadingText.parentNode) {
+              loadingText.parentNode.removeChild(loadingText);
+            }
+            
+            if (data.url) {
+              // Create image element
+              const img = document.createElement('img');
+              img.src = data.url;
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.display = 'block';
+              img.style.margin = '10px 0';
+              img.style.borderRadius = '8px';
+              img.style.cursor = 'pointer';
+              img.onclick = function() {
+                window.open(data.url, '_blank');
+              };
+              
+              // Insert image at cursor position
+              const selection = window.getSelection();
+              if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.insertNode(img);
+                range.collapse(false);
+              } else {
+                editor.appendChild(img);
+              }
+              
+              // Update textarea
+              const textarea = editor.id === 'wysiwyg-question-text' ? questionTextarea : explanationTextarea;
+              if (textarea) {
+                textarea.value = editor.innerHTML;
+              }
+              
+              // Trigger input event
+              editor.dispatchEvent(new Event('input', { bubbles: true }));
+              
+              // Show success message
+              showNotification('Image uploaded successfully!', 'success');
+            } else {
+              showNotification('Failed to upload image: ' + (data.error || 'Unknown error'), 'error');
+            }
+          })
+          .catch(error => {
+            // Remove loading text
+            if (loadingText.parentNode) {
+              loadingText.parentNode.removeChild(loadingText);
+            }
+            console.error('Upload failed:', error);
+            showNotification('Image upload failed. Please try again.', 'error');
+          });
+        };
+        
+        // Trigger file selection
+        document.body.appendChild(input);
+        input.click();
+        document.body.removeChild(input);
+      });
+    });
+
+    // Handle math symbols buttons
+    document.querySelectorAll('[data-wysiwyg-action="math-symbols"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Find the associated editor
+        const toolbar = this.closest('[class*="border"]');
+        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
+        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        
+        if (!editor) {
+          console.warn('Editor not found for math symbols button:', this);
+          return;
+        }
+        
+        // Store the current editor for symbol insertion
+        window.currentMathEditor = editor;
+        
+        // Show math symbols modal
+        showMathSymbolsModal();
+      });
+    });
+    
+    // Math symbols modal functions
+    window.showMathSymbolsModal = function() {
+      const modal = document.getElementById('mathSymbolsModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+    
+    window.closeMathSymbolsModal = function() {
+      const modal = document.getElementById('mathSymbolsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+    
+    // Handle math symbol selection
+    document.querySelectorAll('.math-symbol-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const symbol = this.getAttribute('data-symbol');
+        
+        if (window.currentMathEditor && symbol) {
+          // Focus the editor
+          window.currentMathEditor.focus();
+          
+          // Insert symbol at cursor position
+          document.execCommand('insertText', false, symbol);
+          
+          // Sync content to textarea
+          const questionTextarea = document.getElementById('id_question_text');
+          const explanationTextarea = document.getElementById('id_explanation');
+          
+          if (window.currentMathEditor.id === 'wysiwyg-question-text') {
+            questionTextarea.value = window.currentMathEditor.innerHTML;
+          } else if (window.currentMathEditor.id === 'wysiwyg-explanation-text') {
+            explanationTextarea.value = window.currentMathEditor.innerHTML;
+          }
+          
+          // Close modal
+          closeMathSymbolsModal();
+          
+          // Show notification
+          showNotification('Math symbol inserted!', 'success');
+        }
+      });
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('mathSymbolsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeMathSymbolsModal();
+      }
+    });
+  }
+
+  // Initialize special actions
+  initializeSpecialActions();
+  
+  // Log initialization status
+  console.log('🔧 Toolbar initialized');
+  console.log('✨ Special actions initialized');
+
+  // Log toolbar buttons found
+  const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
+  const imageButtons = document.querySelectorAll('[data-wysiwyg-action="image"]');
+  const mathButtons = document.querySelectorAll('[data-wysiwyg-action="math"]');
+  
+  console.log('🎛️ Toolbar buttons found:', {
+    formatButtons: formatButtons.length,
+    imageButtons: imageButtons.length,
+    mathButtons: mathButtons.length
+  });
+
+  // Notification function
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg max-w-sm ${getNotificationClasses(type)}`;
+    notification.innerHTML = `
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          ${getNotificationIcon(type)}
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium">${message}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 5000);
+  }
+
+  function getNotificationClasses(type) {
+    switch (type) {
+      case 'success':
+        return 'bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400';
+      case 'error':
+        return 'bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400';
+      case 'warning':
+        return 'bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-400';
+      default:
+        return 'bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400';
+    }
+  }
+
+  function getNotificationIcon(type) {
+    switch (type) {
+      case 'success':
+        return '<svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>';
+      case 'error':
+        return '<svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>';
+      case 'warning':
+        return '<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>';
+      default:
+        return '<svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>';
+    }
+  }
+
+  // Question type handling and form validation
   const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
   const choicesSection = document.getElementById('choicesSection');
   const essayAnswerSection = document.getElementById('essayAnswerSection');
 
   function refreshCards() {
-    const descMap = { multiple_choice: 'Cocok untuk soal pilihan ganda dengan beberapa opsi jawaban.', essay: 'Jawaban berupa teks esai yang dinilai sesuai kebijakan penilaian.' };
+    const descMap = { 
+      multiple_choice: 'Cocok untuk soal pilihan ganda dengan beberapa opsi jawaban.', 
+      essay: 'Jawaban berupa teks esai yang dinilai sesuai kebijakan penilaian.' 
+    };
+    
     questionTypeRadios.forEach(function(radio){
       const label = document.querySelector('label[for="' + radio.id + '"]');
       if (!label) return;
+      
       const desc = label.querySelector('.js-type-desc');
       const title = label.querySelector('.js-type-title');
+      
       if (desc) desc.textContent = descMap[radio.value] || 'Pilih tipe pertanyaan yang sesuai.';
+      
       if (radio.checked) {
         label.classList.add('ring-2','ring-primary-500','border-primary-400','bg-primary-100','dark:bg-primary-800/40','dark:border-primary-500','dark:ring-primary-400');
         if (title) title.classList.add('text-gray-900','dark:text-white');
-        if (desc) { desc.classList.add('text-gray-700','dark:text-gray-300'); desc.classList.remove('text-gray-600','dark:text-gray-400'); }
+        if (desc) { 
+          desc.classList.add('text-gray-700','dark:text-gray-300'); 
+          desc.classList.remove('text-gray-600','dark:text-gray-400'); 
+        }
       } else {
         label.classList.remove('ring-2','ring-primary-500','border-primary-400','bg-primary-100','dark:bg-primary-800/40','dark:border-primary-500','dark:ring-primary-400');
-        if (desc) { desc.classList.remove('text-gray-700','dark:text-gray-300'); desc.classList.add('text-gray-600','dark:text-gray-400'); }
+        if (desc) { 
+          desc.classList.remove('text-gray-700','dark:text-gray-300'); 
+          desc.classList.add('text-gray-600','dark:text-gray-400'); 
+        }
       }
     });
   }
@@ -310,8 +1131,9 @@ document.addEventListener('DOMContentLoaded', function() {
   function toggleSections() {
     const selectedType = document.querySelector('input[name="question_type"]:checked');
     if (!selectedType) return;
+    
     document.body.style.cursor = 'wait';
-          setTimeout(function(){
+    setTimeout(function(){
       if (selectedType.value === 'multiple_choice') {
         choicesSection.style.display = 'block';
         essayAnswerSection.style.display = 'none';
@@ -326,17 +1148,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
   }
 
-  questionTypeRadios.forEach(function(radio){ radio.classList.add('sr-only'); radio.addEventListener('change', toggleSections); });
+  questionTypeRadios.forEach(function(radio){ 
+    radio.classList.add('sr-only'); 
+    radio.addEventListener('change', toggleSections); 
+  });
   toggleSections();
 
+  // Form submission handling
   const form = document.querySelector('form');
   if (form) {
     form.addEventListener('submit', function(e){
       const category = document.querySelector('#id_category');
       let questionContent = '';
-      if (quillEditor) { questionContent = quillEditor.root.innerHTML.trim(); if (!quillEditor.getText().trim()) questionContent = ''; }
-      else if (questionTextarea) { questionContent = questionTextarea.value.trim(); }
-      if (quillExplanation && explanationTextarea) { explanationTextarea.value = quillExplanation.root.innerHTML; }
+      
+      // Get content from WYSIWYG editor and ensure sync
+      if (questionWysiwyg && questionEditor) { 
+        questionContent = questionWysiwyg.getContent().trim(); 
+        if (questionEditor.textContent.trim() === '') questionContent = ''; 
+        questionTextarea.value = questionContent;
+      }
+      else if (questionTextarea) { 
+        questionContent = questionTextarea.value.trim(); 
+      }
+      
+      // Update explanation textarea
+      if (explanationWysiwyg && explanationEditor && explanationTextarea) { 
+        explanationTextarea.value = explanationWysiwyg.getContent(); 
+      }
+      
       if (!questionContent || (category && !category.value)) {
         e.preventDefault();
         alert('Please fill in all required fields');
@@ -345,47 +1184,78 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Image upload helpers (teacher)
+  // Image upload functionality for choices
   window.uploadChoiceImage = function(input, choiceNumber) {
     const file = input.files[0];
     if (!file) return;
+    
     const formData = new FormData();
     formData.append('upload', file);
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
     const statusEl = document.getElementById(`choice-image-status-${choiceNumber}`);
-    if (statusEl) { statusEl.textContent = 'Uploading...'; statusEl.className = 'mt-1 text-xs text-blue-600 dark:text-blue-400'; }
-    fetch('/admin/image-upload/', { method: 'POST', body: formData, headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value } })
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.url) {
-          const hiddenUrl = document.getElementById(`choice-image-url-${choiceNumber}`);
-          if (hiddenUrl) hiddenUrl.value = data.url;
-          const preview = document.getElementById(`choice-image-preview-${choiceNumber}`);
-          const uploadArea = document.getElementById(`choice-upload-area-${choiceNumber}`);
-          if (preview) {
-            const img = preview.querySelector('img');
-            if (img) img.src = data.url;
-            preview.classList.remove('hidden');
-          }
-          if (uploadArea) uploadArea.classList.add('hidden');
-          if (statusEl) { statusEl.textContent = 'Image uploaded successfully'; statusEl.className = 'mt-1 text-xs text-green-600 dark:text-green-400'; }
-        } else {
-          if (statusEl) { statusEl.textContent = 'Failed to upload image'; statusEl.className = 'mt-1 text-xs text-red-600 dark:text-red-400'; }
+    if (statusEl) { 
+      statusEl.textContent = 'Uploading...'; 
+      statusEl.className = 'mt-1 text-xs text-blue-600 dark:text-blue-400'; 
+    }
+    
+    fetch('/admin/image-upload/', { 
+      method: 'POST', 
+      body: formData, 
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value } 
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.url) {
+        const hiddenUrl = document.getElementById(`choice-image-url-${choiceNumber}`);
+        if (hiddenUrl) hiddenUrl.value = data.url;
+        
+        const preview = document.getElementById(`choice-image-preview-${choiceNumber}`);
+        const uploadArea = document.getElementById(`choice-upload-area-${choiceNumber}`);
+        
+        if (preview) {
+          const img = preview.querySelector('img');
+          if (img) img.src = data.url;
+          preview.classList.remove('hidden');
         }
-      })
-      .catch(() => { if (statusEl) { statusEl.textContent = 'Failed to upload image'; statusEl.className = 'mt-1 text-xs text-red-600 dark:text-red-400'; } })
-      .finally(() => { input.value = ''; });
+        if (uploadArea) uploadArea.classList.add('hidden');
+        if (statusEl) { 
+          statusEl.textContent = 'Image uploaded successfully'; 
+          statusEl.className = 'mt-1 text-xs text-green-600 dark:text-green-400'; 
+        }
+      } else {
+        if (statusEl) { 
+          statusEl.textContent = 'Failed to upload image'; 
+          statusEl.className = 'mt-1 text-xs text-red-600 dark:text-red-400'; 
+        }
+      }
+    })
+    .catch(() => { 
+      if (statusEl) { 
+        statusEl.textContent = 'Failed to upload image'; 
+        statusEl.className = 'mt-1 text-xs text-red-600 dark:text-red-400'; 
+      } 
+    })
+    .finally(() => { 
+      input.value = ''; 
+    });
   };
 
   window.removeChoiceImage = function(choiceNumber) {
     const hiddenUrl = document.getElementById(`choice-image-url-${choiceNumber}`);
     if (hiddenUrl) hiddenUrl.value = '';
+    
     const preview = document.getElementById(`choice-image-preview-${choiceNumber}`);
     const uploadArea = document.getElementById(`choice-upload-area-${choiceNumber}`);
+    
     if (preview) preview.classList.add('hidden');
     if (uploadArea) uploadArea.classList.remove('hidden');
+    
     const statusEl = document.getElementById(`choice-image-status-${choiceNumber}`);
-    if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-xs'; }
+    if (statusEl) { 
+      statusEl.textContent = ''; 
+      statusEl.className = 'mt-1 text-xs'; 
+    }
   };
 
   // Load existing choice images on page load
@@ -410,17 +1280,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Call on page load
+  // Initialize existing images
   loadExistingChoiceImages();
 
-  // Correct answer visual feedback (simplified)
+  // Correct answer visual feedback
   function handleCorrectAnswerChange(checkbox) {
     const choiceItem = checkbox.closest('.choice-item');
     if (!choiceItem) return;
-    if (checkbox.checked) choiceItem.classList.add('correct-answer'); else choiceItem.classList.remove('correct-answer');
+    
+    if (checkbox.checked) {
+      choiceItem.classList.add('correct-answer');
+    } else {
+      choiceItem.classList.remove('correct-answer');
+    }
   }
+  
   document.querySelectorAll('input[name$="-is_correct"]').forEach(cb => {
-    cb.addEventListener('change', function(){ handleCorrectAnswerChange(this); });
+    cb.addEventListener('change', function(){ 
+      handleCorrectAnswerChange(this); 
+    });
     if (cb.checked) handleCorrectAnswerChange(cb);
   });
 });
@@ -451,10 +1329,12 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+// Image modal functions
 function openImageModal(imageSrc, imageTitle) {
   const modal = document.getElementById('imageModal');
   const modalImage = document.getElementById('modalImage');
   const modalTitle = document.getElementById('modal-title');
+  
   if (imageSrc && modal && modalImage) {
     modalImage.src = imageSrc;
     if (modalTitle) modalTitle.textContent = imageTitle || 'Image Preview';
@@ -462,6 +1342,7 @@ function openImageModal(imageSrc, imageTitle) {
     document.body.style.overflow = 'hidden';
   }
 }
+
 function closeImageModal() {
   const modal = document.getElementById('imageModal');
   if (modal) {
@@ -469,5 +1350,5 @@ function closeImageModal() {
     document.body.style.overflow = '';
   }
 }
-  </script>
+</script>
 {% endblock %}
