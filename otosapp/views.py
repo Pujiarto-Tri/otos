@@ -2016,9 +2016,23 @@ def tryout_list(request):
         if key in request.session:
             del request.session[key]
 
-    # Get categories and packages separately
+    # Get search and sort parameters and then categories and packages
+    search_query = request.GET.get('q', '').strip()
+    sort_option = request.GET.get('sort', '').strip()
     categories = Category.objects.all()
     packages = TryoutPackage.objects.filter(is_active=True)
+    # Apply search filter if provided
+    if search_query:
+        categories = categories.filter(category_name__icontains=search_query)
+        packages = packages.filter(package_name__icontains=search_query)
+    # Apply sort option
+    if sort_option == 'newest':
+        packages = packages.order_by('-created_at')
+    elif sort_option == 'alphabet':
+        packages = packages.order_by('package_name')
+        categories = categories.order_by('category_name')
+    elif sort_option == 'method':
+        categories = categories.order_by('scoring_method')
     
     # Add personal best scores for categories
     if request.user.is_authenticated:
@@ -2033,6 +2047,8 @@ def tryout_list(request):
     context = {
         'categories': categories,
         'packages': packages,
+        'search_query': search_query,
+        'sort_option': sort_option,
     }
     
     return render(request, 'students/tryouts/tryout_list.html', context)
