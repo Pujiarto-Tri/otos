@@ -533,6 +533,45 @@
         top: auto !important;
         bottom: 1rem !important;
     }
+
+    /* Ensure hidden elements stay hidden */
+    .hidden {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    
+    /* Ensure saving indicator transitions work properly */
+    #saving-indicator.hidden {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    /* Ensure no blue boxes appear for math formulas or special elements */
+    .MathJax {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .MathJax_Display {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Remove any unwanted blue highlighting or boxes */
+    .math-formula, .latex-formula {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Ensure no unexpected blue boxes on any elements */
+    *:not(.nav-button):not(.bg-blue-500):not(.border-blue-600) {
+        box-shadow: none !important;
+    }
 }
 </style>
 
@@ -1053,7 +1092,6 @@ function showSaveConfirmation() {
         el.classList.remove('translate-x-0', 'opacity-100');
         el.classList.add('translate-x-full', 'opacity-0');
         setTimeout(() => {
-            el.classList.add('hidden');
             // restore original saving content and classes
             el.innerHTML = `
                 <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1099,6 +1137,15 @@ function showSaveError() {
         el.classList.remove('translate-x-0', 'opacity-100');
         el.classList.add('translate-x-full', 'opacity-0');
         setTimeout(() => {
+            // restore original saving content and classes
+            el.innerHTML = `
+                <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Menyimpan jawaban...</span>
+            `;
+            el.classList.remove('bg-red-500', 'text-white', 'border-red-600');
+            el.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30', 'text-indigo-600', 'dark:text-indigo-400', 'border-indigo-200', 'dark:border-indigo-700');
             el.classList.add('hidden');
             savingHideTimer = null;
         }, 220);
@@ -1149,6 +1196,35 @@ function updateProgressBar(answeredCount, totalQuestions) {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize timer
     initTimer();
+    
+    // Ensure saving indicator is properly hidden on page load
+    const savingIndicator = document.getElementById('saving-indicator');
+    if (savingIndicator) {
+        savingIndicator.classList.add('hidden', 'translate-x-full', 'opacity-0');
+        savingIndicator.classList.remove('translate-x-0', 'opacity-100');
+        savingIndicator.style.display = 'none';
+        savingIndicator.style.visibility = 'hidden';
+    }
+    
+    // Ensure submit modal is properly hidden
+    const submitModal = document.getElementById('submit-modal');
+    if (submitModal) {
+        submitModal.classList.add('hidden');
+        submitModal.style.display = 'none';
+    }
+    
+    // Remove any stray blue boxes or unwanted elements
+    setTimeout(() => {
+        // Check for any elements that might be causing blue box appearance
+        const unwantedElements = document.querySelectorAll('[style*="background-color: blue"], [style*="background: blue"], .bg-blue-400, .bg-blue-300');
+        unwantedElements.forEach(el => {
+            if (!el.classList.contains('nav-button') && !el.classList.contains('bg-blue-500')) {
+                el.style.background = 'transparent';
+                el.style.border = 'none';
+                el.style.boxShadow = 'none';
+            }
+        });
+    }, 100);
     
     // Set up page exit confirmation
     window.addEventListener('beforeunload', confirmExit);
