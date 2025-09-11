@@ -1556,13 +1556,13 @@ document.addEventListener('DOMContentLoaded', function() {
       button.addEventListener('click', function(e) {
         e.preventDefault();
         console.log('ADMIN LaTeX Guide button clicked');
-        openLatexGuideModal();
+        window.openLatexGuideModal();
       });
     });
   }
 
-  // LaTeX Guide Modal functions
-  function openLatexGuideModal() {
+  // LaTeX Guide Modal functions (Global scope)
+  window.openLatexGuideModal = function() {
     console.log('Opening ADMIN LaTeX Guide modal');
     const modal = document.getElementById('latexGuideModal');
     if (modal) {
@@ -1572,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function closeLatexGuideModal() {
+  window.closeLatexGuideModal = function() {
     console.log('Closing ADMIN LaTeX Guide modal');
     const modal = document.getElementById('latexGuideModal');
     if (modal) {
@@ -1582,10 +1582,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // Add event listener for close button
+  document.getElementById('closeLatexGuideBtnAdmin')?.addEventListener('click', function() {
+    window.closeLatexGuideModal();
+  });
+
   // Close modal when clicking outside
   document.getElementById('latexGuideModal')?.addEventListener('click', function(e) {
     if (e.target === this) {
-      closeLatexGuideModal();
+      window.closeLatexGuideModal();
+    }
+  });
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('latexGuideModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        window.closeLatexGuideModal();
+      }
     }
   });
 
@@ -2096,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
               📖 LaTeX Guide - Panduan Penulisan Formula Matematika
             </h3>
-            <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onclick="closeLatexGuideModal()">
+            <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" id="closeLatexGuideBtnAdmin">
               <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
               </svg>
