@@ -804,20 +804,130 @@ def teacher_question_create(request, category_id):
         post_data['category'] = str(category.id)
         form = QuestionForm(post_data)
         formset = ChoiceFormSet(post_data)
-        if form.is_valid() and formset.is_valid():
+
+        # DEBUG: show incoming POST data for choices
+        try:
+            print('\n[DEBUG] teacher_question_create POST data:')
+            for i in range(5):
+                choice_text = request.POST.get(f'choices-{i}-choice_text', '')
+                is_correct = request.POST.get(f'choices-{i}-is_correct', '')
+                choice_letter = chr(65 + i)  # A, B, C, D, E
+                print(f'  Choice {choice_letter}: text="{choice_text[:30]}..." is_correct="{is_correct}"')
+        except Exception:
+            pass
+
+        if form.is_valid():
             question = form.save(commit=False)
             question.pub_date = timezone.now()
             question.category = category
-            question.save()
-            # save choices
-            choices = formset.save(commit=False)
-            for c in choices:
-                c.question = question
-                c.save()
-            messages.success(request, 'Soal berhasil dibuat.')
-            return redirect('teacher_question_list', category_id=category.id)
+            
+            # For essay questions, choices are not required
+            if question.question_type == 'essay':
+                question.save()
+                messages.success(request, 'Soal isian berhasil dibuat!')
+                return redirect('teacher_question_list', category_id=category.id)
+            
+            # For multiple choice questions, use custom choice saving logic
+            elif question.question_type == 'multiple_choice':
+                print(f'[DEBUG] Formset is_valid: {formset.is_valid()}')
+                
+                # CUSTOM VALIDATION: Check if formset errors are only from optional choices (C, D, E)
+                can_proceed = False
+                if formset.is_valid():
+                    can_proceed = True
+                    print('[DEBUG] Formset is valid')
+                else:
+                    print('[DEBUG] Formset errors - checking if only optional choices have errors')
+                    
+                    # Check if errors are only from optional choices (index 2, 3, 4 = C, D, E)
+                    critical_errors = False
+                    for i, form in enumerate(formset.forms):
+                        if form.errors:
+                            print(f'  Form {i} ({chr(65+i)}) errors:', form.errors)
+                            # Only consider errors from A & B (index 0, 1) as critical
+                            if i <= 1:
+                                critical_errors = True
+                                print(f'    -> CRITICAL ERROR in required choice {chr(65+i)}')
+                    
+                    # Check for critical non-form errors
+                    if formset.non_form_errors():
+                        non_form_errors = formset.non_form_errors()
+                        print('[DEBUG] Non-form errors detected:', non_form_errors)
+                        error_text = str(non_form_errors).lower()
+                        if 'choice a' in error_text or 'choice b' in error_text:
+                            critical_errors = True
+                    
+                    if not critical_errors:
+                        can_proceed = True
+                        print('[DEBUG] Only optional choice errors - proceeding anyway')
+                
+                if can_proceed:
+                    # Check if at least one choice is marked as correct
+                    correct_choices = 0
+                    for i in range(5):
+                        checkbox_name = f'choices-{i}-is_correct'
+                        checkbox_value = request.POST.get(checkbox_name, None)
+                        if checkbox_value == 'on' or checkbox_value == 'true' or checkbox_value is True:
+                            correct_choices += 1
+                    
+                    if correct_choices == 0:
+                        messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
+                        return render(request, 'teacher/question_form.html', {
+                            'form': form,
+                            'formset': formset,
+                            'category': category
+                        })
+                    
+                    question.save()
+                    
+                    # CRITICAL FIX: Force save ALL choices (A through E) even if some are empty
+                    print('[DEBUG] Saving all 5 choices manually...')
+                    
+                    saved_choice_count = 0
+                    for i in range(5):  # Always process choices 0-4 (A-E)
+                        choice_letter = chr(65 + i)  # A, B, C, D, E
+                        
+                        # Get data from POST directly
+                        choice_text = request.POST.get(f'choices-{i}-choice_text', '').strip()
+                        is_correct_raw = request.POST.get(f'choices-{i}-is_correct', '')
+                        is_correct = is_correct_raw in ['on', 'true', True]
+                        
+                        print(f'[DEBUG] Creating Choice {choice_letter}: text="{choice_text[:30]}..." is_correct={is_correct}')
+                        
+                        # ALWAYS create choice object, even if empty (to maintain A-E structure)
+                        from .models import Choice
+                        choice_obj = Choice()
+                        choice_obj.question = question
+                        choice_obj.choice_text = choice_text
+                        choice_obj.is_correct = is_correct
+                        
+                        # Handle choice image
+                        choice_image_url = request.POST.get(f'choice_image_{i+1}')
+                        if choice_image_url and choice_image_url.strip():
+                            import urllib.parse
+                            from django.core.files.storage import default_storage
+                            
+                            parsed_url = urllib.parse.urlparse(choice_image_url)
+                            if choice_image_url.startswith('https://') and 'blob.vercel-storage.com' in choice_image_url:
+                                choice_obj.choice_image = choice_image_url
+                            elif parsed_url.path.startswith('/media/'):
+                                file_path = parsed_url.path[7:]
+                                if default_storage.exists(file_path):
+                                    choice_obj.choice_image = file_path
+                        
+                        choice_obj.save()
+                        saved_choice_count += 1
+                        print(f'[DEBUG] Saved Choice {choice_letter} with ID: {choice_obj.id}')
+                    
+                    print(f'[DEBUG] Total choices saved: {saved_choice_count}')
+                    messages.success(request, 'Soal berhasil dibuat.')
+                    return redirect('teacher_question_list', category_id=category.id)
+                else:
+                    messages.error(request, 'Terjadi kesalahan validasi pada pilihan jawaban.')
+            else:
+                messages.error(request, 'Tipe soal tidak valid.')
         else:
-            # Debug: expose validation errors so we can see why the form re-renders
+            # Debug: expose validation errors
             try:
                 form_json = form.errors.as_json()
             except Exception:
@@ -830,7 +940,6 @@ def teacher_question_create(request, category_id):
                 formset_non = str(formset.non_form_errors())
             print('\n[DEBUG] teacher_question_create validation failed')
             print('Form errors (json):', form_json)
-            print('Form errors (text):', form.errors.as_text())
             print('Formset errors:', formset_errors)
             print('Formset non-field errors:', formset_non)
             messages.error(request, 'Form validation failed: ' + (form.errors.as_text() or str(formset_errors)))
@@ -852,38 +961,128 @@ def teacher_question_update(request, question_id):
     if request.method == 'POST':
         form = QuestionUpdateForm(request.POST, instance=question)
         formset = ChoiceFormSet(request.POST, instance=question)
-        if form.is_valid() and formset.is_valid():
+
+        # DEBUG: show incoming POST data for choices
+        try:
+            print('\n[DEBUG] teacher_question_update POST data:')
+            for i in range(5):
+                choice_text = request.POST.get(f'choices-{i}-choice_text', '')
+                is_correct = request.POST.get(f'choices-{i}-is_correct', '')
+                choice_letter = chr(65 + i)  # A, B, C, D, E
+                print(f'  Choice {choice_letter}: text="{choice_text[:30]}..." is_correct="{is_correct}"')
+        except Exception:
+            pass
+
+        if form.is_valid():
             updated_question = form.save()
             
-            # Save choices with choice image processing
-            choices = formset.save(commit=False)
-            for i, choice in enumerate(choices, 1):
-                # Check if there's an uploaded image URL for this choice
-                choice_image_url = request.POST.get(f'choice_image_{i}')
-                if choice_image_url:
-                    # Handle both Vercel Blob URLs and local media URLs
-                    import urllib.parse
-                    
-                    # Parse the URL
-                    parsed_url = urllib.parse.urlparse(choice_image_url)
-                    
-                    # If it's a Vercel Blob URL (starts with https://), store the full URL
-                    if choice_image_url.startswith('https://') and 'blob.vercel-storage.com' in choice_image_url:
-                        choice.choice_image = choice_image_url
-                    # Handle legacy local media URLs
-                    elif parsed_url.path.startswith('/media/'):
-                        file_path = parsed_url.path[7:]  # Remove '/media/' prefix
-                        # Check if file exists in default storage
-                        if default_storage.exists(file_path):
-                            choice.choice_image = file_path
+            # For essay questions, choices are not required
+            if updated_question.question_type == 'essay':
+                # Delete existing choices for essay questions
+                from .models import Choice
+                Choice.objects.filter(question=updated_question).delete()
+                messages.success(request, 'Soal isian berhasil diperbarui!')
+                return redirect('teacher_question_list', category_id=category.id)
+            
+            # For multiple choice questions, use custom choice saving logic
+            elif updated_question.question_type == 'multiple_choice':
+                print(f'[DEBUG] Formset is_valid: {formset.is_valid()}')
                 
-                choice.save()
-            
-            # Save any remaining formset instances and handle deletions
-            formset.save()
-            
-            messages.success(request, 'Soal diperbarui.')
-            return redirect('teacher_question_list', category_id=category.id)
+                # CUSTOM VALIDATION: Check if formset errors are only from optional choices (C, D, E)
+                can_proceed = False
+                if formset.is_valid():
+                    can_proceed = True
+                    print('[DEBUG] Formset is valid')
+                else:
+                    print('[DEBUG] Formset errors - checking if only optional choices have errors')
+                    
+                    # Check if errors are only from optional choices (index 2, 3, 4 = C, D, E)
+                    critical_errors = False
+                    for i, form in enumerate(formset.forms):
+                        if form.errors:
+                            print(f'  Form {i} ({chr(65+i)}) errors:', form.errors)
+                            # Only consider errors from A & B (index 0, 1) as critical
+                            if i <= 1:
+                                critical_errors = True
+                                print(f'    -> CRITICAL ERROR in required choice {chr(65+i)}')
+                    
+                    # Check for critical non-form errors
+                    if formset.non_form_errors():
+                        non_form_errors = formset.non_form_errors()
+                        print('[DEBUG] Non-form errors detected:', non_form_errors)
+                        error_text = str(non_form_errors).lower()
+                        if 'choice a' in error_text or 'choice b' in error_text:
+                            critical_errors = True
+                    
+                    if not critical_errors:
+                        can_proceed = True
+                        print('[DEBUG] Only optional choice errors - proceeding anyway')
+                
+                if can_proceed:
+                    # Check if at least one choice is marked as correct
+                    correct_choices = 0
+                    for i in range(5):
+                        checkbox_name = f'choices-{i}-is_correct'
+                        checkbox_value = request.POST.get(checkbox_name, None)
+                        if checkbox_value == 'on' or checkbox_value == 'true' or checkbox_value is True:
+                            correct_choices += 1
+                    
+                    if correct_choices == 0:
+                        messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
+                        return render(request, 'teacher/question_form.html', {
+                            'form': form,
+                            'formset': formset,
+                            'category': category,
+                            'question': question
+                        })
+                    
+                    # CRITICAL FIX: Delete existing choices and create new ones
+                    print('[DEBUG] Deleting existing choices and creating new ones...')
+                    from .models import Choice
+                    Choice.objects.filter(question=updated_question).delete()
+                    
+                    saved_choice_count = 0
+                    for i in range(5):  # Always process choices 0-4 (A-E)
+                        choice_letter = chr(65 + i)  # A, B, C, D, E
+                        
+                        # Get data from POST directly
+                        choice_text = request.POST.get(f'choices-{i}-choice_text', '').strip()
+                        is_correct_raw = request.POST.get(f'choices-{i}-is_correct', '')
+                        is_correct = is_correct_raw in ['on', 'true', True]
+                        
+                        print(f'[DEBUG] Creating Choice {choice_letter}: text="{choice_text[:30]}..." is_correct={is_correct}')
+                        
+                        # ALWAYS create choice object, even if empty (to maintain A-E structure)
+                        choice_obj = Choice()
+                        choice_obj.question = updated_question
+                        choice_obj.choice_text = choice_text
+                        choice_obj.is_correct = is_correct
+                        
+                        # Handle choice image
+                        choice_image_url = request.POST.get(f'choice_image_{i+1}')
+                        if choice_image_url and choice_image_url.strip():
+                            import urllib.parse
+                            from django.core.files.storage import default_storage
+                            
+                            parsed_url = urllib.parse.urlparse(choice_image_url)
+                            if choice_image_url.startswith('https://') and 'blob.vercel-storage.com' in choice_image_url:
+                                choice_obj.choice_image = choice_image_url
+                            elif parsed_url.path.startswith('/media/'):
+                                file_path = parsed_url.path[7:]
+                                if default_storage.exists(file_path):
+                                    choice_obj.choice_image = file_path
+                        
+                        choice_obj.save()
+                        saved_choice_count += 1
+                        print(f'[DEBUG] Saved Choice {choice_letter} with ID: {choice_obj.id}')
+                    
+                    print(f'[DEBUG] Total choices saved: {saved_choice_count}')
+                    messages.success(request, 'Soal berhasil diperbarui.')
+                    return redirect('teacher_question_list', category_id=category.id)
+                else:
+                    messages.error(request, 'Terjadi kesalahan validasi pada pilihan jawaban.')
+            else:
+                messages.error(request, 'Tipe soal tidak valid.')
         else:
             # Debug: show why update failed
             try:
@@ -898,7 +1097,6 @@ def teacher_question_update(request, question_id):
                 formset_non = str(formset.non_form_errors())
             print('\n[DEBUG] teacher_question_update validation failed')
             print('Form errors (json):', form_json)
-            print('Form errors (text):', form.errors.as_text())
             print('Formset errors:', formset_errors)
             print('Formset non-field errors:', formset_non)
             messages.error(request, 'Form validation failed: ' + (form.errors.as_text() or str(formset_errors)))

@@ -42,6 +42,7 @@ urlpatterns = [
     path('teacher/students/', views.teacher_student_list, name='teacher_student_list'),
     path('teacher/categories/<int:category_id>/scores/', views.teacher_view_student_scores, name='teacher_view_student_scores'),
     path('teacher/categories/<int:category_id>/scores/<int:test_id>/review/', views.teacher_test_review, name='teacher_test_review'),
+    path('teacher/image-upload/', views.image_upload, name='teacher_image_upload'),
 
     path('students/tryouts/', views.tryout_list, name='tryout_list'),
     path('students/tryouts/<int:category_id>/take/<int:question>/', views.take_test, name='take_test'),
