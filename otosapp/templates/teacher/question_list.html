@@ -138,7 +138,7 @@
                   <a href="{% url 'teacher_question_update' question.id %}" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                   </a>
-                  <button type="button" onclick="confirmDelete('{{ question.id }}')" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800" title="Delete">
+                  <button type="button" data-delete-id="{{ question.id }}" data-modal-target="deleteModal" data-modal-toggle="deleteModal" class="delete-btn flex items-center justify-center w-8 h-8 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800" title="Delete">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
@@ -168,54 +168,73 @@
     </div>
   </div>
 </section>
-{% endblock %}
 
 <!-- Delete Confirmation Modal (teacher) -->
-<div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-  <div class="relative p-4 w-full max-w-md max-h-full">
-  <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-    <div class="p-4 md:p-5 text-center">
-    <svg class="mx-auto mb-4 text-gray-400 w-6 h-6 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-    </svg>
-    <p id="modalCategoryInfo" class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this Question?</p>
-    <form id="deleteForm" method="POST">
-      {% csrf_token %}
-      <button data-modal-toggle="deleteModal" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">No, cancel</button>
-      <button type="submit" class="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">Yes, I'm sure</button>
-    </form>
+<div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
+    <div class="relative p-4 w-full max-w-md">
+        <div class="relative p-6 text-center bg-white rounded-lg shadow-lg dark:bg-gray-800">
+            <button type="button" class="text-gray-400 absolute top-3 right-2.5 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="deleteModal">
+                <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                <span class="sr-only">Close modal</span>
+            </button>
+            <svg class="text-gray-400 dark:text-gray-500 w-12 h-12 mb-4 mx-auto" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 01-2 0V7zM8 13a1 1 0 012 0v.01a1 1 0 01-2 0V13z" clip-rule="evenodd"></path>
+            </svg>
+            <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">Hapus Pertanyaan</h3>
+            <p class="mb-6 text-sm text-gray-500 dark:text-gray-300">Apakah Anda yakin ingin menghapus pertanyaan ini?</p>
+            <form id="deleteForm" method="POST">
+                {% csrf_token %}
+                <div class="flex justify-center items-center space-x-4">
+                    <button data-modal-toggle="deleteModal" type="button" class="py-2 px-4 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                        Tidak, batal
+                    </button>
+                    <button type="submit" class="py-2 px-4 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">
+                        Ya, hapus
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>
-  </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-  function confirmDelete(questionId) {
-  const deleteForm = document.getElementById('deleteForm');
-  deleteForm.action = `/teacher/questions/${questionId}/delete/`;
-  const modalEl = document.getElementById('deleteModal');
-  if (window.flowbite && modalEl) {
-    const modal = new flowbite.Modal(modalEl, {});
-    modal.show();
-  } else {
-    modalEl.classList.remove('hidden');
-  }
-  }
-
-  function toggleFilters() {
-  const filtersPanel = document.getElementById('filtersPanel');
-  if (filtersPanel) filtersPanel.classList.toggle('hidden');
+  // Simple function to set form action when modal opens
+  window.toggleFilters = function() {
+    const filtersPanel = document.getElementById('filtersPanel');
+    if (filtersPanel) filtersPanel.classList.toggle('hidden');
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-  const searchInput = document.querySelector('input[name="search"]');
-  if (searchInput) {
-    searchInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      this.form.submit();
+    
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.form.submit();
+        }
+      });
     }
+
+    // Set form action when delete button is clicked (before modal opens)
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+      
+    deleteButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = this.getAttribute('data-delete-id');
+        
+        // Set form action immediately when button is clicked
+        const deleteForm = document.getElementById('deleteForm');
+        if (deleteForm && id) {
+          deleteForm.action = `/teacher/questions/${id}/delete/`;
+        }
+        
+        // Let Flowbite handle the modal opening via data-modal-toggle
+      });
     });
-  }
   });
 </script>
+{% endblock %}

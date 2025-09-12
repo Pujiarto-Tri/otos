@@ -33,11 +33,10 @@
         startup: {
           ready: () => {
             MathJax.startup.defaultReady();
-            console.log('✅ ADMIN MathJax loaded and ready for LaTeX rendering');
             // Re-render all math after page load
             setTimeout(() => {
               if (window.MathJax && window.MathJax.typesetPromise) {
-                window.MathJax.typesetPromise().catch((err) => console.log('ADMIN MathJax render error:', err));
+                window.MathJax.typesetPromise().catch((err) => {});
               }
             }, 500);
           }
@@ -53,6 +52,11 @@
         /* WYSIWYG Editor custom styles */
         .wysiwyg-editor {
             min-height: 200px;
+        }
+        
+        /* Choice WYSIWYG editors have smaller min-height */
+        [id^="wysiwyg-choice-text-"] {
+            min-height: 100px;
         }
         
         .prose {
@@ -200,8 +204,7 @@
         /* Text inputs and textareas */
         textarea,
         input[type="text"],
-        select,
-        .choice-item textarea {
+        select {
             background: #ffffff;
             color: #1f2937;
             border: 1px solid #e5e7eb;
@@ -213,8 +216,7 @@
 
         .dark textarea,
         .dark input[type="text"],
-        .dark select,
-        .dark .choice-item textarea {
+        .dark select {
             background: #1f2937;
             color: #f9fafb;
             border-color: #4b5563;
@@ -222,22 +224,19 @@
 
         textarea:focus,
         input[type="text"]:focus,
-        select:focus,
-        .choice-item textarea:focus {
+        select:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         textarea::placeholder,
-        input[type="text"]::placeholder,
-        .choice-item textarea::placeholder {
+        input[type="text"]::placeholder {
             color: #9ca3af;
         }
 
         .dark textarea::placeholder,
-        .dark input[type="text"]::placeholder,
-        .dark .choice-item textarea::placeholder {
+        .dark input[type="text"]::placeholder {
             color: #6b7280;
         }
 
@@ -266,13 +265,13 @@
             color: white;
         }
 
-        .choice-item.correct-answer textarea {
+        .choice-item.correct-answer .wysiwyg-editor {
             border: 2px solid #10b981;
             background-color: rgba(255, 255, 255, 0.98);
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
-        .dark .choice-item.correct-answer textarea {
+        .dark .choice-item.correct-answer .wysiwyg-editor {
             background-color: rgba(31, 41, 55, 0.98);
         }
 
@@ -348,6 +347,24 @@
         
         .dark .choice-item img { 
             box-shadow: 0 4px 14px rgba(255,255,255,0.03); 
+        }
+        
+        /* Optional choice styling */
+        .choice-item.optional {
+            opacity: 0.8;
+            border-style: dashed !important;
+        }
+        
+        .choice-item.optional .choice-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        .dark .choice-item.optional .choice-header {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        }
+        
+        .choice-item.optional:hover {
+            opacity: 1;
         }
     </style>
 {% endblock %}
@@ -685,13 +702,23 @@
                                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Answer Choices</h3>
                                                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                                     {% if question %}Update multiple choice options for this question{% else %}Add multiple choice options for this question{% endif %}
+                                                    <br><span class="text-blue-600 dark:text-blue-400">• Minimum 2 choices required (A & B must be filled)</span>
+                                                    <br><span class="text-gray-400">• Choices C, D, E are optional</span>
                                                 </p>
                                             </div>
-                                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                <span>Select at least one correct answer</span>
+                                            <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                                                <div class="flex items-center space-x-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    <span>Select at least one correct answer</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                    </svg>
+                                                    <span id="choice-counter" class="text-red-500">0/5 choices filled</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -700,7 +727,7 @@
                                         
                                         <div id="choice-forms" class="space-y-4">
                                             {% for form in formset %}
-                                                <div class="choice-item relative group border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary-300 dark:hover:border-primary-500 {% if form.is_correct.value %}correct-answer{% endif %}" data-choice="{{ forloop.counter }}">
+                                                <div class="choice-item relative group border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary-300 dark:hover:border-primary-500 {% if form.is_correct.value %}correct-answer{% endif %}{% if forloop.counter > 2 %} optional{% endif %}" data-choice="{{ forloop.counter }}">
                                                     {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
                                                     
                                                     <!-- Choice Header with Letter Badge -->
@@ -724,97 +751,198 @@
                                                         
                                                         <!-- Correct Answer Toggle -->
                                                         <div class="flex items-center space-x-3">
-                                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                                {{ form.is_correct }}
-                                                                <span class="ml-3 text-sm font-medium {% if form.is_correct.value %}text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                                                                    Mark as correct
-                                                                </span>
-                                                            </label>
+                                                            <!-- Hidden checkbox for form submission -->
+                                                            <div class="hidden">{{ form.is_correct }}</div>
+                                                            
+                                                            <!-- Button to toggle correct answer -->
+                                                            <button type="button" 
+                                                                    class="correct-answer-btn px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 {% if form.is_correct.value %}bg-green-600 text-white border-green-600 focus:ring-green-500 hover:bg-green-700{% else %}bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 focus:ring-gray-500{% endif %}"
+                                                                    data-choice-number="{{ forloop.counter }}"
+                                                                    onclick="toggleCorrectAnswer(this, {{ forloop.counter }})">
+                                                                <div class="flex items-center space-x-2">
+                                                                    <svg class="w-4 h-4 {% if form.is_correct.value %}block{% else %}hidden{% endif %} check-icon" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <svg class="w-4 h-4 {% if form.is_correct.value %}hidden{% else %}block{% endif %} plus-icon" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span class="button-text">{% if form.is_correct.value %}Correct Answer{% else %}Mark as Correct{% endif %}</span>
+                                                                </div>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                     
                                                     <!-- Choice Content -->
                                                     <div class="p-4">
-                                                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                                            <!-- Choice Text (Left 2/3) -->
-                                                            <div class="lg:col-span-2">
-                                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                                    Choice Text <span id="choice-text-req-{{ forloop.counter }}" class="text-red-500">*</span>
-                                                                </label>
-                                                                {{ form.choice_text }}
-                                                                {% if form.choice_text.errors %}
-                                                                    {% for error in form.choice_text.errors %}
-                                                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
-                                                                    {% endfor %}
-                                                                {% endif %}
+                                                        <!-- Choice Text with WYSIWYG Editor -->
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                                Choice Text {% if forloop.counter <= 2 %}<span id="choice-text-req-{{ forloop.counter }}" class="text-red-500">*</span>{% else %}<span class="text-gray-400 text-xs">(Optional)</span>{% endif %}
+                                                            </label>
+                                                            
+                                                            <!-- Flowbite WYSIWYG Editor for Choice -->
+                                                            <div class="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                                                <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-600">
+                                                                    <div class="flex flex-wrap items-center divide-gray-200 sm:divide-x sm:rtl:divide-x-reverse dark:divide-gray-600">
+                                                                        <div class="flex items-center space-x-1 rtl:space-x-reverse sm:pe-4">
+                                                                            <button type="button" data-tooltip-target="tooltip-bold-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="bold" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Bold</span>
+                                                                            </button>
+                                                                            <div id="tooltip-bold-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Bold
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                            <button type="button" data-tooltip-target="tooltip-italic-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="italic" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Italic</span>
+                                                                            </button>
+                                                                            <div id="tooltip-italic-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Italic
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                            <button type="button" data-tooltip-target="tooltip-underline-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="underline" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Underline</span>
+                                                                            </button>
+                                                                            <div id="tooltip-underline-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Underline
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="flex flex-wrap items-center space-x-1 rtl:space-x-reverse sm:ps-4">
+                                                                            <button type="button" data-tooltip-target="tooltip-list-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="unorderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Bullet list</span>
+                                                                            </button>
+                                                                            <div id="tooltip-list-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Bullet list
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                            <button type="button" data-tooltip-target="tooltip-ordered-list-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="orderedList" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h8m-8 6h8m-8 6h8M4 16a2 2 0 1 1 3.321 1.5L4 20h5M4 5l2-1v6m-2 0h4"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Ordered list</span>
+                                                                            </button>
+                                                                            <div id="tooltip-ordered-list-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Ordered list
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                            <button type="button" data-tooltip-target="tooltip-blockquote-choice-{{ forloop.counter }}" data-wysiwyg-toggle-format="blockquote" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                                    <path fill-rule="evenodd" d="M6 6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L6 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2H6Zm7 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5L13 16.5v.5h3l2-3.5V11a2 2 0 0 0-2-2h-3Z" clip-rule="evenodd"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Blockquote</span>
+                                                                            </button>
+                                                                            <div id="tooltip-blockquote-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Blockquote
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                            
+                                                                            <!-- Separator -->
+                                                                            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                                                                            
+                                                                            <!-- Image Upload Button -->
+                                                                            <button type="button" data-tooltip-target="tooltip-image-choice-{{ forloop.counter }}" data-wysiwyg-action="image" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                                    <path fill-rule="evenodd" d="M13 10a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H14a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                                                                                    <path fill-rule="evenodd" d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12c0 .556-.227 1.06-.593 1.422A.999.999 0 0 1 20.5 20H4a2.002 2.002 0 0 1-2-2V6Zm6.892 12 3.833-5.356-3.99-4.322a1 1 0 0 0-1.549.097L4 12.879V6h16v9.95l-3.257-3.619a1 1 0 0 0-1.557.088L11.2 18H8.892Z" clip-rule="evenodd"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Upload Image</span>
+                                                                            </button>
+                                                                            <div id="tooltip-image-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Upload Image
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+
+                                                                            <!-- Math Symbols Button -->
+                                                                            <button type="button" data-tooltip-target="tooltip-math-choice-{{ forloop.counter }}" data-wysiwyg-action="math-symbols" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                                    <path d="M9 7H7v2H5V7H3V5h2V3h2v2h2v2Zm2 12h10v-2H11v2Zm0-4h10v-2H11v2Zm0-4h10V9H11v2Z"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">Math Symbols</span>
+                                                                            </button>
+                                                                            <div id="tooltip-math-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Insert Math Symbols
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+
+                                                                            <!-- LaTeX Formula Button -->
+                                                                            <button type="button" data-tooltip-target="tooltip-latex-choice-{{ forloop.counter }}" data-wysiwyg-action="latex" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">LaTeX Formula</span>
+                                                                            </button>
+                                                                            <div id="tooltip-latex-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                Insert LaTeX Formula
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+
+                                                                            <!-- LaTeX Guide Button -->
+                                                                            <button type="button" data-tooltip-target="tooltip-latex-guide-choice-{{ forloop.counter }}" data-wysiwyg-action="latex-guide" class="p-2 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
+                                                                                <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                                                    <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm1 13h-2v-2h2v2zm0-3h-2V7h2v5z"/>
+                                                                                </svg>
+                                                                                <span class="sr-only">LaTeX Guide</span>
+                                                                            </button>
+                                                                            <div id="tooltip-latex-guide-choice-{{ forloop.counter }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                                                                LaTeX Guide
+                                                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
+                                                                    <div id="wysiwyg-choice-text-{{ forloop.counter }}" 
+                                                                         data-wysiwyg="true" 
+                                                                         data-placeholder="Enter choice text..."
+                                                                         contenteditable="true" 
+                                                                         class="wysiwyg-editor prose max-w-none text-sm text-gray-900 dark:text-white focus:outline-none min-h-[100px] p-2 border-0">
+                                                                        {% if form.choice_text.value %}{{ form.choice_text.value|safe }}{% endif %}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             
-                                                            <!-- Choice Image (Right 1/3) -->
-                                                            <div class="lg:col-span-1">
-                                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                                    Choice Image
-                                                                </label>
-                                                                
-                                                                <!-- Image Upload Area -->
-                                                                <div class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors duration-200">
-                                                                    <!-- Current Image Preview -->
-                                                                    <div id="choice-image-preview-{{ forloop.counter }}" class="{% if not form.instance.choice_image %}hidden{% endif %}">
-                                                                        {% if form.instance.choice_image %}
-                                                                            <div class="relative inline-block">
-                                                                                <img src="{{ form.instance.choice_image.url }}" 
-                                                                                     class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
-                                                                                     alt="Choice image"
-                                                                                     onclick="openImageModal('{{ form.instance.choice_image.url }}', 'Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}')">
-                                                                                <button type="button" 
-                                                                                        onclick="console.log('Remove existing image clicked for choice {{ forloop.counter }}'); removeChoiceImage({{ forloop.counter }}); event.stopPropagation(); return false;" 
-                                                                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200 z-20 border-2 border-white">
-                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                                                    </svg>
-                                                                                </button>
-                                                                            </div>
-                                                                        {% else %}
-                                                                            <div class="relative inline-block">
-                                                                                <img class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm cursor-pointer hover:opacity-80 transition-opacity" 
-                                                                                     alt="Choice image"
-                                                                                     onclick="openImageModal(this.src, 'Choice {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% elif forloop.counter == 5 %}E{% endif %}')">
-                                                                                <button type="button" 
-                                                                                        onclick="console.log('Remove new image clicked for choice {{ forloop.counter }}'); removeChoiceImage({{ forloop.counter }}); event.stopPropagation(); return false;" 
-                                                                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200 z-20 border-2 border-white">
-                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                                                    </svg>
-                                                                                </button>
-                                                                            </div>
-                                                                        {% endif %}
-                                                                    </div>
-                                                                    
-                                                                    <!-- Upload Area (shown when no image) -->
-                                                                    <div id="choice-upload-area-{{ forloop.counter }}" class="{% if form.instance.choice_image %}hidden{% endif %}">
-                                                                        <svg class="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                            <!-- Hidden textarea for form submission -->
+                                                            <div class="hidden">{{ form.choice_text }}</div>
+                                                            
+                                                            <!-- Legacy Image Display -->
+                                                            {% if form.instance.choice_image %}
+                                                            <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+                                                                <div class="flex items-start space-x-3">
+                                                                    <div class="flex-shrink-0">
+                                                                        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                                                                         </svg>
-                                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Click to upload</p>
                                                                     </div>
-                                                                    
-                                                                    <!-- Hidden File Input -->
-                                                                    <input type="file" 
-                                                                           id="choice-image-{{ forloop.counter }}" 
-                                                                           accept="image/*" 
-                                                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                                                                           onchange="uploadChoiceImage(this, {{ forloop.counter }})">
-                                                                    
-                                                                    <!-- Status Text -->
-                                                                    <p id="choice-image-status-{{ forloop.counter }}" class="mt-1 text-xs"></p>
+                                                                    <div class="flex-1">
+                                                                        <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Legacy Image Found</h4>
+                                                                        <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">This choice contains an image uploaded using the old system. For new images, please use the image upload button in the editor above.</p>
+                                                                        <div class="mt-2">
+                                                                            <img src="{{ form.instance.choice_image.url }}" 
+                                                                                 alt="Legacy choice image" 
+                                                                                 class="max-w-xs h-auto rounded-lg border border-yellow-300">
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                
-                                                                <!-- Hidden Django Field -->
-                                                                <div class="hidden">{{ form.choice_image }}</div>
-                                                                <input type="hidden" 
-                                                                       id="choice-image-url-{{ forloop.counter }}" 
-                                                                       name="choice_image_{{ forloop.counter }}" 
-                                                                       value="{% if form.instance.choice_image %}{{ form.instance.choice_image.url }}{% endif %}">
                                                             </div>
+                                                            {% endif %}
+                                                            
+                                                            {% if form.choice_text.errors %}
+                                                                {% for error in form.choice_text.errors %}
+                                                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                                                                {% endfor %}
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1211,20 +1339,11 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 ADMIN WYSIWYG Editor Initialization Started');
-  
   // Initialize Flowbite WYSIWYG editors
   const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
   const explanationEditor = document.querySelector('#wysiwyg-explanation-admin');
   const questionTextarea = document.querySelector('#id_question_text');
   const explanationTextarea = document.querySelector('#id_explanation');
-
-  console.log('📝 ADMIN Editor Elements Found:', {
-    questionEditor: !!questionEditor,
-    explanationEditor: !!explanationEditor,
-    questionTextarea: !!questionTextarea,
-    explanationTextarea: !!explanationTextarea
-  });
 
   // Flowbite WYSIWYG Editor initialization
   function initializeWysiwygEditor(editor, textarea) {
@@ -1265,9 +1384,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       syncContent();
     });
+    
+    // Additional sync on keyup for better reliability
+    editor.addEventListener('keyup', function() {
+      setTimeout(syncContent, 100);
+    });
 
     // Initial placeholder check
     updatePlaceholder();
+    
+    // Initial sync to ensure content is properly set
+    syncContent();
 
     return {
       getContent: () => editor.innerHTML,
@@ -1282,19 +1409,136 @@ document.addEventListener('DOMContentLoaded', function() {
   const questionWysiwyg = initializeWysiwygEditor(questionEditor, questionTextarea);
   const explanationWysiwyg = initializeWysiwygEditor(explanationEditor, explanationTextarea);
 
+  // Initialize choice editors
+  const choiceEditors = {};
+  for (let i = 1; i <= 5; i++) {
+    const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+    const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
+    
+    if (choiceEditor && choiceTextarea) {
+      choiceEditors[i] = initializeWysiwygEditor(choiceEditor, choiceTextarea);
+      
+      // Add real-time validation for choices
+      choiceEditor.addEventListener('input', function() {
+        validateChoiceRequirements(i);
+      });
+      choiceEditor.addEventListener('blur', function() {
+        validateChoiceRequirements(i);
+      });
+    }
+  }
+  
+  // Global function to sync all WYSIWYG content to textareas
+  window.syncAllWysiwygContent = function() {
+    // Sync question content
+    const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+    const questionTextarea = document.querySelector('#id_question_text');
+    if (questionEditor && questionTextarea) {
+      questionTextarea.value = questionEditor.innerHTML;
+    }
+    
+    // Sync explanation content
+    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
+    const explanationTextarea = document.querySelector('#id_explanation');
+    if (explanationEditor && explanationTextarea) {
+      explanationTextarea.value = explanationEditor.innerHTML;
+    }
+    
+    // Sync all choice editors
+    for (let i = 1; i <= 5; i++) {
+      const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+      const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
+      
+      if (choiceEditor && choiceTextarea) {
+        let htmlContent = choiceEditor.innerHTML;
+        
+        // Get text content to check if it's truly empty
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Clean up empty WYSIWYG content (just empty tags)
+        if (!textContent.trim()) {
+          htmlContent = '';
+        }
+        
+        choiceTextarea.value = htmlContent;
+      }
+    }
+  };
+  
+  // Real-time choice validation function
+  function validateChoiceRequirements(choiceNumber) {
+    const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${choiceNumber}`);
+    const choiceItem = choiceEditor?.closest('.choice-item');
+    const requiredSpan = document.querySelector(`#choice-text-req-${choiceNumber}`);
+    
+    if (!choiceEditor || !choiceItem) return;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    const hasContent = textContent.trim() !== '';
+    
+    // Update visual feedback for required choices (A & B)
+    if (choiceNumber <= 2) {
+      if (hasContent) {
+        choiceItem.classList.remove('border-red-300', 'dark:border-red-600');
+        choiceItem.classList.add('border-green-300', 'dark:border-green-600');
+        if (requiredSpan) {
+          requiredSpan.classList.remove('text-red-500');
+          requiredSpan.classList.add('text-green-500');
+        }
+      } else {
+        choiceItem.classList.remove('border-green-300', 'dark:border-green-600');
+        choiceItem.classList.add('border-red-300', 'dark:border-red-600');
+        if (requiredSpan) {
+          requiredSpan.classList.remove('text-green-500');
+          requiredSpan.classList.add('text-red-500');
+        }
+      }
+    }
+    
+    // Update choice counter display
+    updateChoiceCounter();
+  }
+  
+  // Function to update choice counter
+  function updateChoiceCounter() {
+    let filledChoices = 0;
+    for (let i = 1; i <= 5; i++) {
+      const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+      if (choiceEditor) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        if (textContent.trim()) {
+          filledChoices++;
+        }
+      }
+    }
+    
+    // Find and update counter display (if exists)
+    const counterDisplay = document.querySelector('#choice-counter');
+    if (counterDisplay) {
+      counterDisplay.textContent = `${filledChoices}/5 choices filled`;
+      if (filledChoices >= 2) {
+        counterDisplay.classList.remove('text-red-500');
+        counterDisplay.classList.add('text-green-500');
+      } else {
+        counterDisplay.classList.remove('text-green-500');
+        counterDisplay.classList.add('text-red-500');
+      }
+    }
+  }
+
   // Flowbite WYSIWYG Toolbar functionality
   function initializeToolbar() {
-    console.log('🎛️ ADMIN Initializing toolbar functionality...');
-    
     const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
-    console.log('🔘 ADMIN Format buttons found:', formatButtons.length);
     
     formatButtons.forEach((button, index) => {
-      console.log(`🔘 ADMIN Button ${index + 1}:`, button.getAttribute('data-wysiwyg-toggle-format'));
       
       button.addEventListener('click', function(e) {
-        console.log('🖱️ ADMIN Button clicked:', this.getAttribute('data-wysiwyg-toggle-format'));
-        
         e.preventDefault();
         const format = this.getAttribute('data-wysiwyg-toggle-format');
         
@@ -1303,14 +1547,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
         const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
         
-        console.log('🔍 ADMIN Editor lookup:', {
-          toolbar: toolbar ? 'found' : 'not found',
-          editorContainer: editorContainer ? 'found' : 'not found',
-          editor: editor ? editor.id : 'not found'
-        });
         
         if (!editor) {
-          console.warn('❌ ADMIN Editor not found for button:', this);
           return;
         }
 
@@ -1354,12 +1592,11 @@ document.addEventListener('DOMContentLoaded', function() {
               break;
           }
         } catch (error) {
-          console.warn('❌ ADMIN execCommand failed:', error);
+          // Silent error handling
         }
         
         // Update visual state of button with more visible colors for light theme
         if (success) {
-          console.log('✅ ADMIN Format applied successfully:', format);
           
           // Toggle button state based on current format state
           const isCurrentlyActive = this.classList.contains('text-white') && this.classList.contains('bg-blue-600');
@@ -1374,12 +1611,21 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('text-white', 'bg-blue-600');
             this.style.boxShadow = '';
           }
-        } else {
-          console.log('❌ ADMIN Format application failed:', format);
         }
         
         // Sync content to textarea
-        const textarea = editor.id === 'wysiwyg-question-text-admin' ? questionTextarea : explanationTextarea;
+        let textarea = null;
+        if (editor.id === 'wysiwyg-question-text-admin') {
+          textarea = questionTextarea;
+        } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+          textarea = explanationTextarea;
+        } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+          // Handle choice editors
+          const choiceNumber = editor.id.split('-').pop();
+          const choiceIndex = parseInt(choiceNumber) - 1;
+          textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+        }
+        
         if (textarea) {
           textarea.value = editor.innerHTML;
         }
@@ -1416,7 +1662,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
         
         if (!editor) {
-          console.warn('Editor not found for image button:', this);
           return;
         }
         
@@ -1488,7 +1733,18 @@ document.addEventListener('DOMContentLoaded', function() {
               }
               
               // Update textarea
-              const textarea = editor.id === 'wysiwyg-question-text-admin' ? questionTextarea : explanationTextarea;
+              let textarea = null;
+              if (editor.id === 'wysiwyg-question-text-admin') {
+                textarea = questionTextarea;
+              } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+                textarea = explanationTextarea;
+              } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+                // Handle choice editors
+                const choiceNumber = editor.id.split('-').pop();
+                const choiceIndex = parseInt(choiceNumber) - 1;
+                textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+              }
+              
               if (textarea) {
                 textarea.value = editor.innerHTML;
               }
@@ -1507,7 +1763,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (loadingText.parentNode) {
               loadingText.parentNode.removeChild(loadingText);
             }
-            console.error('Upload failed:', error);
             showNotification('Image upload failed. Please try again.', 'error');
           });
         };
@@ -1530,7 +1785,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
         
         if (!editor) {
-          console.warn('Editor not found for math symbols button:', this);
           return;
         }
         
@@ -1575,6 +1829,14 @@ document.addEventListener('DOMContentLoaded', function() {
             questionTextarea.value = window.currentMathEditor.innerHTML;
           } else if (window.currentMathEditor.id === 'wysiwyg-explanation-text-admin') {
             explanationTextarea.value = window.currentMathEditor.innerHTML;
+          } else if (window.currentMathEditor.id.startsWith('wysiwyg-choice-text-')) {
+            // Handle choice editors
+            const choiceNumber = window.currentMathEditor.id.split('-').pop();
+            const choiceIndex = parseInt(choiceNumber) - 1;
+            const choiceTextarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+            if (choiceTextarea) {
+              choiceTextarea.value = window.currentMathEditor.innerHTML;
+            }
           }
           
           // Close modal
@@ -1604,7 +1866,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
         
         if (!editor) {
-          console.warn('Editor not found for LaTeX button:', this);
           return;
         }
 
@@ -1669,17 +1930,23 @@ document.addEventListener('DOMContentLoaded', function() {
           questionTextarea.value = editor.innerHTML;
         } else if (editor.id === 'wysiwyg-explanation-text-admin') {
           explanationTextarea.value = editor.innerHTML;
+        } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+          // Handle choice editors
+          const choiceNumber = editor.id.split('-').pop();
+          const choiceIndex = parseInt(choiceNumber) - 1;
+          const choiceTextarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+          if (choiceTextarea) {
+            choiceTextarea.value = editor.innerHTML;
+          }
         }
         
         // Trigger input event
         editor.dispatchEvent(new Event('input', { bubbles: true }));
         
         // Re-render MathJax for the new LaTeX
-        console.log('🔢 ADMIN Rendering LaTeX:', latex);
         setTimeout(() => {
           if (window.MathJax && window.MathJax.typesetPromise) {
             window.MathJax.typesetPromise([mathSpan]).then(() => {
-              console.log('✅ ADMIN LaTeX rendered successfully:', latex);
               
               // Add click handler for editing
               mathSpan.addEventListener('click', function(e) {
@@ -1693,16 +1960,22 @@ document.addEventListener('DOMContentLoaded', function() {
                   
                   // Re-render with MathJax
                   window.MathJax.typesetPromise([this]).then(() => {
-                    console.log('✅ ADMIN LaTeX re-rendered:', newLatex);
                     // Update textarea
                     if (editor.id === 'wysiwyg-question-text-admin') {
                       questionTextarea.value = editor.innerHTML;
                     } else if (editor.id === 'wysiwyg-explanation-text-admin') {
                       explanationTextarea.value = editor.innerHTML;
+                    } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+                      // Handle choice editors
+                      const choiceNumber = editor.id.split('-').pop();
+                      const choiceIndex = parseInt(choiceNumber) - 1;
+                      const choiceTextarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+                      if (choiceTextarea) {
+                        choiceTextarea.value = editor.innerHTML;
+                      }
                     }
                     editor.focus();
                   }).catch((err) => {
-                    console.error('ADMIN LaTeX re-render error:', err);
                     this.style.backgroundColor = '#fef2f2';
                     this.style.borderColor = '#ef4444';
                     this.style.color = '#dc2626';
@@ -1711,7 +1984,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
               });
             }).catch((err) => {
-              console.error('❌ ADMIN LaTeX render error:', err);
               mathSpan.style.backgroundColor = '#fef2f2';
               mathSpan.style.borderColor = '#ef4444';
               mathSpan.style.color = '#dc2626';
@@ -1728,7 +2000,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-wysiwyg-action="latex-guide"]').forEach(button => {
       button.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('ADMIN LaTeX Guide button clicked');
         window.openLatexGuideModal();
       });
     });
@@ -1736,7 +2007,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // LaTeX Guide Modal functions (Global scope)
   window.openLatexGuideModal = function() {
-    console.log('Opening ADMIN LaTeX Guide modal');
     const modal = document.getElementById('latexGuideModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -1746,7 +2016,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.closeLatexGuideModal = function() {
-    console.log('Closing ADMIN LaTeX Guide modal');
     const modal = document.getElementById('latexGuideModal');
     if (modal) {
       modal.classList.add('hidden');
@@ -1780,34 +2049,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize special actions
   initializeSpecialActions();
   
-  // Log initialization status
-  console.log('🔧 ADMIN Toolbar initialized');
-  console.log('✨ ADMIN Special actions initialized');
+  // Initialize choice counter on page load
+  updateChoiceCounter();
   
   // Render existing LaTeX formulas on page load
   setTimeout(() => {
     const existingMath = document.querySelectorAll('.latex-formula, .math-display, .math-formula');
     if (existingMath.length > 0 && window.MathJax && window.MathJax.typesetPromise) {
-      console.log('🔄 ADMIN Re-rendering existing LaTeX formulas:', existingMath.length);
-      window.MathJax.typesetPromise(Array.from(existingMath)).catch((err) => console.log('MathJax re-render error:', err.message));
+      window.MathJax.typesetPromise(Array.from(existingMath)).catch((err) => {});
     }
   }, 1000);
-
-  // Log toolbar buttons found
-  const formatButtons = document.querySelectorAll('[data-wysiwyg-toggle-format]');
-  const imageButtons = document.querySelectorAll('[data-wysiwyg-action="image"]');
-  const mathButtons = document.querySelectorAll('[data-wysiwyg-action="math-symbols"]');
-  const latexButtons = document.querySelectorAll('[data-wysiwyg-action="latex"]');
-  
-  console.log('🎛️ ADMIN Toolbar buttons found:', {
-    formatButtons: formatButtons.length,
-    imageButtons: imageButtons.length,
-    mathButtons: mathButtons.length,
-    latexButtons: latexButtons.length
-  });
-  
-  // Initialize Python environment info display (legacy code removed)
-  // Quill.js code has been replaced with Flowbite WYSIWYG
             
   // Question type functionality
             const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');
@@ -1836,7 +2087,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         document.body.style.cursor = '';
-                        console.log('Question type changed to:', selectedType.value);
                     }, 100);
                 }
             }
@@ -1855,9 +2105,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.addEventListener('submit', function(e) {
                     const category = document.querySelector('#id_category');
                     
-                    // Get content from Flowbite WYSIWYG editors
-                    let questionContent = '';
+                    // Sync question content
                     const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+                    if (questionEditor && questionTextarea) {
+                        questionTextarea.value = questionEditor.innerHTML;
+                    }
+
+                    // Sync explanation content
+                    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
+                    if (explanationEditor && explanationTextarea) {
+                        explanationTextarea.value = explanationEditor.innerHTML;
+                    }
+                    
+                    // Sync all choice editors content
+                    for (let i = 1; i <= 5; i++) {
+                        const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+                        const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
+                        
+                        if (choiceEditor && choiceTextarea) {
+                            let htmlContent = choiceEditor.innerHTML;
+                            
+                            // Get text content to check if it's truly empty
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = htmlContent;
+                            const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                            
+                            // Clean up empty WYSIWYG content (just empty tags)
+                            if (!textContent.trim()) {
+                                htmlContent = '';
+                            }
+                            
+                            choiceTextarea.value = htmlContent;
+                        }
+                    }
+                    
+                    // Get content from Flowbite WYSIWYG editors for validation
+                    let questionContent = '';
                     if (questionEditor) {
                         questionContent = questionEditor.innerHTML.trim();
                         // Check for empty content (just HTML tags with no text)
@@ -1867,12 +2150,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (!textContent.trim()) questionContent = '';
                     } else if (questionTextarea) {
                         questionContent = questionTextarea.value.trim();
-                    }
-
-                    // Sync explanation content from Flowbite WYSIWYG to textarea
-                    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
-                    if (explanationEditor && explanationTextarea) {
-                        explanationTextarea.value = explanationEditor.innerHTML;
                     }
                     
                     if (!questionContent || (category && !category.value)) {
@@ -1884,6 +2161,64 @@ document.addEventListener('DOMContentLoaded', function() {
                             firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                         return;
+                    }
+                    
+                    // Check multiple choice validation - minimum 2 choices required
+                    const multipleChoiceRadio = document.querySelector('input[value="multiple_choice"]:checked');
+                    if (multipleChoiceRadio) {
+                        let validChoicesCount = 0;
+                        let correctAnswerExists = false;
+                        
+                        // Check first 2 choices (A & B) - these are required
+                        for (let i = 1; i <= 2; i++) {
+                            const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+                            if (choiceEditor) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+                                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                                if (textContent.trim()) {
+                                    validChoicesCount++;
+                                }
+                            }
+                        }
+                        
+                        // Check remaining choices (C, D, E) - these are optional
+                        for (let i = 3; i <= 5; i++) {
+                            const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+                            if (choiceEditor) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+                                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                                if (textContent.trim()) {
+                                    validChoicesCount++;
+                                }
+                            }
+                        }
+                        
+                        // Check if at least one correct answer is selected
+                        const correctAnswerCheckboxes = document.querySelectorAll('input[name$="_is_correct"]:checked');
+                        correctAnswerExists = correctAnswerCheckboxes.length > 0;
+                        
+                        // Validation: minimum 2 choices required, and at least one must be marked as correct
+                        if (validChoicesCount < 2) {
+                            e.preventDefault();
+                            showNotification('Please fill in at least 2 choices (A & B are required)', 'error');
+                            const choicesSection = document.getElementById('choicesSection');
+                            if (choicesSection) {
+                                choicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
+                        }
+                        
+                        if (!correctAnswerExists) {
+                            e.preventDefault();
+                            showNotification('Please select at least one correct answer', 'error');
+                            const choicesSection = document.getElementById('choicesSection');
+                            if (choicesSection) {
+                                choicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
+                        }
                     }
                     
                     // Check if essay type and answer is provided
@@ -1914,113 +2249,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Choice Image Upload Function
-            window.uploadChoiceImage = function(input, choiceNumber) {
-                const file = input.files[0];
-                if (!file) return;
+            // Toggle correct answer button functionality (Global function)
+            window.toggleCorrectAnswer = function(button, choiceNumber) {
+                // Find the hidden checkbox
+                const choiceItem = button.closest('.choice-item');
+                const checkbox = choiceItem.querySelector('input[name$="-is_correct"]');
                 
-                const formData = new FormData();
-                formData.append('upload', file);
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                
-                const statusElement = document.getElementById(`choice-image-status-${choiceNumber}`);
-                statusElement.textContent = 'Uploading...';
-                statusElement.className = 'text-sm text-blue-600 dark:text-blue-400';
-                
-                fetch('/admin/image-upload/', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.url) {
-                        // Update hidden input with image URL
-                        document.getElementById(`choice-image-url-${choiceNumber}`).value = data.url;
-                        
-                        // Show preview
-                        const previewContainer = document.getElementById(`choice-image-preview-${choiceNumber}`);
-                        const previewImage = previewContainer.querySelector('img');
-                        previewImage.src = data.url;
-                        // responsive and interactive preview styles
-                        previewImage.classList.add('max-w-full','h-auto','rounded-lg','cursor-zoom-in');
-                        previewImage.onclick = function() {
-                            const choiceLabel = String.fromCharCode(64 + choiceNumber); // Convert 1->A, 2->B, etc.
-                            openImageModal(data.url, `Choice ${choiceLabel} Image`);
-                        };
-                        previewContainer.classList.remove('hidden');
-                        
-                        // Update status
-                        statusElement.textContent = 'Image uploaded successfully';
-                        statusElement.className = 'text-sm text-green-600 dark:text-green-400';
-                        
-                        // Update requirement state: if image exists, choice text is not required
-                        if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
-
-                        showNotification('Choice image uploaded successfully!', 'success');
-                    } else {
-                        statusElement.textContent = 'Failed to upload image';
-                        statusElement.className = 'text-sm text-red-600 dark:text-red-400';
-                        showNotification('Failed to upload choice image', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    statusElement.textContent = 'Failed to upload image';
-                    statusElement.className = 'text-sm text-red-600 dark:text-red-400';
-                    showNotification('Failed to upload choice image', 'error');
-                });
-                
-                // Clear the file input
-                input.value = '';
-            };
-
-            // Remove Choice Image Function
-            window.removeChoiceImage = function(choiceNumber) {
-                try {
-                    // Clear hidden input
-                    const hiddenInput = document.getElementById(`choice-image-url-${choiceNumber}`);
-                    if (hiddenInput) {
-                        hiddenInput.value = '';
-                    }
-                    
-                    // Clear file input
-                    const fileInput = document.getElementById(`choice-image-${choiceNumber}`);
-                    if (fileInput) {
-                        fileInput.value = '';
-                    }
-                    
-                    // Hide preview
-                    const previewContainer = document.getElementById(`choice-image-preview-${choiceNumber}`);
-                    if (previewContainer) {
-                        previewContainer.classList.add('hidden');
-                    }
-                    
-                    // Show upload area
-                    const uploadArea = document.getElementById(`choice-upload-area-${choiceNumber}`);
-                    if (uploadArea) {
-                        uploadArea.classList.remove('hidden');
-                    }
-                    
-                    // Clear status
-                    const statusElement = document.getElementById(`choice-image-status-${choiceNumber}`);
-                    if (statusElement) {
-                        statusElement.textContent = '';
-                        statusElement.className = 'mt-1 text-xs';
-                    }
-                    
-                    console.log(`Image removed for choice ${choiceNumber}`);
-                    showNotification('Choice image removed', 'success');
-                    // Update requirement state after removing image
-                    if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
-                } catch (error) {
-                    console.error('Error removing choice image:', error);
-                    showNotification('Error removing image', 'error');
+                if (!checkbox) {
+                    return;
                 }
+                
+                // Toggle checkbox state
+                checkbox.checked = !checkbox.checked;
+                
+                // Update button appearance
+                updateCorrectAnswerButton(button, checkbox.checked);
+                
+                // Trigger existing visual feedback
+                handleCorrectAnswerChange(checkbox, choiceNumber);
             };
-
+            
+            // Toggle correct answer button functionality
+            function toggleCorrectAnswer(button, choiceNumber) {
+                // Find the hidden checkbox
+                const choiceItem = button.closest('.choice-item');
+                const checkbox = choiceItem.querySelector('input[name$="-is_correct"]');
+                
+                if (!checkbox) {
+                    return;
+                }
+                
+                // Toggle checkbox state
+                checkbox.checked = !checkbox.checked;
+                
+                // Update button appearance
+                updateCorrectAnswerButton(button, checkbox.checked);
+                
+                // Trigger existing visual feedback
+                handleCorrectAnswerChange(checkbox, choiceNumber);
+            }
+            
+            // Update button appearance based on state
+            function updateCorrectAnswerButton(button, isCorrect) {
+                const checkIcon = button.querySelector('.check-icon');
+                const plusIcon = button.querySelector('.plus-icon');
+                const buttonText = button.querySelector('.button-text');
+                
+                if (isCorrect) {
+                    // Correct state - green button
+                    button.className = 'correct-answer-btn px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-green-600 text-white border-green-600 focus:ring-green-500 hover:bg-green-700';
+                    checkIcon.classList.remove('hidden');
+                    checkIcon.classList.add('block');
+                    plusIcon.classList.remove('block');
+                    plusIcon.classList.add('hidden');
+                    buttonText.textContent = 'Correct Answer';
+                } else {
+                    // Normal state - gray button
+                    button.className = 'correct-answer-btn px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 focus:ring-gray-500';
+                    checkIcon.classList.remove('block');
+                    checkIcon.classList.add('hidden');
+                    plusIcon.classList.remove('hidden');
+                    plusIcon.classList.add('block');
+                    buttonText.textContent = 'Mark as Correct';
+                }
+            }
+            
             // Handle correct answer checkbox changes for visual feedback
             function handleCorrectAnswerChange(checkbox, choiceNumber) {
                 const choiceItem = checkbox.closest('.choice-item');
@@ -2076,11 +2369,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         checkboxLabel.style.fontWeight = '500';
                     }
                     
-                    // Update textarea
-                    const textarea = choiceItem.querySelector('textarea');
-                    if (textarea) {
-                        textarea.style.border = '2px solid #10b981';
-                        textarea.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.15)';
+                    // Update WYSIWYG editor
+                    const wysiwygEditor = choiceItem.querySelector('.wysiwyg-editor');
+                    if (wysiwygEditor) {
+                        wysiwygEditor.style.border = '2px solid #10b981';
+                        wysiwygEditor.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.15)';
                     }
                 } else {
                     // Remove correct answer styling
@@ -2130,11 +2423,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         checkboxLabel.style.fontWeight = '';
                     }
                     
-                    // Reset textarea
-                    const textarea = choiceItem.querySelector('textarea');
-                    if (textarea) {
-                        textarea.style.border = '';
-                        textarea.style.boxShadow = '';
+                    // Reset WYSIWYG editor
+                    const wysiwygEditor = choiceItem.querySelector('.wysiwyg-editor');
+                    if (wysiwygEditor) {
+                        wysiwygEditor.style.border = '';
+                        wysiwygEditor.style.boxShadow = '';
                     }
                 }
             }
@@ -2169,6 +2462,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Initialize state on page load
                     if (checkbox.checked) {
                         handleCorrectAnswerChange(checkbox, index + 1);
+                    }
+                    
+                    // Initialize button state
+                    const choiceItem = checkbox.closest('.choice-item');
+                    const button = choiceItem?.querySelector('.correct-answer-btn');
+                    if (button) {
+                        updateCorrectAnswerButton(button, checkbox.checked);
                     }
                 });
             }

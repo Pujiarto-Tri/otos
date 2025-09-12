@@ -474,12 +474,22 @@ class Question(models.Model):
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
     choice_text = models.TextField('Text')
-    choice_image = models.ImageField(upload_to='choice_images/', blank=True, null=True, storage=get_storage, max_length=500)
+    # DEPRECATED: choice_image field kept for backward compatibility
+    # Images are now handled directly in choice_text via WYSIWYG editor
+    choice_image = models.ImageField(
+        upload_to='choice_images/', 
+        blank=True, 
+        null=True, 
+        storage=get_storage, 
+        max_length=500,
+        help_text="DEPRECATED: Use WYSIWYG editor in choice_text instead. Kept for existing data compatibility."
+    )
     is_correct = models.BooleanField(default=False)
 
     def delete_media_files(self):
         """Delete associated media files without calling delete()"""
-        # Delete images from choice_text
+        import re
+        # Delete images from choice_text (WYSIWYG editor content)
         pattern = r'src="([^"]+)"'
         matches = re.findall(pattern, self.choice_text)
         
@@ -492,15 +502,15 @@ class Choice(models.Model):
                     try:
                         os.remove(absolute_path)
                     except (OSError, PermissionError):
-                        pass
+                        pass  # Handle file deletion errors gracefully
         
-        # Delete choice_image if exists
+        # Handle legacy choice_image field (for backward compatibility)
         if self.choice_image:
             try:
                 if os.path.exists(self.choice_image.path):
                     os.remove(self.choice_image.path)
             except (OSError, PermissionError, ValueError):
-                pass
+                pass  # Handle file deletion errors gracefully
 
     def delete(self, *args, **kwargs):
         self.delete_media_files()

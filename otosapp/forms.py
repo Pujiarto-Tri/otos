@@ -407,6 +407,28 @@ class ChoiceForm(forms.ModelForm):
         text = cleaned.get('choice_text')
         image = cleaned.get('choice_image')
 
+        # ENHANCED: Clean WYSIWYG HTML content to check for actual text
+        has_meaningful_text = False
+        if text:
+            # Remove HTML tags and check if there's actual text content
+            import re
+            from html import unescape
+            
+            # Strip HTML tags
+            clean_text = re.sub(r'<[^>]+>', '', text)
+            # Decode HTML entities
+            clean_text = unescape(clean_text)
+            # Remove extra whitespace and check if there's content
+            clean_text = clean_text.strip()
+            
+            if clean_text:
+                has_meaningful_text = True
+                # Update the cleaned data with the original HTML (preserve formatting)
+                cleaned['choice_text'] = text
+            else:
+                # Set to empty string if no meaningful content
+                cleaned['choice_text'] = ''
+
         # If no text and no newly uploaded image, check existing instance image
         has_existing_image = False
         try:
@@ -436,17 +458,103 @@ class ChoiceForm(forms.ModelForm):
         except Exception:
             has_uploaded_url = False
 
-        if not text and not image and not has_existing_image and not has_uploaded_url:
-            raise forms.ValidationError('Please provide either choice text or an image for each choice.')
+        # NEW: Determine if this choice is required based on its index
+        choice_index = None
+        try:
+            prefix = getattr(self, 'prefix', '')  # e.g. 'choices-0'
+            if prefix and '-' in prefix:
+                parts = prefix.split('-')
+                choice_index = int(parts[-1])  # 0-based index
+        except Exception:
+            choice_index = None
+        
+        # Only validate if this is choice A or B (index 0 or 1)
+        is_required_choice = choice_index is not None and choice_index <= 1
+        
+        # For optional choices (C, D, E), if they're empty, don't validate further
+        if not is_required_choice and not has_meaningful_text and not image and not has_existing_image and not has_uploaded_url:
+            # This is an optional empty choice - that's perfectly fine
+            return cleaned
+        
+        # For required choices (A, B), enforce validation
+        if is_required_choice and not has_meaningful_text and not image and not has_existing_image and not has_uploaded_url:
+            choice_letter = 'A' if choice_index == 0 else 'B'
+            raise forms.ValidationError(f'Choice {choice_letter} is required. Please provide either choice text or an image.')
 
         return cleaned
+    
+    def has_changed(self):
+        """
+        Override to prevent Django from treating empty optional choices as 'changed'
+        which could trigger unnecessary validation
+        """
+        # Get choice index
+        choice_index = None
+        try:
+            prefix = getattr(self, 'prefix', '')
+            if prefix and '-' in prefix:
+                parts = prefix.split('-')
+                choice_index = int(parts[-1])
+        except Exception:
+            choice_index = None
+        
+        # For optional choices (C, D, E), if they're empty, consider them unchanged
+        if choice_index is not None and choice_index > 1:
+            text = self.cleaned_data.get('choice_text', '') if hasattr(self, 'cleaned_data') else ''
+            image = self.cleaned_data.get('choice_image') if hasattr(self, 'cleaned_data') else None
+            
+            if not text and not image:
+                return False
+        
+        return super().has_changed()
+
+class BaseChoiceFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        """
+        Custom formset validation that only requires choices A & B to be filled
+        """
+        if any(self.errors):
+            return
+        
+        filled_choices = 0
+        choice_a_filled = False
+        choice_b_filled = False
+        
+        for i, form in enumerate(self.forms):
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                text = form.cleaned_data.get('choice_text', '').strip()
+                image = form.cleaned_data.get('choice_image')
+                
+                # Clean HTML content to check for actual text
+                has_content = False
+                if text:
+                    import re
+                    from html import unescape
+                    clean_text = re.sub(r'<[^>]+>', '', text)
+                    clean_text = unescape(clean_text).strip()
+                    if clean_text:
+                        has_content = True
+                
+                if has_content or image:
+                    filled_choices += 1
+                    if i == 0:  # Choice A
+                        choice_a_filled = True
+                    elif i == 1:  # Choice B
+                        choice_b_filled = True
+        
+        # Require minimum 2 choices (A & B must be filled)
+        if not choice_a_filled:
+            raise forms.ValidationError('Choice A is required.')
+        if not choice_b_filled:
+            raise forms.ValidationError('Choice B is required.')
 
 ChoiceFormSet = forms.inlineformset_factory(
     Question,
     Choice,
     form=ChoiceForm,
+    formset=BaseChoiceFormSet,
     extra=5,
-    min_num=5,
+    min_num=2,  # Changed from 5 to 2 - only require minimum 2 choices (A & B)
     max_num=5,
     validate_max=True,
     can_delete=False
