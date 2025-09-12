@@ -513,15 +513,35 @@ class BaseChoiceFormSet(forms.BaseInlineFormSet):
         """
         Custom formset validation that only requires choices A & B to be filled
         """
+        # Don't validate if there are already form-level errors
         if any(self.errors):
-            return
+            # Check if the errors are only from optional choices (C, D, E)
+            has_critical_errors = False
+            for i, form_errors in enumerate(self.errors):
+                if form_errors and i <= 1:  # Only consider errors from A & B as critical
+                    has_critical_errors = True
+                    break
+            
+            if has_critical_errors:
+                return
+            # If only optional choices have errors, we can proceed
         
         filled_choices = 0
         choice_a_filled = False
         choice_b_filled = False
         
         for i, form in enumerate(self.forms):
-            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+            # Skip deleted forms
+            if form.cleaned_data and form.cleaned_data.get('DELETE', False):
+                continue
+                
+            # For choices C, D, E (index 2, 3, 4), we're more lenient
+            if i >= 2:
+                # Optional choices - don't require validation
+                continue
+                
+            # For choices A & B (index 0, 1), validate normally
+            if form.cleaned_data:
                 text = form.cleaned_data.get('choice_text', '').strip()
                 image = form.cleaned_data.get('choice_image')
                 
@@ -542,11 +562,36 @@ class BaseChoiceFormSet(forms.BaseInlineFormSet):
                     elif i == 1:  # Choice B
                         choice_b_filled = True
         
-        # Require minimum 2 choices (A & B must be filled)
+        # Only require A & B to be filled
         if not choice_a_filled:
             raise forms.ValidationError('Choice A is required.')
         if not choice_b_filled:
             raise forms.ValidationError('Choice B is required.')
+    
+    def is_valid(self):
+        """
+        Override to handle optional empty forms for choices C, D, E
+        """
+        # First check the parent validation
+        result = super().is_valid()
+        
+        # If there are errors, check if they're only from optional choices
+        if not result and self.errors:
+            critical_errors = False
+            for i, form_errors in enumerate(self.errors):
+                if form_errors and i <= 1:  # Only A & B are critical
+                    critical_errors = True
+                    break
+            
+            # If no critical errors, we can consider it valid
+            if not critical_errors:
+                # Clear errors from optional choices
+                for i in range(2, len(self.errors)):
+                    if i < len(self.errors):
+                        self.errors[i] = {}
+                result = True
+        
+        return result
 
 ChoiceFormSet = forms.inlineformset_factory(
     Question,
@@ -554,7 +599,7 @@ ChoiceFormSet = forms.inlineformset_factory(
     form=ChoiceForm,
     formset=BaseChoiceFormSet,
     extra=5,
-    min_num=2,  # Changed from 5 to 2 - only require minimum 2 choices (A & B)
+    min_num=0,  # Set to 0 - we'll handle validation in BaseChoiceFormSet.clean()
     max_num=5,
     validate_max=True,
     can_delete=False

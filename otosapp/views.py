@@ -1664,12 +1664,33 @@ def question_create(request):
     
     if request.method == 'POST':
         form = QuestionForm(request.POST)
-        formset = ChoiceFormSet(request.POST, prefix='choices')
+        formset = ChoiceFormSet(request.POST)
 
         # DEBUG: show incoming POST and FILES keys to diagnose validation issues
         try:
             print('\n[DEBUG] question_create POST keys:', list(request.POST.keys()))
             print('[DEBUG] question_create FILES keys:', list(request.FILES.keys()))
+            
+            # Debug checkbox values specifically
+            print('\n[DEBUG] Checkbox values:')
+            for key in request.POST.keys():
+                if 'is_correct' in key:
+                    print(f'  {key}: {request.POST.get(key)}')
+            
+            # Debug formset structure
+            print('\n[DEBUG] Formset info:')
+            print(f'  TOTAL_FORMS: {request.POST.get("choices-TOTAL_FORMS")}')
+            print(f'  INITIAL_FORMS: {request.POST.get("choices-INITIAL_FORMS")}')
+            
+            # Debug each choice data
+            print('\n[DEBUG] Choice data from POST:')
+            for i in range(5):
+                choice_text = request.POST.get(f'choices-{i}-choice_text', '')
+                is_correct = request.POST.get(f'choices-{i}-is_correct', '')
+                # Handle both checkbox "on" values and hidden field "true"/"false" values
+                is_correct_bool = is_correct in ['on', 'true', True]
+                print(f'  Choice {i+1}: text="{choice_text[:30]}..." is_correct="{is_correct}" -> {is_correct_bool}')
+            
         except Exception as _:
             pass
         
@@ -1689,71 +1710,185 @@ def question_create(request):
                 return redirect('question_list')
             
             # For multiple choice questions, validate and save choices
-            elif question.question_type == 'multiple_choice' and formset.is_valid():
-                # Check if at least one choice is marked as correct
-                correct_choices = sum(1 for form in formset if form.cleaned_data.get('is_correct', False) and not form.cleaned_data.get('DELETE', False))
-                if correct_choices == 0:
-                    messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
-                    return render(request, 'admin/manage_questions/question_form.html', {
-                        'form': form,
-                        'formset': formset,
-                        'title': 'Add New Question',
-                        'page_title': 'Create New Question',
-                        'page_subtitle': 'Fill in the details to create a new question',
-                        'category': question.category if hasattr(question, 'category') else None
-                    })
+            elif question.question_type == 'multiple_choice':
+                print(f'[DEBUG] Formset is_valid: {formset.is_valid()}')
                 
-                question.save()
-                choices = formset.save(commit=False)
-                
-                # Process choice images from uploaded URLs
-                for i, choice in enumerate(choices, 1):
-                    choice.question = question
+                # CUSTOM VALIDATION: Check if formset errors are only from optional choices (C, D, E)
+                can_proceed = False
+                if formset.is_valid():
+                    can_proceed = True
+                    print('[DEBUG] Formset is valid')
+                else:
+                    print('[DEBUG] Formset errors:')
+                    print('  Non-form errors:', formset.non_form_errors())
                     
-                    # Check if there's an uploaded image URL for this choice
-                    choice_image_url = request.POST.get(f'choice_image_{i}')
-                    if choice_image_url:
-                        # Extract filename from URL and create ImageField
-                        import urllib.parse
-                        from django.core.files.base import ContentFile
-                        from django.core.files.storage import default_storage
+                    # Check if errors are only from optional choices (index 2, 3, 4 = C, D, E)
+                    critical_errors = False
+                    for i, form in enumerate(formset.forms):
+                        if form.errors:
+                            print(f'  Form {i} ({chr(65+i)}) errors:', form.errors)
+                            # Only consider errors from A & B (index 0, 1) as critical
+                            if i <= 1:
+                                critical_errors = True
+                                print(f'    -> CRITICAL ERROR in required choice {chr(65+i)}')
+                        # Also show cleaned_data for debugging
+                        if hasattr(form, 'cleaned_data'):
+                            print(f'  Form {i} ({chr(65+i)}) cleaned_data:', form.cleaned_data)
+                    
+                    # Check for critical non-form errors
+                    if formset.non_form_errors():
+                        non_form_errors = formset.non_form_errors()
+                        print('[DEBUG] Non-form errors detected:', non_form_errors)
+                        # Check if non-form errors are about required choices only
+                        error_text = str(non_form_errors).lower()
+                        if 'choice a' in error_text or 'choice b' in error_text:
+                            critical_errors = True
+                            print('[DEBUG] Critical non-form errors detected')
+                    
+                    if not critical_errors:
+                        can_proceed = True
+                        print('[DEBUG] Only optional choice errors - proceeding anyway')
+                    else:
+                        print('[DEBUG] Critical errors found - cannot proceed')
+                
+                if can_proceed:
+                    print('[DEBUG] Formset is valid, proceeding with choice saving...')
+                    
+                    # ENHANCED DEBUG: Check both raw POST data and formset cleaned_data
+                    print('\n[DEBUG] Raw POST checkbox data:')
+                    for key, value in request.POST.items():
+                        if 'is_correct' in key:
+                            print(f'  POST[{key}] = {value}')
+                    
+                    print('\n[DEBUG] Formset cleaned_data:')
+                    for i, form in enumerate(formset):
+                        if form.cleaned_data:
+                            choice_letter = chr(65 + i)  # A, B, C, D, E
+                            print(f'  Choice {choice_letter}: {form.cleaned_data}')
+                    
+                    # Check if at least one choice is marked as correct
+                    correct_choices = 0
+                    
+                    # ALTERNATIVE APPROACH: Check raw POST data directly for checkbox validation
+                    print('\n[DEBUG] Checking POST data for correct answers:')
+                    for i in range(5):
+                        checkbox_name = f'choices-{i}-is_correct'
+                        checkbox_value = request.POST.get(checkbox_name, None)
+                        choice_letter = chr(65 + i)  # A, B, C, D, E
                         
-                        # Parse the URL to get the file path
-                        parsed_url = urllib.parse.urlparse(choice_image_url)
-                        if parsed_url.path.startswith('/media/'):
-                            file_path = parsed_url.path[7:]  # Remove '/media/' prefix
-                            
-                            # Check if file exists in media storage
-                            if default_storage.exists(file_path):
-                                choice.choice_image = file_path
+                        print(f'  Choice {choice_letter}: POST[{checkbox_name}] = {checkbox_value}')
+                        
+                        if checkbox_value == 'on' or checkbox_value == 'true' or checkbox_value is True:
+                            correct_choices += 1
+                            print(f'  -> Choice {choice_letter} counted as CORRECT')
                     
-                    choice.save()
+                    # Also check formset cleaned_data as backup
+                    for i, form in enumerate(formset):
+                        if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                            is_correct = form.cleaned_data.get('is_correct', False)
+                            choice_letter = chr(65 + i)  # A, B, C, D, E
+                            print(f'[DEBUG] Formset Choice {choice_letter}: is_correct = {is_correct} (type: {type(is_correct)})')
+                            
+                            # Only count if not already counted from POST data
+                            checkbox_name = f'choices-{i}-is_correct'
+                            if request.POST.get(checkbox_name) is None:
+                                if is_correct is True or is_correct == 'on' or is_correct == 'true':
+                                    correct_choices += 1
+                                    print(f'[DEBUG] Choice {choice_letter} counted from formset as CORRECT')
+                    
+                    print(f'[DEBUG] Total correct choices found: {correct_choices}')
+                    
+                    if correct_choices == 0:
+                        messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
+                        return render(request, 'admin/manage_questions/question_form.html', {
+                            'form': form,
+                            'formset': formset,
+                            'title': 'Add New Question',
+                            'page_title': 'Create New Question',
+                            'page_subtitle': 'Fill in the details to create a new question',
+                            'category': question.category if hasattr(question, 'category') else None
+                        })
                 
-                messages.success(request, 'Soal pilihan ganda berhasil dibuat!')
+                    question.save()
+                    
+                    # Save choices using formset but handle image URLs manually
+                    choices = formset.save(commit=False)
+                    print(f'[DEBUG] formset.save(commit=False) returned {len(choices)} choices')
+                    
+                    # CRITICAL FIX: Force save ALL choices (A through E) even if some are empty
+                    # The issue is that Django formset only includes forms with data in save(commit=False)
+                    # We need to manually process all 5 choice forms
+                    
+                    # First, delete any existing choices for this question (in case of update)
+                    if hasattr(question, 'id') and question.id:
+                        from .models import Choice
+                        Choice.objects.filter(question=question).delete()
+                        print('[DEBUG] Deleted existing choices for question')
+                    
+                    saved_choice_count = 0
+                    for i in range(5):  # Always process choices 0-4 (A-E)
+                        choice_letter = chr(65 + i)  # A, B, C, D, E
+                        
+                        # Get data from POST directly
+                        choice_text = request.POST.get(f'choices-{i}-choice_text', '').strip()
+                        is_correct_raw = request.POST.get(f'choices-{i}-is_correct', '')
+                        is_correct = is_correct_raw in ['on', 'true', True]
+                        
+                        print(f'[DEBUG] Processing Choice {choice_letter}: text="{choice_text[:30]}..." is_correct={is_correct}')
+                        
+                        # ALWAYS create choice object, even if empty (to maintain A-E structure)
+                        from .models import Choice
+                        choice_obj = Choice()
+                        choice_obj.question = question
+                        choice_obj.choice_text = choice_text
+                        choice_obj.is_correct = is_correct
+                        
+                        # Handle choice image
+                        choice_image_url = request.POST.get(f'choice_image_{i+1}')
+                        if choice_image_url and choice_image_url.strip():
+                            import urllib.parse
+                            from django.core.files.storage import default_storage
+                            
+                            parsed_url = urllib.parse.urlparse(choice_image_url)
+                            if parsed_url.path.startswith('/media/'):
+                                file_path = parsed_url.path[7:]
+                                if default_storage.exists(file_path):
+                                    choice_obj.choice_image = file_path
+                        
+                        choice_obj.save()
+                        saved_choice_count += 1
+                        print(f'[DEBUG] SAVED Choice {choice_letter}: text="{choice_text[:30] if choice_text else ""}..." is_correct={is_correct}')
+                    
+                    print(f'[DEBUG] Total choices saved: {saved_choice_count}')
+                    
+                    # No need for save_m2m since we're handling choices manually
+                    
+                    messages.success(request, 'Soal pilihan ganda berhasil dibuat!')
+                    
+                    # Redirect to category-specific question list if came from there
+                    if question.category:
+                        return redirect('question_list_by_category', category_id=question.category.id)
+                    return redirect('question_list')
                 
-                # Redirect to category-specific question list if came from there
-                if question.category:
-                    return redirect('question_list_by_category', category_id=question.category.id)
-                return redirect('question_list')
-            else:
-                # DEBUG: formset invalid - dump errors and posted hidden image urls
-                try:
-                    print('\n[DEBUG] Choice formset is invalid')
-                    print('formset.non_form_errors():', formset.non_form_errors())
-                    for idx, f in enumerate(formset.forms, start=1):
-                        try:
-                            print(f"-- form {idx} prefix={f.prefix} errors=", f.errors.as_json())
-                        except Exception:
-                            print(f"-- form {idx} prefix={f.prefix} errors=", f.errors)
-                    # Also show any hidden image POST fields that JS should set
-                    for i in range(1, 10):
-                        key = f'choice_image_{i}'
-                        if key in request.POST:
-                            print(f"POST[{key}] =", request.POST.get(key))
-                except Exception as e:
-                    print('[DEBUG] error while printing formset debug:', e)
+                else:
+                    # DEBUG: formset invalid - dump errors and posted hidden image urls
+                    try:
+                        print('\n[DEBUG] Choice formset is invalid')
+                        print('formset.non_form_errors():', formset.non_form_errors())
+                        for idx, f in enumerate(formset.forms, start=1):
+                            try:
+                                print(f"-- form {idx} prefix={f.prefix} errors=", f.errors.as_json())
+                            except Exception:
+                                print(f"-- form {idx} prefix={f.prefix} errors=", f.errors)
+                        # Also show any hidden image POST fields that JS should set
+                        for i in range(1, 10):
+                            key = f'choice_image_{i}'
+                            if key in request.POST:
+                                print(f"POST[{key}] =", request.POST.get(key))
+                    except Exception as e:
+                        print('[DEBUG] error while printing formset debug:', e)
 
-                messages.error(request, 'Please correct the errors below.')
+                    messages.error(request, 'Please correct the errors below.')
         else:
             # DEBUG: form invalid - print errors
             try:
@@ -1764,7 +1899,7 @@ def question_create(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         form = QuestionForm()
-        formset = ChoiceFormSet(prefix='choices')
+        formset = ChoiceFormSet()
         
         # Set initial category if provided
         if initial_category:
