@@ -189,6 +189,153 @@
           white-space: nowrap;
           overflow: hidden;
         }
+
+        /* Image Resize & Crop Styles */
+        .wysiwyg-editor .resizable-image {
+          position: relative;
+          display: inline-block;
+          max-width: 100%;
+        }
+
+        .wysiwyg-editor .resizable-image.selected {
+          outline: 2px solid #3b82f6;
+          outline-offset: 2px;
+          position: relative;
+        }
+
+        .wysiwyg-editor .resizable-image.selected::after {
+          content: "Click to edit • Double-click to preview";
+          position: absolute;
+          bottom: -25px;
+          left: 0;
+          background: #3b82f6;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          white-space: nowrap;
+          z-index: 25;
+        }
+
+        .wysiwyg-editor .resize-handles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        .wysiwyg-editor .resize-handle {
+          position: absolute;
+          width: 12px;
+          height: 12px;
+          background: #3b82f6;
+          border: 2px solid white;
+          border-radius: 50%;
+          pointer-events: all;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .wysiwyg-editor .resize-handle:hover {
+          background: #2563eb;
+          transform: scale(1.2);
+        }
+
+        .wysiwyg-editor .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .wysiwyg-editor .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .wysiwyg-editor .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .wysiwyg-editor .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+        .wysiwyg-editor .resize-handle.n { top: -6px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+        .wysiwyg-editor .resize-handle.s { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+        .wysiwyg-editor .resize-handle.w { top: 50%; left: -6px; transform: translateY(-50%); cursor: w-resize; }
+        .wysiwyg-editor .resize-handle.e { top: 50%; right: -6px; transform: translateY(-50%); cursor: e-resize; }
+
+        /* Image Toolbar */
+        .wysiwyg-editor .image-toolbar {
+          position: absolute;
+          top: -40px;
+          left: 0;
+          background: white;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 4px;
+          display: flex;
+          gap: 4px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          z-index: 20;
+        }
+
+        .wysiwyg-editor .image-toolbar button {
+          padding: 6px 8px;
+          border: none;
+          background: #f9fafb;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          color: #374151;
+          transition: all 0.2s ease;
+          type: button; /* Ensure it's not a submit button */
+        }
+
+        .wysiwyg-editor .image-toolbar button:hover {
+          background: #e5e7eb;
+          color: #111827;
+        }
+
+        .wysiwyg-editor .image-toolbar button.active {
+          background: #3b82f6;
+          color: white;
+        }
+
+        .wysiwyg-editor .image-toolbar button:active {
+          background: #d1d5db;
+          transform: translateY(1px);
+        }
+
+        .wysiwyg-editor .image-toolbar button:focus {
+          outline: 2px solid #3b82f6;
+          outline-offset: 1px;
+        }
+
+        /* Crop Mode Styles */
+        .wysiwyg-editor .crop-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 15;
+          pointer-events: none;
+        }
+
+        .wysiwyg-editor .crop-area {
+          position: absolute;
+          border: 2px dashed #3b82f6;
+          background: transparent;
+          z-index: 16;
+          pointer-events: all;
+          cursor: move;
+        }
+
+        .wysiwyg-editor .crop-handle {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background: #3b82f6;
+          border: 2px solid white;
+          border-radius: 2px;
+          pointer-events: all;
+        }
+
+        .wysiwyg-editor .crop-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .wysiwyg-editor .crop-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .wysiwyg-editor .crop-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .wysiwyg-editor .crop-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
         
         /* Format toolbar button active states */
         [data-wysiwyg-toggle-format].active {
@@ -1778,18 +1925,28 @@ document.addEventListener('DOMContentLoaded', function() {
               img.style.margin = '10px 0';
               img.style.borderRadius = '8px';
               img.style.cursor = 'pointer';
-              img.onclick = function() {
+              
+              // Wrap image in resizable container
+              const imageContainer = document.createElement('div');
+              imageContainer.className = 'resizable-image';
+              imageContainer.appendChild(img);
+              
+              // Initialize image resize and crop functionality
+              initializeImageEditor(imageContainer, img);
+              
+              // Add click handler for image modal (secondary click)
+              img.addEventListener('dblclick', function() {
                 window.openImageModal(data.url, 'Uploaded Image');
-              };
+              });
               
               // Insert image at cursor position
               const selection = window.getSelection();
               if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                range.insertNode(img);
+                range.insertNode(imageContainer);
                 range.collapse(false);
               } else {
-                editor.appendChild(img);
+                editor.appendChild(imageContainer);
               }
               
               // Update textarea
@@ -2065,6 +2222,528 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Image Editor Functions for Resize and Crop
+  function initializeImageEditor(container, img) {
+    let isSelected = false;
+    let isDragging = false;
+    let startX, startY, startWidth, startHeight;
+    let isCropMode = false;
+    let cropData = null;
+
+    // Select image on click
+    img.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // If already selected, don't do anything (let other handlers work)
+      if (isSelected) {
+        return;
+      }
+      
+      selectImage(container);
+    });
+    
+    // Add double-click for modal if not already set
+    if (!img.hasAttribute('data-modal-handler')) {
+      img.setAttribute('data-modal-handler', 'true');
+      img.addEventListener('dblclick', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.openImageModal(img.src, 'Image Preview');
+      });
+    }
+
+    // Deselect when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!container.contains(e.target)) {
+        deselectImage(container);
+      }
+    });
+
+    function selectImage(container) {
+      // Deselect other images first
+      document.querySelectorAll('.resizable-image.selected').forEach(img => {
+        deselectImage(img);
+      });
+
+      isSelected = true;
+      container.classList.add('selected');
+      
+      // Create resize handles
+      createResizeHandles(container);
+      
+      // Create image toolbar
+      createImageToolbar(container);
+      
+      // Show helpful notification
+      showNotification('Image selected! Use handles to resize, toolbar to crop, or double-click to preview', 'info');
+    }
+
+    function deselectImage(container) {
+      isSelected = false;
+      container.classList.remove('selected');
+      
+      // Remove resize handles
+      const handles = container.querySelector('.resize-handles');
+      if (handles) handles.remove();
+      
+      // Remove toolbar
+      const toolbar = container.querySelector('.image-toolbar');
+      if (toolbar) toolbar.remove();
+      
+      // Remove crop overlay if exists
+      removeCropOverlay(container);
+    }
+
+    function createResizeHandles(container) {
+      const handles = document.createElement('div');
+      handles.className = 'resize-handles';
+      
+      const handleTypes = ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'];
+      
+      handleTypes.forEach(type => {
+        const handle = document.createElement('div');
+        handle.className = `resize-handle ${type}`;
+        handle.addEventListener('mousedown', (e) => startResize(e, type, container));
+        handles.appendChild(handle);
+      });
+      
+      container.appendChild(handles);
+    }
+
+    function createImageToolbar(container) {
+      const toolbar = document.createElement('div');
+      toolbar.className = 'image-toolbar';
+      
+      const buttons = [
+        { text: 'Reset', action: 'reset' },
+        { text: 'Crop', action: 'crop' },
+        { text: '25%', action: 'size', value: 25 },
+        { text: '50%', action: 'size', value: 50 },
+        { text: '75%', action: 'size', value: 75 },
+        { text: '100%', action: 'size', value: 100 }
+      ];
+      
+      buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.type = 'button'; // Prevent form submission
+        button.textContent = btn.text;
+        button.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleToolbarAction(btn.action, btn.value, container);
+        });
+        toolbar.appendChild(button);
+      });
+      
+      container.appendChild(toolbar);
+    }
+
+    function handleToolbarAction(action, value, container) {
+      const img = container.querySelector('img');
+      
+      switch(action) {
+        case 'reset':
+          img.style.width = '';
+          img.style.height = '';
+          img.style.maxWidth = '100%';
+          syncEditorContent(container);
+          showNotification('Image size reset to original', 'success');
+          break;
+        case 'crop':
+          toggleCropMode(container);
+          break;
+        case 'size':
+          const originalWidth = img.naturalWidth;
+          const newWidth = (originalWidth * value) / 100;
+          img.style.width = newWidth + 'px';
+          img.style.height = 'auto';
+          syncEditorContent(container);
+          showNotification(`Image resized to ${value}%`, 'success');
+          break;
+      }
+    }
+
+    function startResize(e, type, container) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const img = container.querySelector('img');
+      const rect = img.getBoundingClientRect();
+      startWidth = rect.width;
+      startHeight = rect.height;
+      
+      const onMouseMove = (e) => resize(e, type, container);
+      const onMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        syncEditorContent(container);
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function resize(e, type, container) {
+      if (!isDragging) return;
+      
+      const img = container.querySelector('img');
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      
+      switch(type) {
+        case 'se':
+        case 'e':
+          newWidth = startWidth + deltaX;
+          break;
+        case 'sw':
+        case 'w':
+          newWidth = startWidth - deltaX;
+          break;
+        case 'ne':
+          newWidth = startWidth + deltaX;
+          break;
+        case 'nw':
+          newWidth = startWidth - deltaX;
+          break;
+        case 's':
+          newHeight = startHeight + deltaY;
+          newWidth = (newHeight * img.naturalWidth) / img.naturalHeight;
+          break;
+        case 'n':
+          newHeight = startHeight - deltaY;
+          newWidth = (newHeight * img.naturalWidth) / img.naturalHeight;
+          break;
+      }
+      
+      // Maintain aspect ratio for corner handles
+      if (['se', 'sw', 'ne', 'nw'].includes(type)) {
+        newHeight = (newWidth * img.naturalHeight) / img.naturalWidth;
+      }
+      
+      // Set minimum size
+      newWidth = Math.max(50, newWidth);
+      newHeight = Math.max(50, newHeight);
+      
+      img.style.width = newWidth + 'px';
+      img.style.height = newHeight + 'px';
+    }
+
+    function toggleCropMode(container) {
+      if (isCropMode) {
+        applyCrop(container);
+        removeCropOverlay(container);
+        isCropMode = false;
+      } else {
+        createCropOverlay(container);
+        isCropMode = true;
+      }
+    }
+
+    function createCropOverlay(container) {
+      const img = container.querySelector('img');
+      const rect = img.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'crop-overlay';
+      
+      // Create crop area (start with 80% of image)
+      const cropArea = document.createElement('div');
+      cropArea.className = 'crop-area';
+      const cropWidth = rect.width * 0.8;
+      const cropHeight = rect.height * 0.8;
+      const cropLeft = (rect.width - cropWidth) / 2;
+      const cropTop = (rect.height - cropHeight) / 2;
+      
+      cropArea.style.left = cropLeft + 'px';
+      cropArea.style.top = cropTop + 'px';
+      cropArea.style.width = cropWidth + 'px';
+      cropArea.style.height = cropHeight + 'px';
+      
+      // Add crop handles
+      const handleTypes = ['nw', 'ne', 'sw', 'se'];
+      handleTypes.forEach(type => {
+        const handle = document.createElement('div');
+        handle.className = `crop-handle ${type}`;
+        handle.addEventListener('mousedown', (e) => startCropResize(e, type, cropArea, container));
+        cropArea.appendChild(handle);
+      });
+      
+      // Add drag functionality for crop area
+      cropArea.addEventListener('mousedown', (e) => {
+        if (e.target === cropArea) {
+          startCropDrag(e, cropArea, container);
+        }
+      });
+      
+      overlay.appendChild(cropArea);
+      container.appendChild(overlay);
+      
+      // Store crop data
+      cropData = { left: cropLeft, top: cropTop, width: cropWidth, height: cropHeight };
+      
+      // Update toolbar button
+      const toolbar = container.querySelector('.image-toolbar');
+      const cropBtn = Array.from(toolbar.children).find(btn => btn.textContent === 'Crop');
+      if (cropBtn) {
+        cropBtn.textContent = 'Apply';
+        cropBtn.classList.add('active');
+      }
+    }
+
+    function removeCropOverlay(container) {
+      const overlay = container.querySelector('.crop-overlay');
+      if (overlay) overlay.remove();
+      
+      // Reset toolbar button
+      const toolbar = container.querySelector('.image-toolbar');
+      if (toolbar) {
+        const cropBtn = Array.from(toolbar.children).find(btn => btn.textContent === 'Apply');
+        if (cropBtn) {
+          cropBtn.textContent = 'Crop';
+          cropBtn.classList.remove('active');
+        }
+      }
+    }
+
+    function applyCrop(container) {
+      if (!cropData) return;
+      
+      const img = container.querySelector('img');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Calculate crop ratios
+      const scaleX = img.naturalWidth / img.offsetWidth;
+      const scaleY = img.naturalHeight / img.offsetHeight;
+      
+      const cropX = cropData.left * scaleX;
+      const cropY = cropData.top * scaleY;
+      const cropWidth = cropData.width * scaleX;
+      const cropHeight = cropData.height * scaleY;
+      
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
+      
+      // Create new image for cropping
+      const tempImg = new Image();
+      tempImg.crossOrigin = 'anonymous';
+      tempImg.onload = function() {
+        ctx.drawImage(tempImg, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        
+        // Convert to blob and create new URL
+        canvas.toBlob(function(blob) {
+          const newUrl = URL.createObjectURL(blob);
+          img.src = newUrl;
+          img.style.width = cropData.width + 'px';
+          img.style.height = cropData.height + 'px';
+          
+          syncEditorContent(container);
+          showNotification('Image cropped successfully!', 'success');
+        }, 'image/png');
+      };
+      tempImg.src = img.src;
+      
+      cropData = null;
+    }
+
+    function startCropResize(e, type, cropArea, container) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const rect = cropArea.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      startWidth = rect.width;
+      startHeight = rect.height;
+      
+      const onMouseMove = (e) => {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        const img = container.querySelector('img');
+        const imgRect = img.getBoundingClientRect();
+        
+        let newWidth = startWidth;
+        let newHeight = startHeight;
+        let newLeft = parseFloat(cropArea.style.left);
+        let newTop = parseFloat(cropArea.style.top);
+        
+        switch(type) {
+          case 'se':
+            newWidth = startWidth + deltaX;
+            newHeight = startHeight + deltaY;
+            break;
+          case 'sw':
+            newWidth = startWidth - deltaX;
+            newHeight = startHeight + deltaY;
+            newLeft = parseFloat(cropArea.style.left) + deltaX;
+            break;
+          case 'ne':
+            newWidth = startWidth + deltaX;
+            newHeight = startHeight - deltaY;
+            newTop = parseFloat(cropArea.style.top) + deltaY;
+            break;
+          case 'nw':
+            newWidth = startWidth - deltaX;
+            newHeight = startHeight - deltaY;
+            newLeft = parseFloat(cropArea.style.left) + deltaX;
+            newTop = parseFloat(cropArea.style.top) + deltaY;
+            break;
+        }
+        
+        // Constrain to image bounds
+        newWidth = Math.max(50, Math.min(newWidth, imgRect.width - newLeft));
+        newHeight = Math.max(50, Math.min(newHeight, imgRect.height - newTop));
+        newLeft = Math.max(0, Math.min(newLeft, imgRect.width - newWidth));
+        newTop = Math.max(0, Math.min(newTop, imgRect.height - newHeight));
+        
+        cropArea.style.width = newWidth + 'px';
+        cropArea.style.height = newHeight + 'px';
+        cropArea.style.left = newLeft + 'px';
+        cropArea.style.top = newTop + 'px';
+        
+        // Update crop data
+        cropData = { left: newLeft, top: newTop, width: newWidth, height: newHeight };
+      };
+      
+      const onMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function startCropDrag(e, cropArea, container) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const startLeft = parseFloat(cropArea.style.left);
+      const startTop = parseFloat(cropArea.style.top);
+      
+      const onMouseMove = (e) => {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        const img = container.querySelector('img');
+        const imgRect = img.getBoundingClientRect();
+        const cropRect = cropArea.getBoundingClientRect();
+        
+        let newLeft = startLeft + deltaX;
+        let newTop = startTop + deltaY;
+        
+        // Constrain to image bounds
+        newLeft = Math.max(0, Math.min(newLeft, imgRect.width - cropRect.width));
+        newTop = Math.max(0, Math.min(newTop, imgRect.height - cropRect.height));
+        
+        cropArea.style.left = newLeft + 'px';
+        cropArea.style.top = newTop + 'px';
+        
+        // Update crop data
+        cropData = { 
+          left: newLeft, 
+          top: newTop, 
+          width: parseFloat(cropArea.style.width), 
+          height: parseFloat(cropArea.style.height) 
+        };
+      };
+      
+      const onMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function syncEditorContent(container) {
+      // Find the parent editor
+      const editor = container.closest('[data-wysiwyg="true"]');
+      if (!editor) return;
+      
+      // Update corresponding textarea
+      let textarea = null;
+      if (editor.id === 'wysiwyg-question-text-admin') {
+        textarea = document.querySelector('#id_question_text');
+      } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+        textarea = document.querySelector('#id_explanation');
+      } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+        const choiceNumber = editor.id.split('-').pop();
+        const choiceIndex = parseInt(choiceNumber) - 1;
+        textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+      }
+      
+      if (textarea) {
+        textarea.value = editor.innerHTML;
+      }
+      
+      // Trigger input event
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  // Initialize existing images on page load
+  function initializeExistingImages() {
+    document.querySelectorAll('.wysiwyg-editor img').forEach(img => {
+      if (!img.closest('.resizable-image')) {
+        const container = document.createElement('div');
+        container.className = 'resizable-image';
+        img.parentNode.insertBefore(container, img);
+        container.appendChild(img);
+        
+        // Remove existing onclick handler if present
+        if (img.onclick) {
+          const originalSrc = img.src;
+          img.onclick = null;
+          
+          // Add double-click handler for modal
+          img.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.openImageModal(originalSrc, 'Image Preview');
+          });
+        }
+        
+        // Remove any existing click event listeners by cloning the node
+        const newImg = img.cloneNode(true);
+        img.parentNode.replaceChild(newImg, img);
+        
+        // Re-add double-click handler after cloning
+        newImg.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.openImageModal(newImg.src, 'Image Preview');
+        });
+        
+        initializeImageEditor(container, newImg);
+      }
+    });
+  }
+
   // LaTeX Guide Modal functions (Global scope)
   window.openLatexGuideModal = function() {
     const modal = document.getElementById('latexGuideModal');
@@ -2108,6 +2787,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize special actions
   initializeSpecialActions();
+  
+  // Initialize existing images with resize/crop functionality
+  initializeExistingImages();
+  
+  // Initialize existing images with resize/crop functionality
+  initializeExistingImages();
   
   // Initialize choice counter on page load
   updateChoiceCounter();
