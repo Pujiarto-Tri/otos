@@ -44,55 +44,215 @@
       };
     </script>
     <!-- MathJax Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mtml-chtml.min.js"></script>
-
-    <!-- Include WYSIWYG Styles -->
-    {% include 'admin/includes/wysiwyg_styles.html' %}
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
     <style>
-        /* Page transition animation */
         .section-fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Form-specific WYSIWYG overrides */
+        /* WYSIWYG Editor custom styles */
         .wysiwyg-editor {
             min-height: 200px;
         }
         
+        /* Choice WYSIWYG editors have smaller min-height */
         [id^="wysiwyg-choice-text-"] {
             min-height: 100px;
         }
-
-        /* Form inputs styling */
-        textarea, input[type="text"], select {
-            background: white;
-            color: #1f2937;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-            transition: all 0.15s ease-in-out;
+        
+        .prose {
+            max-width: none;
+        }
+        
+        .prose p {
+            margin-bottom: 1em;
+        }
+        
+        .prose ul, .prose ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        
+        .prose blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            margin: 1em 0;
+            font-style: italic;
+        }
+        
+        .dark .prose blockquote {
+            border-left-color: #6b7280;
+        }
+        
+        /* Placeholder styling for empty WYSIWYG editors */
+        [data-wysiwyg="true"].is-empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            font-style: italic;
+            pointer-events: none;
+            position: absolute;
+        }
+        
+        .dark [data-wysiwyg="true"].is-empty:before {
+            color: #6b7280;
+        }
+        
+        /* Ensure proper focus outline for accessibility */
+        [data-wysiwyg="true"]:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+      /* LaTeX Formula Styling - Inline with text flow */
+      .math-formula {
+        display: inline !important;
+        margin: 0 1px;
+        padding: 2px 4px;
+        background-color: #eff6ff;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        font-size: 1em;
+        vertical-align: baseline;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+        font-family: 'KaTeX_Main', 'Times New Roman', serif;
+        line-height: 1.2;
+        max-width: none;
+      }
+      
+      .math-formula:hover {
+        background-color: #dbeafe;
+        border-color: #2563eb;
+      }
+      
+      /* Dark mode math formula styling */
+      .dark .math-formula {
+        background-color: #1e3a8a;
+        border-color: #3b82f6;
+        color: #dbeafe;
+      }
+      
+      .dark .math-formula:hover {
+        background-color: #1e40af;
+        border-color: #60a5fa;
+      }
+      
+      /* Ensure math formulas don't break text flow */
+      .wysiwyg-editor .math-formula {
+        line-height: inherit;
+        vertical-align: baseline;
+      }
+      
+      /* MathJax output styling override */
+      .math-formula .MathJax,
+      .math-formula .MathJax_Display {
+        display: inline !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-align: left !important;
+      }        /* Legacy LaTeX formula styling (for backward compatibility) */
+        .latex-formula, .math-display {
+          display: inline-block;
+          margin: 2px 5px;
+          padding: 4px 8px;
+          background-color: #f0f9ff;
+          border: 1px solid #0ea5e9;
+          border-radius: 4px;
+          min-height: 24px;
+          vertical-align: middle;
+          cursor: pointer;
+          user-select: none; /* Prevent text selection issues */
+          position: relative;
+          z-index: 1;
+        }
+        
+        .latex-formula:hover, .math-display:hover {
+          background-color: #e0f2fe;
+          border-color: #0284c7;
+        }
+        
+        /* Dark mode LaTeX styling */
+        .dark .latex-formula, .dark .math-display {
+          background-color: #1e3a8a;
+          border-color: #3b82f6;
+          color: #dbeafe;
+        }
+        
+        .dark .latex-formula:hover, .dark .math-display:hover {
+          background-color: #1e40af;
+          border-color: #60a5fa;
+        }
+        
+        /* Ensure LaTeX doesn't break editor flow */
+        .wysiwyg-editor .latex-formula,
+        .wysiwyg-editor .math-display {
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        
+        /* Format toolbar button active states */
+        [data-wysiwyg-toggle-format].active {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .dark [data-wysiwyg-toggle-format].active {
+            background-color: #1e3a8a;
+            color: #bfdbfe;
         }
 
-        .dark textarea, .dark input[type="text"], .dark select {
+        /* Text inputs and textareas */
+        textarea,
+        input[type="text"],
+        select {
+            background: #ffffff;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-size: 14px;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        .dark textarea,
+        .dark input[type="text"],
+        .dark select {
             background: #1f2937;
             color: #f9fafb;
             border-color: #4b5563;
         }
 
-        textarea:focus, input[type="text"]:focus, select:focus {
+        textarea:focus,
+        input[type="text"]:focus,
+        select:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        /* Choice styling */
+        textarea::placeholder,
+        input[type="text"]::placeholder {
+            color: #9ca3af;
+        }
+
+        .dark textarea::placeholder,
+        .dark input[type="text"]::placeholder {
+            color: #6b7280;
+        }
+
+        /* Choice checkbox styling */
         .choice-checkbox:focus {
             outline: none;
             border-color: #10b981;
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
 
+        .dark .choice-checkbox {
+            border-color: #4b5563;
+            background-color: #374151;
+        }
+
+        /* Correct answer visual states */
         .choice-item.correct-answer {
             background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             border: 3px solid #10b981;
@@ -105,20 +265,106 @@
             color: white;
         }
 
-        .choice-item {
-            transition: all 0.2s ease-in-out;
-        }
-        
-        .choice-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        .choice-item.correct-answer .wysiwyg-editor {
+            border: 2px solid #10b981;
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
-        /* Responsive adjustments */
+        .dark .choice-item.correct-answer .wysiwyg-editor {
+            background-color: rgba(31, 41, 55, 0.98);
+        }
+
+        /* Dark theme adjustments for correct answer (softer, more readable) */
+        .dark .choice-item.correct-answer {
+            background: rgba(6, 95, 70, 0.22);
+            border-color: #059669;
+            box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18);
+        }
+
+        .dark .choice-item.correct-answer .choice-header {
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            color: #e5fff4;
+        }
+
+        .dark .choice-item.correct-answer .choice-status,
+        .dark .choice-item.correct-answer h4 {
+            color: #e5fff4;
+        }
+
+        .dark .choice-item.correct-answer .choice-badge {
+            background-color: #059669;
+            color: #ecfdf5;
+        }
+
+        /* Layout and small animations */
+        .choice-item { 
+            transition: all 0.2s ease-in-out; 
+        }
+        
+        .choice-item:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        }
+
+        /* Modal and thumbnail */
+        #imageModal { 
+            backdrop-filter: blur(4px); 
+        }
+        
+        #modalImage { 
+            transition: transform 0.2s ease-in-out; 
+            cursor: zoom-in; 
+        }
+        
+        #modalImage:hover { 
+            transform: scale(1.02); 
+        }
+        
+        .choice-item img { 
+            transition: all 0.2s ease-in-out; 
+        }
+        
+        .choice-item img:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+        }
+
+        /* Responsive tweaks */
         @media (max-width: 768px) {
-            .wysiwyg-editor {
-                min-height: 150px;
+            .wysiwyg-editor { 
+                min-height: 180px; 
             }
+            .choice-item { 
+                padding: 0.5rem; 
+            }
+        }
+
+        /* Dark mode adjustments for previews */
+        .dark #imageModal .modal-panel { 
+            background-color: #0f172a; 
+        }
+        
+        .dark .choice-item img { 
+            box-shadow: 0 4px 14px rgba(255,255,255,0.03); 
+        }
+        
+        /* Optional choice styling */
+        .choice-item.optional {
+            opacity: 0.8;
+            border-style: dashed !important;
+        }
+        
+        .choice-item.optional .choice-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        .dark .choice-item.optional .choice-header {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        }
+        
+        .choice-item.optional:hover {
+            opacity: 1;
         }
     </style>
 {% endblock %}
@@ -1532,28 +1778,18 @@ document.addEventListener('DOMContentLoaded', function() {
               img.style.margin = '10px 0';
               img.style.borderRadius = '8px';
               img.style.cursor = 'pointer';
-              
-              // Wrap image in resizable container
-              const imageContainer = document.createElement('div');
-              imageContainer.className = 'resizable-image';
-              imageContainer.appendChild(img);
-              
-              // Initialize image resize and crop functionality
-              initializeImageEditor(imageContainer, img);
-              
-              // Add click handler for image modal (secondary click)
-              img.addEventListener('dblclick', function() {
+              img.onclick = function() {
                 window.openImageModal(data.url, 'Uploaded Image');
-              });
+              };
               
               // Insert image at cursor position
               const selection = window.getSelection();
               if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                range.insertNode(imageContainer);
+                range.insertNode(img);
                 range.collapse(false);
               } else {
-                editor.appendChild(imageContainer);
+                editor.appendChild(img);
               }
               
               // Update textarea
@@ -1829,528 +2065,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Image Editor Functions for Resize and Crop
-  function initializeImageEditor(container, img) {
-    let isSelected = false;
-    let isDragging = false;
-    let startX, startY, startWidth, startHeight;
-    let isCropMode = false;
-    let cropData = null;
-
-    // Select image on click
-    img.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // If already selected, don't do anything (let other handlers work)
-      if (isSelected) {
-        return;
-      }
-      
-      selectImage(container);
-    });
-    
-    // Add double-click for modal if not already set
-    if (!img.hasAttribute('data-modal-handler')) {
-      img.setAttribute('data-modal-handler', 'true');
-      img.addEventListener('dblclick', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.openImageModal(img.src, 'Image Preview');
-      });
-    }
-
-    // Deselect when clicking outside
-    document.addEventListener('click', function(e) {
-      if (!container.contains(e.target)) {
-        deselectImage(container);
-      }
-    });
-
-    function selectImage(container) {
-      // Deselect other images first
-      document.querySelectorAll('.resizable-image.selected').forEach(img => {
-        deselectImage(img);
-      });
-
-      isSelected = true;
-      container.classList.add('selected');
-      
-      // Create resize handles
-      createResizeHandles(container);
-      
-      // Create image toolbar
-      createImageToolbar(container);
-      
-      // Show helpful notification
-      showNotification('Image selected! Use handles to resize, toolbar to crop, or double-click to preview', 'info');
-    }
-
-    function deselectImage(container) {
-      isSelected = false;
-      container.classList.remove('selected');
-      
-      // Remove resize handles
-      const handles = container.querySelector('.resize-handles');
-      if (handles) handles.remove();
-      
-      // Remove toolbar
-      const toolbar = container.querySelector('.image-toolbar');
-      if (toolbar) toolbar.remove();
-      
-      // Remove crop overlay if exists
-      removeCropOverlay(container);
-    }
-
-    function createResizeHandles(container) {
-      const handles = document.createElement('div');
-      handles.className = 'resize-handles';
-      
-      const handleTypes = ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'];
-      
-      handleTypes.forEach(type => {
-        const handle = document.createElement('div');
-        handle.className = `resize-handle ${type}`;
-        handle.addEventListener('mousedown', (e) => startResize(e, type, container));
-        handles.appendChild(handle);
-      });
-      
-      container.appendChild(handles);
-    }
-
-    function createImageToolbar(container) {
-      const toolbar = document.createElement('div');
-      toolbar.className = 'image-toolbar';
-      
-      const buttons = [
-        { text: 'Reset', action: 'reset' },
-        { text: 'Crop', action: 'crop' },
-        { text: '25%', action: 'size', value: 25 },
-        { text: '50%', action: 'size', value: 50 },
-        { text: '75%', action: 'size', value: 75 },
-        { text: '100%', action: 'size', value: 100 }
-      ];
-      
-      buttons.forEach(btn => {
-        const button = document.createElement('button');
-        button.type = 'button'; // Prevent form submission
-        button.textContent = btn.text;
-        button.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleToolbarAction(btn.action, btn.value, container);
-        });
-        toolbar.appendChild(button);
-      });
-      
-      container.appendChild(toolbar);
-    }
-
-    function handleToolbarAction(action, value, container) {
-      const img = container.querySelector('img');
-      
-      switch(action) {
-        case 'reset':
-          img.style.width = '';
-          img.style.height = '';
-          img.style.maxWidth = '100%';
-          syncEditorContent(container);
-          showNotification('Image size reset to original', 'success');
-          break;
-        case 'crop':
-          toggleCropMode(container);
-          break;
-        case 'size':
-          const originalWidth = img.naturalWidth;
-          const newWidth = (originalWidth * value) / 100;
-          img.style.width = newWidth + 'px';
-          img.style.height = 'auto';
-          syncEditorContent(container);
-          showNotification(`Image resized to ${value}%`, 'success');
-          break;
-      }
-    }
-
-    function startResize(e, type, container) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      
-      const img = container.querySelector('img');
-      const rect = img.getBoundingClientRect();
-      startWidth = rect.width;
-      startHeight = rect.height;
-      
-      const onMouseMove = (e) => resize(e, type, container);
-      const onMouseUp = () => {
-        isDragging = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        syncEditorContent(container);
-      };
-      
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    }
-
-    function resize(e, type, container) {
-      if (!isDragging) return;
-      
-      const img = container.querySelector('img');
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-      
-      let newWidth = startWidth;
-      let newHeight = startHeight;
-      
-      switch(type) {
-        case 'se':
-        case 'e':
-          newWidth = startWidth + deltaX;
-          break;
-        case 'sw':
-        case 'w':
-          newWidth = startWidth - deltaX;
-          break;
-        case 'ne':
-          newWidth = startWidth + deltaX;
-          break;
-        case 'nw':
-          newWidth = startWidth - deltaX;
-          break;
-        case 's':
-          newHeight = startHeight + deltaY;
-          newWidth = (newHeight * img.naturalWidth) / img.naturalHeight;
-          break;
-        case 'n':
-          newHeight = startHeight - deltaY;
-          newWidth = (newHeight * img.naturalWidth) / img.naturalHeight;
-          break;
-      }
-      
-      // Maintain aspect ratio for corner handles
-      if (['se', 'sw', 'ne', 'nw'].includes(type)) {
-        newHeight = (newWidth * img.naturalHeight) / img.naturalWidth;
-      }
-      
-      // Set minimum size
-      newWidth = Math.max(50, newWidth);
-      newHeight = Math.max(50, newHeight);
-      
-      img.style.width = newWidth + 'px';
-      img.style.height = newHeight + 'px';
-    }
-
-    function toggleCropMode(container) {
-      if (isCropMode) {
-        applyCrop(container);
-        removeCropOverlay(container);
-        isCropMode = false;
-      } else {
-        createCropOverlay(container);
-        isCropMode = true;
-      }
-    }
-
-    function createCropOverlay(container) {
-      const img = container.querySelector('img');
-      const rect = img.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      
-      // Create overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'crop-overlay';
-      
-      // Create crop area (start with 80% of image)
-      const cropArea = document.createElement('div');
-      cropArea.className = 'crop-area';
-      const cropWidth = rect.width * 0.8;
-      const cropHeight = rect.height * 0.8;
-      const cropLeft = (rect.width - cropWidth) / 2;
-      const cropTop = (rect.height - cropHeight) / 2;
-      
-      cropArea.style.left = cropLeft + 'px';
-      cropArea.style.top = cropTop + 'px';
-      cropArea.style.width = cropWidth + 'px';
-      cropArea.style.height = cropHeight + 'px';
-      
-      // Add crop handles
-      const handleTypes = ['nw', 'ne', 'sw', 'se'];
-      handleTypes.forEach(type => {
-        const handle = document.createElement('div');
-        handle.className = `crop-handle ${type}`;
-        handle.addEventListener('mousedown', (e) => startCropResize(e, type, cropArea, container));
-        cropArea.appendChild(handle);
-      });
-      
-      // Add drag functionality for crop area
-      cropArea.addEventListener('mousedown', (e) => {
-        if (e.target === cropArea) {
-          startCropDrag(e, cropArea, container);
-        }
-      });
-      
-      overlay.appendChild(cropArea);
-      container.appendChild(overlay);
-      
-      // Store crop data
-      cropData = { left: cropLeft, top: cropTop, width: cropWidth, height: cropHeight };
-      
-      // Update toolbar button
-      const toolbar = container.querySelector('.image-toolbar');
-      const cropBtn = Array.from(toolbar.children).find(btn => btn.textContent === 'Crop');
-      if (cropBtn) {
-        cropBtn.textContent = 'Apply';
-        cropBtn.classList.add('active');
-      }
-    }
-
-    function removeCropOverlay(container) {
-      const overlay = container.querySelector('.crop-overlay');
-      if (overlay) overlay.remove();
-      
-      // Reset toolbar button
-      const toolbar = container.querySelector('.image-toolbar');
-      if (toolbar) {
-        const cropBtn = Array.from(toolbar.children).find(btn => btn.textContent === 'Apply');
-        if (cropBtn) {
-          cropBtn.textContent = 'Crop';
-          cropBtn.classList.remove('active');
-        }
-      }
-    }
-
-    function applyCrop(container) {
-      if (!cropData) return;
-      
-      const img = container.querySelector('img');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Calculate crop ratios
-      const scaleX = img.naturalWidth / img.offsetWidth;
-      const scaleY = img.naturalHeight / img.offsetHeight;
-      
-      const cropX = cropData.left * scaleX;
-      const cropY = cropData.top * scaleY;
-      const cropWidth = cropData.width * scaleX;
-      const cropHeight = cropData.height * scaleY;
-      
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
-      
-      // Create new image for cropping
-      const tempImg = new Image();
-      tempImg.crossOrigin = 'anonymous';
-      tempImg.onload = function() {
-        ctx.drawImage(tempImg, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-        
-        // Convert to blob and create new URL
-        canvas.toBlob(function(blob) {
-          const newUrl = URL.createObjectURL(blob);
-          img.src = newUrl;
-          img.style.width = cropData.width + 'px';
-          img.style.height = cropData.height + 'px';
-          
-          syncEditorContent(container);
-          showNotification('Image cropped successfully!', 'success');
-        }, 'image/png');
-      };
-      tempImg.src = img.src;
-      
-      cropData = null;
-    }
-
-    function startCropResize(e, type, cropArea, container) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      
-      const rect = cropArea.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      startWidth = rect.width;
-      startHeight = rect.height;
-      
-      const onMouseMove = (e) => {
-        if (!isDragging) return;
-        
-        const deltaX = e.clientX - startX;
-        const deltaY = e.clientY - startY;
-        const img = container.querySelector('img');
-        const imgRect = img.getBoundingClientRect();
-        
-        let newWidth = startWidth;
-        let newHeight = startHeight;
-        let newLeft = parseFloat(cropArea.style.left);
-        let newTop = parseFloat(cropArea.style.top);
-        
-        switch(type) {
-          case 'se':
-            newWidth = startWidth + deltaX;
-            newHeight = startHeight + deltaY;
-            break;
-          case 'sw':
-            newWidth = startWidth - deltaX;
-            newHeight = startHeight + deltaY;
-            newLeft = parseFloat(cropArea.style.left) + deltaX;
-            break;
-          case 'ne':
-            newWidth = startWidth + deltaX;
-            newHeight = startHeight - deltaY;
-            newTop = parseFloat(cropArea.style.top) + deltaY;
-            break;
-          case 'nw':
-            newWidth = startWidth - deltaX;
-            newHeight = startHeight - deltaY;
-            newLeft = parseFloat(cropArea.style.left) + deltaX;
-            newTop = parseFloat(cropArea.style.top) + deltaY;
-            break;
-        }
-        
-        // Constrain to image bounds
-        newWidth = Math.max(50, Math.min(newWidth, imgRect.width - newLeft));
-        newHeight = Math.max(50, Math.min(newHeight, imgRect.height - newTop));
-        newLeft = Math.max(0, Math.min(newLeft, imgRect.width - newWidth));
-        newTop = Math.max(0, Math.min(newTop, imgRect.height - newHeight));
-        
-        cropArea.style.width = newWidth + 'px';
-        cropArea.style.height = newHeight + 'px';
-        cropArea.style.left = newLeft + 'px';
-        cropArea.style.top = newTop + 'px';
-        
-        // Update crop data
-        cropData = { left: newLeft, top: newTop, width: newWidth, height: newHeight };
-      };
-      
-      const onMouseUp = () => {
-        isDragging = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-      
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    }
-
-    function startCropDrag(e, cropArea, container) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      
-      const startLeft = parseFloat(cropArea.style.left);
-      const startTop = parseFloat(cropArea.style.top);
-      
-      const onMouseMove = (e) => {
-        if (!isDragging) return;
-        
-        const deltaX = e.clientX - startX;
-        const deltaY = e.clientY - startY;
-        const img = container.querySelector('img');
-        const imgRect = img.getBoundingClientRect();
-        const cropRect = cropArea.getBoundingClientRect();
-        
-        let newLeft = startLeft + deltaX;
-        let newTop = startTop + deltaY;
-        
-        // Constrain to image bounds
-        newLeft = Math.max(0, Math.min(newLeft, imgRect.width - cropRect.width));
-        newTop = Math.max(0, Math.min(newTop, imgRect.height - cropRect.height));
-        
-        cropArea.style.left = newLeft + 'px';
-        cropArea.style.top = newTop + 'px';
-        
-        // Update crop data
-        cropData = { 
-          left: newLeft, 
-          top: newTop, 
-          width: parseFloat(cropArea.style.width), 
-          height: parseFloat(cropArea.style.height) 
-        };
-      };
-      
-      const onMouseUp = () => {
-        isDragging = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-      
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    }
-
-    function syncEditorContent(container) {
-      // Find the parent editor
-      const editor = container.closest('[data-wysiwyg="true"]');
-      if (!editor) return;
-      
-      // Update corresponding textarea
-      let textarea = null;
-      if (editor.id === 'wysiwyg-question-text-admin') {
-        textarea = document.querySelector('#id_question_text');
-      } else if (editor.id === 'wysiwyg-explanation-text-admin') {
-        textarea = document.querySelector('#id_explanation');
-      } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
-        const choiceNumber = editor.id.split('-').pop();
-        const choiceIndex = parseInt(choiceNumber) - 1;
-        textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
-      }
-      
-      if (textarea) {
-        textarea.value = editor.innerHTML;
-      }
-      
-      // Trigger input event
-      editor.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  }
-
-  // Initialize existing images on page load
-  function initializeExistingImages() {
-    document.querySelectorAll('.wysiwyg-editor img').forEach(img => {
-      if (!img.closest('.resizable-image')) {
-        const container = document.createElement('div');
-        container.className = 'resizable-image';
-        img.parentNode.insertBefore(container, img);
-        container.appendChild(img);
-        
-        // Remove existing onclick handler if present
-        if (img.onclick) {
-          const originalSrc = img.src;
-          img.onclick = null;
-          
-          // Add double-click handler for modal
-          img.addEventListener('dblclick', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.openImageModal(originalSrc, 'Image Preview');
-          });
-        }
-        
-        // Remove any existing click event listeners by cloning the node
-        const newImg = img.cloneNode(true);
-        img.parentNode.replaceChild(newImg, img);
-        
-        // Re-add double-click handler after cloning
-        newImg.addEventListener('dblclick', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          window.openImageModal(newImg.src, 'Image Preview');
-        });
-        
-        initializeImageEditor(container, newImg);
-      }
-    });
-  }
-
   // LaTeX Guide Modal functions (Global scope)
   window.openLatexGuideModal = function() {
     const modal = document.getElementById('latexGuideModal');
@@ -2394,12 +2108,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize special actions
   initializeSpecialActions();
-  
-  // Initialize existing images with resize/crop functionality
-  initializeExistingImages();
-  
-  // Initialize existing images with resize/crop functionality
-  initializeExistingImages();
   
   // Initialize choice counter on page load
   updateChoiceCounter();
@@ -3051,9 +2759,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     </script>
-
-    <!-- Include WYSIWYG Scripts -->
-    {% include 'admin/includes/wysiwyg_scripts.html' %}
 
     <!-- LaTeX Guide Modal -->
     <div id="latexGuideModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
