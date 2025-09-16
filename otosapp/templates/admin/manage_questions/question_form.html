@@ -1339,6 +1339,47 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Fix checkbox duplication issue and ensure proper naming
+  console.log('[DEBUG] Fixing checkbox duplication...');
+  for (let i = 0; i < 5; i++) {
+    const checkboxes = document.querySelectorAll(`input[name="choices-${i}-is_correct"]`);
+    console.log(`Found ${checkboxes.length} checkboxes for choices-${i}-is_correct`);
+    
+    if (checkboxes.length > 1) {
+      // Keep the Django-generated one (usually has proper ID) and remove others
+      let djangoCheckbox = null;
+      let toRemove = [];
+      
+      checkboxes.forEach(cb => {
+        if (cb.id && cb.id.includes('id_choices')) {
+          djangoCheckbox = cb;
+        } else {
+          toRemove.push(cb);
+        }
+      });
+      
+      // Remove duplicates
+      toRemove.forEach(cb => cb.remove());
+      
+      // If no Django checkbox found, keep the first one
+      if (!djangoCheckbox && checkboxes.length > 0) {
+        djangoCheckbox = checkboxes[0];
+        for (let j = 1; j < checkboxes.length; j++) {
+          checkboxes[j].remove();
+        }
+      }
+      
+      console.log(`Kept checkbox for choices-${i}-is_correct:`, djangoCheckbox ? djangoCheckbox.id : 'NONE');
+    }
+  }
+  
+  // Verify final state
+  console.log('[DEBUG] Final checkbox verification:');
+  for (let i = 0; i < 5; i++) {
+    const checkbox = document.querySelector(`input[name="choices-${i}-is_correct"]`);
+    console.log(`Choice ${i+1}: ${checkbox ? 'HAS CHECKBOX' : 'NO CHECKBOX'} - ${checkbox ? checkbox.name : 'N/A'}`);
+  }
+
   // Initialize Flowbite WYSIWYG editors
   const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
   const explanationEditor = document.querySelector('#wysiwyg-explanation-admin');
@@ -1479,6 +1520,25 @@ document.addEventListener('DOMContentLoaded', function() {
     tempDiv.innerHTML = choiceEditor.innerHTML.trim();
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
     const hasContent = textContent.trim() !== '';
+    
+    // Check if this choice is marked as correct but has no content
+    const correctCheckbox = choiceItem.querySelector('input[name$="-is_correct"]');
+    if (correctCheckbox && correctCheckbox.checked && !hasContent) {
+      // Automatically uncheck the correct answer if content is removed
+      correctCheckbox.checked = false;
+      
+      // Update button appearance
+      const correctButton = choiceItem.querySelector('.correct-answer-btn');
+      if (correctButton) {
+        updateCorrectAnswerButton(correctButton, false);
+      }
+      
+      // Remove correct answer styling
+      handleCorrectAnswerChange(correctCheckbox, choiceNumber);
+      
+      // Show notification
+      showNotification(`Choice ${String.fromCharCode(64 + choiceNumber)} is no longer marked as correct since it has no content`, 'info');
+    }
     
     // Update visual feedback for required choices (A & B)
     if (choiceNumber <= 2) {
@@ -2065,34 +2125,56 @@ document.addEventListener('DOMContentLoaded', function() {
             const choicesSection = document.getElementById('choicesSection');
             const essayAnswerSection = document.getElementById('essayAnswerSection');
             
+            console.log('[DEBUG] Question type initialization:', {
+                radios: questionTypeRadios.length,
+                choicesSection: !!choicesSection,
+                essayAnswerSection: !!essayAnswerSection
+            });
+            
             function toggleSections() {
                 const selectedType = document.querySelector('input[name="question_type"]:checked');
+                console.log('[DEBUG] toggleSections called, selectedType:', selectedType ? selectedType.value : 'NONE');
+                
                 if (selectedType) {
                     document.body.style.cursor = 'wait';
                     
                     setTimeout(() => {
                         if (selectedType.value === 'multiple_choice') {
-                            choicesSection.style.display = 'block';
-                            essayAnswerSection.style.display = 'none';
-                            choicesSection.classList.add('section-fade-in');
+                            if (choicesSection) choicesSection.style.display = 'block';
+                            if (essayAnswerSection) essayAnswerSection.style.display = 'none';
+                            if (choicesSection) choicesSection.classList.add('section-fade-in');
+                            
+                            console.log('[DEBUG] Showing multiple choice section');
                             
                             // Initialize choice checkboxes after section becomes visible
                             setTimeout(() => {
                                 initializeChoiceCheckboxes();
                             }, 100);
                         } else if (selectedType.value === 'essay') {
-                            choicesSection.style.display = 'none';
-                            essayAnswerSection.style.display = 'block';
-                            essayAnswerSection.classList.add('section-fade-in');
+                            if (choicesSection) choicesSection.style.display = 'none';
+                            if (essayAnswerSection) essayAnswerSection.style.display = 'block';
+                            if (essayAnswerSection) essayAnswerSection.classList.add('section-fade-in');
+                            
+                            console.log('[DEBUG] Showing essay section');
                         }
                         
                         document.body.style.cursor = '';
                     }, 100);
+                } else {
+                    console.log('[DEBUG] No question type selected, ensuring multiple_choice is selected by default');
+                    // If no type is selected, select multiple_choice by default
+                    const multipleChoiceRadio = document.querySelector('input[name="question_type"][value="multiple_choice"]');
+                    if (multipleChoiceRadio) {
+                        multipleChoiceRadio.checked = true;
+                        setTimeout(toggleSections, 50);
+                    }
                 }
             }
             
             // Initial toggle based on selected value
-            toggleSections();
+            setTimeout(() => {
+                toggleSections();
+            }, 100);
             
             // Add event listeners to radio buttons
             questionTypeRadios.forEach(function(radio) {
@@ -2139,6 +2221,47 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                     
+                    // Debug: Log all checkbox states before submission and ensure they're all present
+                    console.log('=== CHECKBOX DEBUG BEFORE SUBMIT ===');
+                    
+                    // Check existing checkboxes first
+                    for (let i = 0; i < 5; i++) {
+                        const checkbox = document.querySelector(`input[name="choices-${i}-is_correct"]`);
+                        console.log(`Choice ${i+1} checkbox:`, {
+                            exists: !!checkbox,
+                            name: checkbox ? checkbox.name : 'N/A',
+                            checked: checkbox ? checkbox.checked : 'N/A',
+                            value: checkbox ? checkbox.value : 'N/A',
+                            id: checkbox ? checkbox.id : 'N/A'
+                        });
+                        
+                        // CRITICAL FIX: Ensure checked checkboxes are properly submitted
+                        // Instead of adding hidden inputs, ensure checked checkboxes have correct attributes
+                        if (checkbox) {
+                            if (checkbox.checked) {
+                                console.log(`Checkbox ${i+1} is CHECKED - ensuring proper submission`);
+                                // Make sure checked checkbox has the right value and attributes
+                                checkbox.value = 'on';
+                                checkbox.setAttribute('checked', 'checked');
+                            } else {
+                                console.log(`Checkbox ${i+1} is UNCHECKED`);
+                                // Remove checked attribute for unchecked boxes
+                                checkbox.removeAttribute('checked');
+                            }
+                        }
+                    }
+                    
+                    // Log final FormData to see what will be submitted
+                    console.log('=== FORM DATA BEFORE SUBMIT ===');
+                    const formData = new FormData(form);
+                    for (let [key, value] of formData.entries()) {
+                        if (key.includes('is_correct') || key.includes('choice_text')) {
+                            console.log(`FormData: ${key} = ${value}`);
+                        }
+                    }
+                    
+                    console.log('========================================');
+                    
                     // Get content from Flowbite WYSIWYG editors for validation
                     let questionContent = '';
                     if (questionEditor) {
@@ -2168,9 +2291,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (multipleChoiceRadio) {
                         let validChoicesCount = 0;
                         let correctAnswerExists = false;
+                        let validChoicesWithContent = []; // Track which choices have content
                         
-                        // Check first 2 choices (A & B) - these are required
-                        for (let i = 1; i <= 2; i++) {
+                        // Check all choices (A, B, C, D, E) and track which ones have content
+                        for (let i = 1; i <= 5; i++) {
                             const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
                             if (choiceEditor) {
                                 const tempDiv = document.createElement('div');
@@ -2178,26 +2302,30 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const textContent = tempDiv.textContent || tempDiv.innerText || '';
                                 if (textContent.trim()) {
                                     validChoicesCount++;
+                                    validChoicesWithContent.push(i); // Track this choice as having content
                                 }
                             }
                         }
                         
-                        // Check remaining choices (C, D, E) - these are optional
-                        for (let i = 3; i <= 5; i++) {
-                            const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
-                            if (choiceEditor) {
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = choiceEditor.innerHTML.trim();
-                                const textContent = tempDiv.textContent || tempDiv.innerText || '';
-                                if (textContent.trim()) {
-                                    validChoicesCount++;
+                        // Check if at least one correct answer is selected AND has content
+                        const correctAnswerCheckboxes = document.querySelectorAll('input[name$="-is_correct"]:checked');
+                        let validCorrectAnswers = 0;
+                        
+                        correctAnswerCheckboxes.forEach(checkbox => {
+                            // Extract choice number from checkbox name (e.g., "choices-0-is_correct" -> choice 1)
+                            const nameMatch = checkbox.name.match(/choices-(\d+)-is_correct/);
+                            if (nameMatch) {
+                                const choiceIndex = parseInt(nameMatch[1]); // 0-based index
+                                const choiceNumber = choiceIndex + 1; // Convert to 1-based
+                                
+                                // Check if this choice has content
+                                if (validChoicesWithContent.includes(choiceNumber)) {
+                                    validCorrectAnswers++;
                                 }
                             }
-                        }
+                        });
                         
-                        // Check if at least one correct answer is selected
-                        const correctAnswerCheckboxes = document.querySelectorAll('input[name$="_is_correct"]:checked');
-                        correctAnswerExists = correctAnswerCheckboxes.length > 0;
+                        correctAnswerExists = validCorrectAnswers > 0;
                         
                         // Validation: minimum 2 choices required, and at least one must be marked as correct
                         if (validChoicesCount < 2) {
@@ -2210,9 +2338,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                         
+                        // Check if first 2 choices (A & B) are filled since they are required
+                        if (!validChoicesWithContent.includes(1) || !validChoicesWithContent.includes(2)) {
+                            e.preventDefault();
+                            showNotification('Choices A and B are required. Please fill them in.', 'error');
+                            const choicesSection = document.getElementById('choicesSection');
+                            if (choicesSection) {
+                                choicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
+                        }
+                        
                         if (!correctAnswerExists) {
                             e.preventDefault();
-                            showNotification('Please select at least one correct answer', 'error');
+                            showNotification('Please select at least one correct answer from the choices that have content', 'error');
                             const choicesSection = document.getElementById('choicesSection');
                             if (choicesSection) {
                                 choicesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2251,16 +2390,52 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Toggle correct answer button functionality (Global function)
             window.toggleCorrectAnswer = function(button, choiceNumber) {
-                // Find the hidden checkbox
-                const choiceItem = button.closest('.choice-item');
-                const checkbox = choiceItem.querySelector('input[name$="-is_correct"]');
+                // Find the hidden checkbox - use the exact name pattern that Django generates
+                const checkboxName = `choices-${choiceNumber - 1}-is_correct`;
+                let checkbox = document.querySelector(`input[name="${checkboxName}"]`);
+                
+                console.log(`[DEBUG] Looking for checkbox with name: ${checkboxName}`);
+                console.log(`[DEBUG] Found checkbox:`, checkbox);
                 
                 if (!checkbox) {
-                    return;
+                    console.warn(`No checkbox found for choice ${choiceNumber} with name ${checkboxName}`);
+                    // Try alternative selector
+                    const choiceItem = button.closest('.choice-item');
+                    checkbox = choiceItem.querySelector('input[name$="-is_correct"][type="checkbox"]');
+                    console.log(`[DEBUG] Fallback checkbox search:`, checkbox);
+                    
+                    if (!checkbox) {
+                        console.error(`Still no checkbox found for choice ${choiceNumber}`);
+                        return;
+                    }
+                }
+                
+                // Check if the choice has content before allowing it to be marked as correct
+                const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${choiceNumber}`);
+                if (choiceEditor) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+                    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                    
+                    if (!textContent.trim() && !checkbox.checked) {
+                        // Prevent marking empty choice as correct
+                        showNotification(`Please add content to Choice ${String.fromCharCode(64 + choiceNumber)} before marking it as correct`, 'warning');
+                        return;
+                    }
                 }
                 
                 // Toggle checkbox state
                 checkbox.checked = !checkbox.checked;
+                
+                // CRITICAL: Also set the value attribute to ensure form submission works
+                if (checkbox.checked) {
+                    checkbox.setAttribute('value', 'on');
+                } else {
+                    checkbox.removeAttribute('value');
+                }
+                
+                console.log(`[DEBUG] Choice ${choiceNumber} (${checkboxName}) marked as: ${checkbox.checked ? 'CORRECT' : 'INCORRECT'}`);
+                console.log(`[DEBUG] Checkbox value attribute:`, checkbox.getAttribute('value'));
                 
                 // Update button appearance
                 updateCorrectAnswerButton(button, checkbox.checked);
@@ -2269,25 +2444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleCorrectAnswerChange(checkbox, choiceNumber);
             };
             
-            // Toggle correct answer button functionality
-            function toggleCorrectAnswer(button, choiceNumber) {
-                // Find the hidden checkbox
-                const choiceItem = button.closest('.choice-item');
-                const checkbox = choiceItem.querySelector('input[name$="-is_correct"]');
-                
-                if (!checkbox) {
-                    return;
-                }
-                
-                // Toggle checkbox state
-                checkbox.checked = !checkbox.checked;
-                
-                // Update button appearance
-                updateCorrectAnswerButton(button, checkbox.checked);
-                
-                // Trigger existing visual feedback
-                handleCorrectAnswerChange(checkbox, choiceNumber);
-            }
+
             
             // Update button appearance based on state
             function updateCorrectAnswerButton(button, isCorrect) {
@@ -2434,43 +2591,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Initialize choice checkboxes function
             function initializeChoiceCheckboxes() {
-                // Add event listeners to all correct answer checkboxes - try multiple selectors
-                let checkboxes = document.querySelectorAll('input[name$="-is_correct"]'); // Formset pattern
-                if (checkboxes.length === 0) {
-                    checkboxes = document.querySelectorAll('input[name$="_is_correct"]'); // Alternative pattern
-                }
-                if (checkboxes.length === 0) {
-                    checkboxes = document.querySelectorAll('.choice-checkbox'); // Class-based selector
-                }
-                if (checkboxes.length === 0) {
-                    checkboxes = document.querySelectorAll('input[type="checkbox"]'); // All checkboxes
-                }
+                console.log('[DEBUG] Initializing choice checkboxes...');
                 
-                checkboxes.forEach((checkbox, index) => {
-                    // Remove existing listeners to avoid duplicates
-                    if (checkbox._choiceHandler) {
-                        checkbox.removeEventListener('change', checkbox._choiceHandler);
+                // Process each choice individually to ensure correct mapping
+                for (let i = 0; i < 5; i++) {
+                    const checkbox = document.querySelector(`input[name="choices-${i}-is_correct"][type="checkbox"]`);
+                    const choiceNumber = i + 1; // Convert to 1-based for display
+                    
+                    if (checkbox) {
+                        console.log(`[DEBUG] Initializing checkbox for choice ${choiceNumber}:`, checkbox.name);
+                        
+                        // Remove existing listeners to avoid duplicates
+                        if (checkbox._choiceHandler) {
+                            checkbox.removeEventListener('change', checkbox._choiceHandler);
+                        }
+                        
+                        // Create new handler with validation
+                        checkbox._choiceHandler = function(e) {
+                            console.log(`[DEBUG] Checkbox change event for choice ${choiceNumber}: checked=${this.checked}`);
+                            
+                            // If checkbox is being checked, validate that the choice has content
+                            if (this.checked) {
+                                const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${choiceNumber}`);
+                                if (choiceEditor) {
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = choiceEditor.innerHTML.trim();
+                                    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                                    
+                                    if (!textContent.trim()) {
+                                        // Prevent checking if no content
+                                        e.preventDefault();
+                                        this.checked = false;
+                                        showNotification(`Please add content to Choice ${String.fromCharCode(64 + choiceNumber)} before marking it as correct`, 'warning');
+                                        return;
+                                    }
+                                }
+                            }
+                            
+                            handleCorrectAnswerChange(this, choiceNumber);
+                        };
+                        
+                        checkbox.addEventListener('change', checkbox._choiceHandler);
+                        
+                        // Initialize state on page load
+                        if (checkbox.checked) {
+                            handleCorrectAnswerChange(checkbox, choiceNumber);
+                        }
+                        
+                        // Initialize button state
+                        const choiceItem = checkbox.closest('.choice-item');
+                        const button = choiceItem?.querySelector('.correct-answer-btn');
+                        if (button) {
+                            updateCorrectAnswerButton(button, checkbox.checked);
+                        }
+                    } else {
+                        console.warn(`[DEBUG] No checkbox found for choice ${choiceNumber}`);
                     }
-                    
-                    // Create new handler
-                    checkbox._choiceHandler = function() {
-                        handleCorrectAnswerChange(this, index + 1);
-                    };
-                    
-                    checkbox.addEventListener('change', checkbox._choiceHandler);
-                    
-                    // Initialize state on page load
-                    if (checkbox.checked) {
-                        handleCorrectAnswerChange(checkbox, index + 1);
-                    }
-                    
-                    // Initialize button state
-                    const choiceItem = checkbox.closest('.choice-item');
-                    const button = choiceItem?.querySelector('.correct-answer-btn');
-                    if (button) {
-                        updateCorrectAnswerButton(button, checkbox.checked);
-                    }
-                });
+                }
             }
 
             // Initialize correct answer checkboxes on DOM ready
