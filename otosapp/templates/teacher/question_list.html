@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Questions - {{ category.category_name }}{% endblock %}
 
@@ -118,7 +119,7 @@
             {% for question in questions %}
             <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <td class="px-6 py-4">{{ forloop.counter }}</td>
-              <td class="px-6 py-4"><div class="prose dark:prose-invert max-w-none">{{ question.question_text|truncatechars:160|safe }}</div></td>
+              <td class="px-6 py-4"><div class="prose dark:prose-invert max-w-none">{{ question.question_text|smart_question_text|truncatechars:160 }}</div></td>
               <td class="px-6 py-4">
                 <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{{ question.difficulty_coefficient|default:question.custom_weight|default:'-' }}</span>
               </td>
@@ -128,7 +129,7 @@
                   {% for choice in question.choices.all %}
                   <li class="flex items-start space-x-2 text-sm">
                     <div class="flex-shrink-0 mt-0.5">{% if choice.is_correct %}<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>{% else %}<span class="w-4 h-4 inline-block"></span>{% endif %}</div>
-                    <div class="flex-1 text-gray-700 dark:text-gray-300">{{ choice.choice_text|truncatechars:120|safe }}</div>
+                    <div class="flex-1 text-gray-700 dark:text-gray-300">{{ choice.choice_text|smart_question_text|truncatechars:120 }}</div>
                   </li>
                   {% endfor %}
                 </ul>

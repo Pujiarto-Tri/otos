@@ -64,3 +64,27 @@ def smart_float(value):
         return f"{value:.1f}"
     except (ValueError, TypeError):
         return value
+
+@register.filter
+def smart_question_text(text):
+    """
+    Smart format for question text that handles both plain text and HTML content.
+    If text contains HTML tags, treat as HTML. Otherwise, convert plain text to HTML with line breaks.
+    """
+    import re
+    from django.utils.safestring import mark_safe
+    from django.utils.html import escape, linebreaks
+    
+    if not text:
+        return ""
+    
+    # Check if text contains HTML tags (especially WYSIWYG content)
+    html_pattern = r'<(?:span|div|p|br|strong|em|u|ol|ul|li|h[1-6]|img|table|tr|td|th|thead|tbody)[^>]*>'
+    
+    if re.search(html_pattern, text, re.IGNORECASE):
+        # Text contains HTML, treat as HTML content
+        return mark_safe(text)
+    else:
+        # Plain text, convert to HTML with proper escaping and line breaks
+        escaped_text = escape(text)
+        return mark_safe(linebreaks(escaped_text))

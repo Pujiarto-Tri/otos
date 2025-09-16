@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Questions - {{ category.category_name }}{% endblock %}
 
@@ -163,14 +164,14 @@
                             <td class="px-6 py-4">
                                 <div class="max-w-md">
                                     <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-                                        {{ question.question_text|striptags|truncatechars:100 }}
+                                        {{ question.question_text|smart_question_text|striptags|truncatechars:100 }}
                                     </div>
                                     {% if question.question_text|length > 100 %}
                                     <button onclick="toggleFullText({{ forloop.counter }})" class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 mt-1">
                                         Show more
                                     </button>
                                     <div id="fulltext-{{ forloop.counter }}" class="hidden mt-2 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ question.question_text|safe }}
+                                        {{ question.question_text|smart_question_text }}
                                     </div>
                                     {% endif %}
                                 </div>
@@ -241,14 +242,14 @@
                                                 <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                                                 </svg>
-                                                <span class="font-medium">{{ choice.choice_text|striptags|truncatechars:30 }}</span>
+                                                <span class="font-medium">{{ choice.choice_text|smart_question_text|striptags|truncatechars:30 }}</span>
                                             </div>
                                             {% else %}
                                             <div class="flex items-center text-gray-500 dark:text-gray-400">
                                                 <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                                                 </svg>
-                                                <span>{{ choice.choice_text|striptags|truncatechars:30 }}</span>
+                                                <span>{{ choice.choice_text|smart_question_text|striptags|truncatechars:30 }}</span>
                                             </div>
                                             {% endif %}
                                         </div>
