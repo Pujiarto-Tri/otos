@@ -44,362 +44,55 @@
       };
     </script>
     <!-- MathJax Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mtml-chtml.min.js"></script>
+
+    <!-- Include WYSIWYG Styles -->
+    {% include 'admin/includes/wysiwyg_styles.html' %}
+
     <style>
+        /* Page transition animation */
         .section-fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* WYSIWYG Editor custom styles */
+        /* Form-specific WYSIWYG overrides */
         .wysiwyg-editor {
             min-height: 200px;
         }
         
-        /* Choice WYSIWYG editors have smaller min-height */
         [id^="wysiwyg-choice-text-"] {
             min-height: 100px;
         }
-        
-        .prose {
-            max-width: none;
-        }
-        
-        .prose p {
-            margin-bottom: 1em;
-        }
-        
-        .prose ul, .prose ol {
-            margin: 1em 0;
-            padding-left: 2em;
-        }
-        
-        .prose blockquote {
-            border-left: 4px solid #e5e7eb;
-            padding-left: 1em;
-            margin: 1em 0;
-            font-style: italic;
-        }
-        
-        .dark .prose blockquote {
-            border-left-color: #6b7280;
-        }
-        
-        /* Placeholder styling for empty WYSIWYG editors */
-        [data-wysiwyg="true"].is-empty:before {
-            content: attr(data-placeholder);
-            color: #9ca3af;
-            font-style: italic;
-            pointer-events: none;
-            position: absolute;
-        }
-        
-        .dark [data-wysiwyg="true"].is-empty:before {
-            color: #6b7280;
-        }
-        
-        /* Ensure proper focus outline for accessibility */
-        [data-wysiwyg="true"]:focus {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
-        
-      /* LaTeX Formula Styling - Inline with text flow */
-      .math-formula {
-        display: inline !important;
-        margin: 0 1px;
-        padding: 2px 4px;
-        background-color: #eff6ff;
-        border: 1px solid #3b82f6;
-        border-radius: 4px;
-        font-size: 1em;
-        vertical-align: baseline;
-        cursor: pointer;
-        user-select: none;
-        white-space: nowrap;
-        font-family: 'KaTeX_Main', 'Times New Roman', serif;
-        line-height: 1.2;
-        max-width: none;
-      }
-      
-      .math-formula:hover {
-        background-color: #dbeafe;
-        border-color: #2563eb;
-      }
-      
-      /* Dark mode math formula styling */
-      .dark .math-formula {
-        background-color: #1e3a8a;
-        border-color: #3b82f6;
-        color: #dbeafe;
-      }
-      
-      .dark .math-formula:hover {
-        background-color: #1e40af;
-        border-color: #60a5fa;
-      }
-      
-      /* Ensure math formulas don't break text flow */
-      .wysiwyg-editor .math-formula {
-        line-height: inherit;
-        vertical-align: baseline;
-      }
-      
-      /* MathJax output styling override */
-      .math-formula .MathJax,
-      .math-formula .MathJax_Display {
-        display: inline !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        text-align: left !important;
-      }        /* Legacy LaTeX formula styling (for backward compatibility) */
-        .latex-formula, .math-display {
-          display: inline-block;
-          margin: 2px 5px;
-          padding: 4px 8px;
-          background-color: #f0f9ff;
-          border: 1px solid #0ea5e9;
-          border-radius: 4px;
-          min-height: 24px;
-          vertical-align: middle;
-          cursor: pointer;
-          user-select: none; /* Prevent text selection issues */
-          position: relative;
-          z-index: 1;
-        }
-        
-        .latex-formula:hover, .math-display:hover {
-          background-color: #e0f2fe;
-          border-color: #0284c7;
-        }
-        
-        /* Dark mode LaTeX styling */
-        .dark .latex-formula, .dark .math-display {
-          background-color: #1e3a8a;
-          border-color: #3b82f6;
-          color: #dbeafe;
-        }
-        
-        .dark .latex-formula:hover, .dark .math-display:hover {
-          background-color: #1e40af;
-          border-color: #60a5fa;
-        }
-        
-        /* Ensure LaTeX doesn't break editor flow */
-        .wysiwyg-editor .latex-formula,
-        .wysiwyg-editor .math-display {
-          white-space: nowrap;
-          overflow: hidden;
-        }
 
-        /* Image Resize & Crop Styles */
-        .wysiwyg-editor .resizable-image {
-          position: relative;
-          display: inline-block;
-          max-width: 100%;
-        }
-
-        .wysiwyg-editor .resizable-image.selected {
-          outline: 2px solid #3b82f6;
-          outline-offset: 2px;
-          position: relative;
-        }
-
-        .wysiwyg-editor .resizable-image.selected::after {
-          content: "Click to edit • Double-click to preview";
-          position: absolute;
-          bottom: -25px;
-          left: 0;
-          background: #3b82f6;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 11px;
-          white-space: nowrap;
-          z-index: 25;
-        }
-
-        .wysiwyg-editor .resize-handles {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 10;
-        }
-
-        .wysiwyg-editor .resize-handle {
-          position: absolute;
-          width: 12px;
-          height: 12px;
-          background: #3b82f6;
-          border: 2px solid white;
-          border-radius: 50%;
-          pointer-events: all;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .wysiwyg-editor .resize-handle:hover {
-          background: #2563eb;
-          transform: scale(1.2);
-        }
-
-        .wysiwyg-editor .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
-        .wysiwyg-editor .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
-        .wysiwyg-editor .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
-        .wysiwyg-editor .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
-        .wysiwyg-editor .resize-handle.n { top: -6px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-        .wysiwyg-editor .resize-handle.s { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
-        .wysiwyg-editor .resize-handle.w { top: 50%; left: -6px; transform: translateY(-50%); cursor: w-resize; }
-        .wysiwyg-editor .resize-handle.e { top: 50%; right: -6px; transform: translateY(-50%); cursor: e-resize; }
-
-        /* Image Toolbar */
-        .wysiwyg-editor .image-toolbar {
-          position: absolute;
-          top: -40px;
-          left: 0;
-          background: white;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          padding: 4px;
-          display: flex;
-          gap: 4px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          z-index: 20;
-        }
-
-        .wysiwyg-editor .image-toolbar button {
-          padding: 6px 8px;
-          border: none;
-          background: #f9fafb;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          color: #374151;
-          transition: all 0.2s ease;
-          type: button; /* Ensure it's not a submit button */
-        }
-
-        .wysiwyg-editor .image-toolbar button:hover {
-          background: #e5e7eb;
-          color: #111827;
-        }
-
-        .wysiwyg-editor .image-toolbar button.active {
-          background: #3b82f6;
-          color: white;
-        }
-
-        .wysiwyg-editor .image-toolbar button:active {
-          background: #d1d5db;
-          transform: translateY(1px);
-        }
-
-        .wysiwyg-editor .image-toolbar button:focus {
-          outline: 2px solid #3b82f6;
-          outline-offset: 1px;
-        }
-
-        /* Crop Mode Styles */
-        .wysiwyg-editor .crop-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 15;
-          pointer-events: none;
-        }
-
-        .wysiwyg-editor .crop-area {
-          position: absolute;
-          border: 2px dashed #3b82f6;
-          background: transparent;
-          z-index: 16;
-          pointer-events: all;
-          cursor: move;
-        }
-
-        .wysiwyg-editor .crop-handle {
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          background: #3b82f6;
-          border: 2px solid white;
-          border-radius: 2px;
-          pointer-events: all;
-        }
-
-        .wysiwyg-editor .crop-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
-        .wysiwyg-editor .crop-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
-        .wysiwyg-editor .crop-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
-        .wysiwyg-editor .crop-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
-        
-        /* Format toolbar button active states */
-        [data-wysiwyg-toggle-format].active {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .dark [data-wysiwyg-toggle-format].active {
-            background-color: #1e3a8a;
-            color: #bfdbfe;
-        }
-
-        /* Text inputs and textareas */
-        textarea,
-        input[type="text"],
-        select {
-            background: #ffffff;
+        /* Form inputs styling */
+        textarea, input[type="text"], select {
+            background: white;
             color: #1f2937;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            font-size: 14px;
-            transition: border-color 0.2s ease-in-out;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.15s ease-in-out;
         }
 
-        .dark textarea,
-        .dark input[type="text"],
-        .dark select {
+        .dark textarea, .dark input[type="text"], .dark select {
             background: #1f2937;
             color: #f9fafb;
             border-color: #4b5563;
         }
 
-        textarea:focus,
-        input[type="text"]:focus,
-        select:focus {
+        textarea:focus, input[type="text"]:focus, select:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        textarea::placeholder,
-        input[type="text"]::placeholder {
-            color: #9ca3af;
-        }
-
-        .dark textarea::placeholder,
-        .dark input[type="text"]::placeholder {
-            color: #6b7280;
-        }
-
-        /* Choice checkbox styling */
+        /* Choice styling */
         .choice-checkbox:focus {
             outline: none;
             border-color: #10b981;
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
 
-        .dark .choice-checkbox {
-            border-color: #4b5563;
-            background-color: #374151;
-        }
-
-        /* Correct answer visual states */
         .choice-item.correct-answer {
             background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             border: 3px solid #10b981;
@@ -412,106 +105,20 @@
             color: white;
         }
 
-        .choice-item.correct-answer .wysiwyg-editor {
-            border: 2px solid #10b981;
-            background-color: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-        }
-
-        .dark .choice-item.correct-answer .wysiwyg-editor {
-            background-color: rgba(31, 41, 55, 0.98);
-        }
-
-        /* Dark theme adjustments for correct answer (softer, more readable) */
-        .dark .choice-item.correct-answer {
-            background: rgba(6, 95, 70, 0.22);
-            border-color: #059669;
-            box-shadow: 0 8px 18px rgba(5, 150, 105, 0.18);
-        }
-
-        .dark .choice-item.correct-answer .choice-header {
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-            color: #e5fff4;
-        }
-
-        .dark .choice-item.correct-answer .choice-status,
-        .dark .choice-item.correct-answer h4 {
-            color: #e5fff4;
-        }
-
-        .dark .choice-item.correct-answer .choice-badge {
-            background-color: #059669;
-            color: #ecfdf5;
-        }
-
-        /* Layout and small animations */
-        .choice-item { 
-            transition: all 0.2s ease-in-out; 
+        .choice-item {
+            transition: all 0.2s ease-in-out;
         }
         
-        .choice-item:hover { 
-            transform: translateY(-1px); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        .choice-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
-        /* Modal and thumbnail */
-        #imageModal { 
-            backdrop-filter: blur(4px); 
-        }
-        
-        #modalImage { 
-            transition: transform 0.2s ease-in-out; 
-            cursor: zoom-in; 
-        }
-        
-        #modalImage:hover { 
-            transform: scale(1.02); 
-        }
-        
-        .choice-item img { 
-            transition: all 0.2s ease-in-out; 
-        }
-        
-        .choice-item img:hover { 
-            transform: scale(1.05); 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
-        }
-
-        /* Responsive tweaks */
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .wysiwyg-editor { 
-                min-height: 180px; 
+            .wysiwyg-editor {
+                min-height: 150px;
             }
-            .choice-item { 
-                padding: 0.5rem; 
-            }
-        }
-
-        /* Dark mode adjustments for previews */
-        .dark #imageModal .modal-panel { 
-            background-color: #0f172a; 
-        }
-        
-        .dark .choice-item img { 
-            box-shadow: 0 4px 14px rgba(255,255,255,0.03); 
-        }
-        
-        /* Optional choice styling */
-        .choice-item.optional {
-            opacity: 0.8;
-            border-style: dashed !important;
-        }
-        
-        .choice-item.optional .choice-header {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        }
-        
-        .dark .choice-item.optional .choice-header {
-            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-        }
-        
-        .choice-item.optional:hover {
-            opacity: 1;
         }
     </style>
 {% endblock %}
@@ -3444,6 +3051,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     </script>
+
+    <!-- Include WYSIWYG Scripts -->
+    {% include 'admin/includes/wysiwyg_scripts.html' %}
 
     <!-- LaTeX Guide Modal -->
     <div id="latexGuideModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">

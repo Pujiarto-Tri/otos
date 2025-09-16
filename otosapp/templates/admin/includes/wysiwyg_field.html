@@ -1,0 +1,138 @@
+<!-- WYSIWYG Editor Form Field Component -->
+{% load static %}
+
+<div class="wysiwyg-field-group" data-field="{{ field_name }}">
+    <label for="{{ field_id }}" class="block text-sm font-medium text-gray-700 mb-2">
+        {{ label }}
+        {% if required %}
+            <span class="text-red-500">*</span>
+        {% endif %}
+    </label>
+    
+    <!-- WYSIWYG Toolbar -->
+    <div class="wysiwyg-toolbar" data-target="{{ editor_id }}">
+        <!-- Format buttons -->
+        <button type="button" data-command="bold" title="Bold (Ctrl+B)">
+            <strong>B</strong>
+        </button>
+        <button type="button" data-command="italic" title="Italic (Ctrl+I)">
+            <em>I</em>
+        </button>
+        <button type="button" data-command="underline" title="Underline (Ctrl+U)">
+            <u>U</u>
+        </button>
+        
+        <div class="border-l border-gray-300 mx-1"></div>
+        
+        <!-- List buttons -->
+        <button type="button" data-command="insertUnorderedList" title="Bullet List">
+            • List
+        </button>
+        <button type="button" data-command="insertOrderedList" title="Numbered List">
+            1. List
+        </button>
+        
+        <div class="border-l border-gray-300 mx-1"></div>
+        
+        <!-- Alignment -->
+        <button type="button" data-command="justifyLeft" title="Align Left">
+            ⇤
+        </button>
+        <button type="button" data-command="justifyCenter" title="Align Center">
+            ⇔
+        </button>
+        <button type="button" data-command="justifyRight" title="Align Right">
+            ⇥
+        </button>
+        
+        <div class="border-l border-gray-300 mx-1"></div>
+        
+        <!-- Math and Special -->
+        <button type="button" data-command="insertMath" title="Insert Math Formula">
+            ∑ Math
+        </button>
+        <button type="button" data-command="insertImage" title="Insert Image">
+            🖼 Image
+        </button>
+        
+        <div class="border-l border-gray-300 mx-1"></div>
+        
+        <!-- Utility -->
+        <button type="button" data-command="removeFormat" title="Clear Formatting">
+            Clear
+        </button>
+        <button type="button" data-command="undo" title="Undo (Ctrl+Z)">
+            ↶
+        </button>
+        <button type="button" data-command="redo" title="Redo (Ctrl+Y)">
+            ↷
+        </button>
+    </div>
+    
+    <!-- WYSIWYG Editor -->
+    <div 
+        id="{{ editor_id }}" 
+        class="wysiwyg-editor" 
+        contenteditable="true" 
+        data-wysiwyg="true"
+        data-target="{{ field_id }}"
+        placeholder="{{ placeholder|default:'Enter your content here...' }}"
+    >
+        {{ initial_value|safe }}
+    </div>
+    
+    <!-- Hidden textarea for form submission -->
+    <textarea 
+        id="{{ field_id }}" 
+        name="{{ field_name }}" 
+        class="hidden"
+        {% if required %}required{% endif %}
+    >{{ initial_value }}</textarea>
+    
+    {% if help_text %}
+        <p class="mt-1 text-sm text-gray-500">{{ help_text }}</p>
+    {% endif %}
+    
+    <!-- Math input modal (if field supports math) -->
+    {% if enable_math %}
+        <div id="mathModal-{{ editor_id }}" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Insert Math Formula</h3>
+                        <div class="mt-2">
+                            <label for="mathInput-{{ editor_id }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                LaTeX Formula:
+                            </label>
+                            <textarea 
+                                id="mathInput-{{ editor_id }}" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                rows="4" 
+                                placeholder="e.g., x^2 + y^2 = z^2"
+                            ></textarea>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Enter LaTeX syntax. Preview will appear below.
+                            </p>
+                            <div id="mathPreview-{{ editor_id }}" class="mt-4 p-4 bg-gray-50 border rounded min-h-[60px] text-center">
+                                Preview will appear here...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="button" 
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                onclick="window.wysiwygEditor.insertMathFormula('{{ editor_id }}')">
+                            Insert
+                        </button>
+                        <button type="button" 
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                onclick="window.wysiwygEditor.closeMathModal('{{ editor_id }}')">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
