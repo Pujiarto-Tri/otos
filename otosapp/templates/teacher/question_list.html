@@ -1,6 +1,62 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Questions - {{ category.category_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Simple styling that matches admin template */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Compact choices styling */
+.choices-container {
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.choices-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.choices-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.choices-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.choices-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Handle responsive table */
+@media (max-width: 1024px) {
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .overflow-x-auto table {
+    min-width: 700px;
+  }
+  
+  /* Hide choices column on very small screens */
+  .choices-mobile-hidden {
+    display: none;
+  }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- Start block -->
@@ -110,36 +166,94 @@
               <th scope="col" class="px-6 py-3">Question Text</th>
               <th scope="col" class="px-6 py-3">Difficulty Coefficient</th>
               <th scope="col" class="px-6 py-3">Date Created</th>
-              <th scope="col" class="px-6 py-3">Choices</th>
+              <th scope="col" class="px-6 py-3 choices-mobile-hidden">Jawaban</th>
               <th scope="col" class="px-6 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for question in questions %}
             <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <td class="px-6 py-4">{{ forloop.counter }}</td>
-              <td class="px-6 py-4"><div class="prose dark:prose-invert max-w-none">{{ question.question_text|truncatechars:160|safe }}</div></td>
+              <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ forloop.counter }}</td>
               <td class="px-6 py-4">
-                <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{{ question.difficulty_coefficient|default:question.custom_weight|default:'-' }}</span>
+                <div class="max-w-md">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+                    {{ question.question_text|smart_question_text|striptags|truncatechars:100 }}
+                  </div>
+                  {% if question.question_text|length > 100 %}
+                  <button onclick="toggleFullText({{ forloop.counter }})" class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 mt-1">
+                    Show more
+                  </button>
+                  <div id="fulltext-{{ forloop.counter }}" class="hidden mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    {{ question.question_text|smart_question_text }}
+                  </div>
+                  {% endif %}
+                </div>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-500">{% if question.pub_date %}{{ question.pub_date|date:'M d, Y' }}<div class="text-xs text-gray-400">{{ question.pub_date|time:'H:i' }}</div>{% endif %}</td>
               <td class="px-6 py-4">
-                <ul class="space-y-1">
-                  {% for choice in question.choices.all %}
-                  <li class="flex items-start space-x-2 text-sm">
-                    <div class="flex-shrink-0 mt-0.5">{% if choice.is_correct %}<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>{% else %}<span class="w-4 h-4 inline-block"></span>{% endif %}</div>
-                    <div class="flex-1 text-gray-700 dark:text-gray-300">{{ choice.choice_text|truncatechars:120|safe }}</div>
-                  </li>
-                  {% endfor %}
-                </ul>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                  {{ question.difficulty_coefficient|default:question.custom_weight|floatformat:2|default:'-' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                {% if question.pub_date %}
+                  {{ question.pub_date|date:'M d, Y' }}
+                  <div class="text-xs text-gray-400 dark:text-gray-500">{{ question.pub_date|time:'H:i' }}</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 choices-mobile-hidden">
+                <div class="max-w-xs choices-container">
+                  {% if question.question_type == 'essay' %}
+                    <!-- Essay Answer -->
+                    <div class="flex items-start">
+                      <div class="flex-1">
+                        <div class="text-sm text-gray-900 dark:text-white font-medium">
+                          {{ question.correct_answer_text|truncatechars:50 }}
+                        </div>
+                        {% if question.correct_answer_text|length > 50 %}
+                        <button onclick="toggleEssayAnswer({{ forloop.counter }})" class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 mt-1">
+                          Show full answer
+                        </button>
+                        <div id="essay-answer-{{ forloop.counter }}" class="hidden mt-2 text-sm text-gray-700 dark:text-gray-300 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                          {{ question.correct_answer_text }}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% else %}
+                    <!-- Multiple Choice Answers -->
+                    {% for choice in question.choices.all %}
+                    <div class="flex items-center space-x-1 text-xs mb-1">
+                      {% if choice.is_correct %}
+                        <div class="flex items-center text-green-600">
+                          <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                          </svg>
+                          <span class="font-medium">{{ choice.choice_text|smart_question_text|striptags|truncatechars:25 }}</span>
+                        </div>
+                      {% else %}
+                        <div class="flex items-center text-gray-500 dark:text-gray-400">
+                          <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                          </svg>
+                          <span>{{ choice.choice_text|smart_question_text|striptags|truncatechars:25 }}</span>
+                        </div>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  {% endif %}
+                </div>
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center space-x-2">
                   <a href="{% url 'teacher_question_update' question.id %}" class="flex items-center justify-center w-8 h-8 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800" title="Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
                   </a>
                   <button type="button" data-delete-id="{{ question.id }}" data-modal-target="deleteModal" data-modal-toggle="deleteModal" class="delete-btn flex items-center justify-center w-8 h-8 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800" title="Delete">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -205,6 +319,32 @@
   window.toggleFilters = function() {
     const filtersPanel = document.getElementById('filtersPanel');
     if (filtersPanel) filtersPanel.classList.toggle('hidden');
+  }
+
+  function toggleFullText(index) {
+    const fullTextDiv = document.getElementById(`fulltext-${index}`);
+    const button = event.target;
+    
+    if (fullTextDiv.classList.contains('hidden')) {
+      fullTextDiv.classList.remove('hidden');
+      button.textContent = 'Show less';
+    } else {
+      fullTextDiv.classList.add('hidden');
+      button.textContent = 'Show more';
+    }
+  }
+
+  function toggleEssayAnswer(index) {
+    const essayAnswerDiv = document.getElementById(`essay-answer-${index}`);
+    const button = event.target;
+    
+    if (essayAnswerDiv.classList.contains('hidden')) {
+      essayAnswerDiv.classList.remove('hidden');
+      button.textContent = 'Hide full answer';
+    } else {
+      essayAnswerDiv.classList.add('hidden');
+      button.textContent = 'Show full answer';
+    }
   }
 
   document.addEventListener('DOMContentLoaded', function() {
