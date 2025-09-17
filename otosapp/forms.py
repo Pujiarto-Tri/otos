@@ -1005,8 +1005,8 @@ class UniversityForm(forms.ModelForm):
             'minimum_utbk_score': forms.NumberInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
                 'min': '0',
-                'max': '1000',
-                'placeholder': 'Nilai minimum UTBK (0-1000)'
+                'max': '7000',
+                'placeholder': 'Nilai minimum UTBK (0-7000)'
             }),
             'tier': forms.Select(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
@@ -1020,8 +1020,8 @@ class UniversityForm(forms.ModelForm):
         """Validate UTBK score range"""
         score = self.cleaned_data.get('minimum_utbk_score')
         if score is not None:
-            if score < 0 or score > 1000:
-                raise forms.ValidationError('Nilai UTBK harus antara 0-1000')
+            if score < 0 or score > 7000:
+                raise forms.ValidationError('Nilai UTBK harus antara 0-7000')
         return score
 
 
@@ -1151,7 +1151,7 @@ class TryoutPackageCategoryForm(forms.ModelForm):
         # Set help texts
         self.fields['category'].help_text = "Pilih kategori soal"
         self.fields['question_count'].help_text = "Jumlah soal dari kategori ini"
-        self.fields['max_score'].help_text = "Skor maksimum untuk kategori ini (kontribusi ke total 1000)"
+        self.fields['max_score'].help_text = "Skor maksimum untuk kategori ini (kontribusi ke total 7000)"
         self.fields['order'].help_text = "Urutan kategori dalam paket (1 = pertama)"
     
     def clean(self):

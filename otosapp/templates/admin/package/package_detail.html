@@ -53,7 +53,7 @@
                         <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Paket Perlu Perbaikan</h3>
                         <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
                             {% if not package.is_scoring_complete %}
-                            Total skor belum mencapai 1000 poin.
+                            Total skor belum mencapai 7000 poin.
                             {% endif %}
                             {% if package.get_total_questions == 0 %}
                             Belum ada kategori yang dikonfigurasi.
@@ -163,10 +163,10 @@
                     <div class="mt-3">
                         <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                             <span>Poin per soal: {{ pc.get_score_per_question|floatformat:1 }}</span>
-                            <span>{{ pc.max_score }}/1000 poin</span>
+                            <span>{{ pc.max_score }}/7000 poin</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600">
-                            <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio pc.max_score 1000 100 %}%"></div>
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio pc.max_score 7000 100 %}%"></div>
                         </div>
                     </div>
                     
@@ -218,7 +218,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ test.score|floatformat:1 }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">dari 1000</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">dari 7000</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 {% if test.is_passed %}

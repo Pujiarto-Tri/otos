@@ -4729,7 +4729,7 @@ def student_university_target(request):
     # Calculate score percentage for progress bar
     score_percentage = 0
     if latest_utbk_test:
-        score_percentage = min((latest_utbk_test.score / 1000) * 100, 100)
+        score_percentage = min((latest_utbk_test.score / 7000) * 100, 100)
     
     context = {
         'form': form,
@@ -4850,8 +4850,8 @@ def admin_package_create(request):
                 
                 # Validate total score
                 total_score = package.get_total_max_score()
-                if abs(total_score - 1000) > 0.01:
-                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 1000. Silakan sesuaikan.')
+                if abs(total_score - 7000) > 0.01:
+                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 7000. Silakan sesuaikan.')
                 else:
                     messages.success(request, f'Paket "{package.package_name}" berhasil dibuat!')
                 
@@ -4884,8 +4884,8 @@ def admin_package_update(request, package_id):
                 
                 # Validate total score
                 total_score = package.get_total_max_score()
-                if abs(total_score - 1000) > 0.01:
-                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 1000. Silakan sesuaikan.')
+                if abs(total_score - 7000) > 0.01:
+                    messages.warning(request, f'Peringatan: Total skor adalah {total_score}, bukan 7000. Silakan sesuaikan.')
                 else:
                     messages.success(request, f'Paket "{package.package_name}" berhasil diperbarui!')
                 
@@ -4954,9 +4954,9 @@ def admin_package_detail(request, package_id):
         'pass_rate': 0
     }
     
-    # Calculate pass rate (60% of 1000 = 600)
+    # Calculate pass rate (60% of 7000 = 4200)
     if statistics['total_attempts'] > 0:
-        passed_tests = package_tests.filter(score__gte=600).count()
+        passed_tests = package_tests.filter(score__gte=4200).count()
         statistics['pass_rate'] = round((passed_tests / statistics['total_attempts']) * 100, 1)
     
     # Get recent test results
