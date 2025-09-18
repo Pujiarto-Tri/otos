@@ -1443,6 +1443,11 @@ def register(request):
 @admin_or_operator_required
 def user_list(request):
     users_list = User.objects.all().order_by('-date_joined')
+    
+    # If the current user is an operator, exclude admin users
+    if request.user.is_operator():
+        users_list = users_list.exclude(role__role_name='Admin')
+    
     q = request.GET.get('q', '').strip()
     role = request.GET.get('role', '').strip()
     if q:
@@ -1483,20 +1488,25 @@ def user_list(request):
 @admin_or_operator_required
 def user_create(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST, current_user=request.user)
         if form.is_valid():
             form.save()
             return redirect('user_list')
     else:
-        form = CustomUserCreationForm()
+        form = CustomUserCreationForm(current_user=request.user)
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Add New User'})
 
 @login_required
 @admin_or_operator_required
 def user_update(request, user_id):
     user = get_object_or_404(User, id=user_id)
+    
+    # Prevent operators from editing admin users
+    if request.user.is_operator() and user.is_admin():
+        raise PermissionDenied("Operators cannot edit admin users.")
+    
     if request.method == 'POST':
-        form = UserUpdateForm(request.POST, instance=user)
+        form = UserUpdateForm(request.POST, instance=user, current_user=request.user)
         if form.is_valid():
             # Prevent Operator from assigning Admin role
             try:
@@ -1510,13 +1520,18 @@ def user_update(request, user_id):
                 form.save()
                 return redirect('user_list')
     else:
-        form = UserUpdateForm(instance=user)
+        form = UserUpdateForm(instance=user, current_user=request.user)
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Edit User'})
 
 @login_required
 @admin_or_operator_required
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
+    
+    # Prevent operators from deleting admin users
+    if request.user.is_operator() and user.is_admin():
+        raise PermissionDenied("Operators cannot delete admin users.")
+    
     if request.method == 'POST':
         user.delete()
         return redirect('user_list')

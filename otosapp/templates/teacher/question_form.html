@@ -366,6 +366,189 @@
         .choice-item.optional:hover {
             opacity: 1;
         }
+        
+        /* Image Resizer/Cropper Styles */
+        .image-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+        
+        .image-container.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+        
+        .image-resizer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #3b82f6;
+            box-sizing: border-box;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .image-container.selected .image-resizer {
+            display: block;
+            pointer-events: auto;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: auto;
+        }
+        
+        .resize-handle:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+        
+        .resize-handle.nw-resize {
+            top: -6px;
+            left: -6px;
+            cursor: nw-resize;
+        }
+        
+        .resize-handle.ne-resize {
+            top: -6px;
+            right: -6px;
+            cursor: ne-resize;
+        }
+        
+        .resize-handle.sw-resize {
+            bottom: -6px;
+            left: -6px;
+            cursor: sw-resize;
+        }
+        
+        .resize-handle.se-resize {
+            bottom: -6px;
+            right: -6px;
+            cursor: se-resize;
+        }
+        
+        .resize-handle.n-resize {
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: n-resize;
+        }
+        
+        .resize-handle.s-resize {
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: s-resize;
+        }
+        
+        .resize-handle.w-resize {
+            top: 50%;
+            left: -6px;
+            transform: translateY(-50%);
+            cursor: w-resize;
+        }
+        
+        .resize-handle.e-resize {
+            top: 50%;
+            right: -6px;
+            transform: translateY(-50%);
+            cursor: e-resize;
+        }
+        
+        .image-toolbar {
+            position: absolute;
+            top: -45px;
+            left: 0;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            padding: 8px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .image-container.selected .image-toolbar {
+            display: flex;
+        }
+        
+        .toolbar-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 4px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .toolbar-btn:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .toolbar-btn.danger {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+        
+        .toolbar-btn.danger:hover {
+            background: #dc2626;
+        }
+        
+        .toolbar-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+        
+        /* Dark mode adjustments */
+        .dark .image-container.selected {
+            outline-color: #60a5fa;
+        }
+        
+        .dark .image-resizer {
+            border-color: #60a5fa;
+        }
+        
+        .dark .resize-handle {
+            background: #60a5fa;
+            border-color: #1f2937;
+        }
+        
+        .dark .resize-handle:hover {
+            background: #3b82f6;
+        }
+        
+        .dark .image-toolbar {
+            background: rgba(31, 41, 55, 0.9);
+        }
+        
+        .dark .toolbar-btn {
+            background: rgba(55, 65, 81, 0.9);
+            color: #f9fafb;
+        }
+        
+        .dark .toolbar-btn:hover {
+            background: #4b5563;
+        }
     </style>
 {% endblock %}
 
@@ -1769,27 +1952,92 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (data.url) {
+              // Create image container with resizer
+              const imageContainer = document.createElement('div');
+              imageContainer.className = 'image-container';
+              imageContainer.style.display = 'inline-block';
+              imageContainer.style.margin = '10px 0';
+              imageContainer.style.maxWidth = '100%';
+              
               // Create image element
               const img = document.createElement('img');
               img.src = data.url;
               img.style.maxWidth = '100%';
               img.style.height = 'auto';
               img.style.display = 'block';
-              img.style.margin = '10px 0';
               img.style.borderRadius = '8px';
               img.style.cursor = 'pointer';
-              img.onclick = function() {
-                window.openImageModal(data.url, 'Uploaded Image');
-              };
+              img.dataset.originalSrc = data.url;
               
-              // Insert image at cursor position
+              // Create resizer overlay
+              const resizer = document.createElement('div');
+              resizer.className = 'image-resizer';
+              
+              // Create resize handles
+              const handles = ['nw-resize', 'ne-resize', 'sw-resize', 'se-resize', 'n-resize', 's-resize', 'w-resize', 'e-resize'];
+              handles.forEach(handleClass => {
+                const handle = document.createElement('div');
+                handle.className = `resize-handle ${handleClass}`;
+                resizer.appendChild(handle);
+              });
+              
+              // Create toolbar
+              const toolbar = document.createElement('div');
+              toolbar.className = 'image-toolbar';
+              toolbar.innerHTML = `
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)">25%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)">50%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)">75%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)">100%</button>
+                <button type="button" class="toolbar-btn" onclick="cropImage(this)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h3m4 1v2m0 0V2a1 1 0 011-1h3m0 1v2m0 0h2a1 1 0 011 1v3m-1 4h2m0 0v3a1 1 0 01-1 1h-3m-4-1v2m0 0v2a1 1 0 01-1 1H7m-4-1v-2m0 0H2a1 1 0 01-1-1V7m1-4h2"/>
+                  </svg>
+                  Crop
+                </button>
+                <button type="button" class="toolbar-btn" onclick="resetImageSize(this)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  Reset
+                </button>
+                <button type="button" class="toolbar-btn" onclick="openImageModal('${data.url}', 'Uploaded Image')">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  Preview
+                </button>
+                <button type="button" class="toolbar-btn danger" onclick="removeImage(this)">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Delete
+                </button>
+              `;
+              
+              // Assemble the image container
+              imageContainer.appendChild(img);
+              imageContainer.appendChild(resizer);
+              imageContainer.appendChild(toolbar);
+              
+              // Add click handler for selection
+              img.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                selectImage(imageContainer);
+              });
+              
+              // Add resize functionality
+              addResizeListeners(imageContainer);
+              
+              // Insert image container at cursor position
               const selection = window.getSelection();
               if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                range.insertNode(img);
+                range.insertNode(imageContainer);
                 range.collapse(false);
               } else {
-                editor.appendChild(img);
+                editor.appendChild(imageContainer);
               }
               
               // Update textarea
@@ -2746,6 +2994,304 @@ document.addEventListener('DOMContentLoaded', function() {
                         return '<svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>';
                 }
             }
+            
+            // Image Resizing/Cropping Functions
+            let selectedImage = null;
+            let isResizing = false;
+            let resizeStartPos = { x: 0, y: 0 };
+            let resizeStartSize = { width: 0, height: 0 };
+            let currentHandle = null;
+            
+            // Global functions for toolbar actions
+            window.selectImage = function(imageContainer) {
+                // Deselect previously selected image
+                if (selectedImage && selectedImage !== imageContainer) {
+                    selectedImage.classList.remove('selected');
+                }
+                
+                // Select current image
+                selectedImage = imageContainer;
+                imageContainer.classList.add('selected');
+                
+                // Close selection when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', deselectImage, { once: true });
+                }, 10);
+            };
+            
+            function deselectImage(e) {
+                if (selectedImage && !selectedImage.contains(e.target)) {
+                    selectedImage.classList.remove('selected');
+                    selectedImage = null;
+                }
+            }
+            
+            window.addResizeListeners = function(imageContainer) {
+                const resizer = imageContainer.querySelector('.image-resizer');
+                const img = imageContainer.querySelector('img');
+                const handles = resizer.querySelectorAll('.resize-handle');
+                
+                handles.forEach(handle => {
+                    handle.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        isResizing = true;
+                        currentHandle = this;
+                        resizeStartPos = { x: e.clientX, y: e.clientY };
+                        
+                        const rect = img.getBoundingClientRect();
+                        resizeStartSize = { width: rect.width, height: rect.height };
+                        
+                        document.addEventListener('mousemove', handleResize);
+                        document.addEventListener('mouseup', stopResize);
+                        document.body.style.cursor = this.style.cursor;
+                        document.body.style.userSelect = 'none';
+                    });
+                });
+            };
+            
+            function handleResize(e) {
+                if (!isResizing || !currentHandle || !selectedImage) return;
+                
+                const img = selectedImage.querySelector('img');
+                const deltaX = e.clientX - resizeStartPos.x;
+                const deltaY = e.clientY - resizeStartPos.y;
+                
+                const handleClass = currentHandle.classList.toString();
+                let newWidth = resizeStartSize.width;
+                let newHeight = resizeStartSize.height;
+                
+                // Calculate new dimensions based on handle
+                if (handleClass.includes('e-resize') || handleClass.includes('se-resize') || handleClass.includes('ne-resize')) {
+                    newWidth = Math.max(50, resizeStartSize.width + deltaX);
+                }
+                if (handleClass.includes('w-resize') || handleClass.includes('sw-resize') || handleClass.includes('nw-resize')) {
+                    newWidth = Math.max(50, resizeStartSize.width - deltaX);
+                }
+                if (handleClass.includes('s-resize') || handleClass.includes('se-resize') || handleClass.includes('sw-resize')) {
+                    newHeight = Math.max(50, resizeStartSize.height + deltaY);
+                }
+                if (handleClass.includes('n-resize') || handleClass.includes('ne-resize') || handleClass.includes('nw-resize')) {
+                    newHeight = Math.max(50, resizeStartSize.height - deltaY);
+                }
+                
+                // Maintain aspect ratio for corner handles
+                if (handleClass.includes('se-resize') || handleClass.includes('sw-resize') || 
+                    handleClass.includes('ne-resize') || handleClass.includes('nw-resize')) {
+                    const aspectRatio = resizeStartSize.width / resizeStartSize.height;
+                    if (e.shiftKey) {
+                        // Force maintain aspect ratio when Shift is held
+                        newHeight = newWidth / aspectRatio;
+                    }
+                }
+                
+                img.style.width = newWidth + 'px';
+                img.style.height = newHeight + 'px';
+                
+                // Update textarea content
+                updateEditorContent(selectedImage);
+            }
+            
+            function stopResize() {
+                isResizing = false;
+                currentHandle = null;
+                document.removeEventListener('mousemove', handleResize);
+                document.removeEventListener('mouseup', stopResize);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+            
+            window.cropImage = function(button) {
+                const imageContainer = button.closest('.image-container');
+                const img = imageContainer.querySelector('img');
+                
+                // Simple crop simulation - just set max dimensions
+                const maxWidth = 400;
+                const maxHeight = 300;
+                
+                const currentWidth = img.offsetWidth;
+                const currentHeight = img.offsetHeight;
+                
+                if (currentWidth > maxWidth || currentHeight > maxHeight) {
+                    const scale = Math.min(maxWidth / currentWidth, maxHeight / currentHeight);
+                    img.style.width = (currentWidth * scale) + 'px';
+                    img.style.height = (currentHeight * scale) + 'px';
+                    
+                    updateEditorContent(imageContainer);
+                    showNotification('Image cropped to fit maximum dimensions', 'success');
+                } else {
+                    showNotification('Image is already within crop dimensions', 'info');
+                }
+            };
+            
+            window.resizeImageToPercent = function(button, percentage) {
+                const imageContainer = button.closest('.image-container');
+                const img = imageContainer.querySelector('img');
+                
+                // Get the original image dimensions
+                const tempImg = new Image();
+                tempImg.onload = function() {
+                    const originalWidth = this.naturalWidth;
+                    const originalHeight = this.naturalHeight;
+                    
+                    // Calculate new dimensions based on percentage
+                    const newWidth = (originalWidth * percentage) / 100;
+                    const newHeight = (originalHeight * percentage) / 100;
+                    
+                    // Apply new size
+                    img.style.width = newWidth + 'px';
+                    img.style.height = newHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    
+                    updateEditorContent(imageContainer);
+                    showNotification(`Image resized to ${percentage}%!`, 'success');
+                };
+                tempImg.src = img.dataset.originalSrc || img.src;
+            };
+            
+            window.resetImageSize = function(button) {
+                const imageContainer = button.closest('.image-container');
+                const img = imageContainer.querySelector('img');
+                
+                // Reset to original size
+                img.style.width = '';
+                img.style.height = '';
+                img.style.maxWidth = '100%';
+                
+                updateEditorContent(imageContainer);
+                showNotification('Image size reset to original', 'success');
+            };
+            
+            window.removeImage = function(button) {
+                const imageContainer = button.closest('.image-container');
+                
+                if (confirm('Are you sure you want to remove this image?')) {
+                    const editor = imageContainer.closest('[data-wysiwyg="true"]');
+                    imageContainer.remove();
+                    
+                    if (editor) {
+                        updateEditorContent(editor);
+                    }
+                    
+                    showNotification('Image removed', 'success');
+                }
+            };
+            
+            function updateEditorContent(container) {
+                const editor = container.closest ? container.closest('[data-wysiwyg="true"]') : container;
+                if (!editor) return;
+                
+                // Update corresponding textarea
+                let textarea = null;
+                if (editor.id === 'wysiwyg-question-text-teacher') {
+                    textarea = document.getElementById('id_question_text');
+                } else if (editor.id === 'wysiwyg-explanation-text-teacher') {
+                    textarea = document.getElementById('id_explanation');
+                } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+                    const choiceNumber = editor.id.split('-').pop();
+                    const choiceIndex = parseInt(choiceNumber) - 1;
+                    textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+                }
+                
+                if (textarea) {
+                    textarea.value = editor.innerHTML;
+                }
+                
+                // Trigger input event for any listeners
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            // Global click handler to deselect images
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.image-container') && selectedImage) {
+                    selectedImage.classList.remove('selected');
+                    selectedImage = null;
+                }
+            });
+            
+            // Initialize existing images on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    document.querySelectorAll('[data-wysiwyg="true"] img').forEach(img => {
+                        // Skip if already in an image-container
+                        if (img.closest('.image-container')) return;
+                        
+                        // Wrap existing images
+                        const imageContainer = document.createElement('div');
+                        imageContainer.className = 'image-container';
+                        imageContainer.style.display = 'inline-block';
+                        imageContainer.style.margin = '10px 0';
+                        imageContainer.style.maxWidth = '100%';
+                        
+                        // Create resizer overlay
+                        const resizer = document.createElement('div');
+                        resizer.className = 'image-resizer';
+                        
+                        // Create resize handles
+                        const handles = ['nw-resize', 'ne-resize', 'sw-resize', 'se-resize', 'n-resize', 's-resize', 'w-resize', 'e-resize'];
+                        handles.forEach(handleClass => {
+                            const handle = document.createElement('div');
+                            handle.className = `resize-handle ${handleClass}`;
+                            resizer.appendChild(handle);
+                        });
+                        
+                        // Create toolbar
+                        const toolbar = document.createElement('div');
+                        toolbar.className = 'image-toolbar';
+                        toolbar.innerHTML = `
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)">25%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)">50%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)">75%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)">100%</button>
+                            <button type="button" class="toolbar-btn" onclick="cropImage(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h3m4 1v2m0 0V2a1 1 0 011-1h3m0 1v2m0 0h2a1 1 0 011 1v3m-1 4h2m0 0v3a1 1 0 01-1 1h-3m-4-1v2m0 0v2a1 1 0 01-1 1H7m-4-1v-2m0 0H2a1 1 0 01-1-1V7m1-4h2"/>
+                                </svg>
+                                Crop
+                            </button>
+                            <button type="button" class="toolbar-btn" onclick="resetImageSize(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Reset
+                            </button>
+                            <button type="button" class="toolbar-btn" onclick="openImageModal('${img.src}', 'Image Preview')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                Preview
+                            </button>
+                            <button type="button" class="toolbar-btn danger" onclick="removeImage(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Delete
+                            </button>
+                        `;
+                        
+                        // Wrap the image
+                        img.parentNode.insertBefore(imageContainer, img);
+                        imageContainer.appendChild(img);
+                        imageContainer.appendChild(resizer);
+                        imageContainer.appendChild(toolbar);
+                        
+                        // Update image styles
+                        img.style.cursor = 'pointer';
+                        img.dataset.originalSrc = img.src;
+                        
+                        // Add click handler
+                        img.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            selectImage(imageContainer);
+                        });
+                        
+                        // Add resize functionality
+                        addResizeListeners(imageContainer);
+                    });
+                }, 1000);
+            });
             
             // Mobile-friendly enhancements
             if (window.innerWidth <= 768) {

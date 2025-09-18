@@ -12,10 +12,29 @@ class CustomUserCreationForm(UserCreationForm):
             'placeholder': 'Masukkan nomor HP (contoh: +62812...)'
         })
     )
+    
+    role = forms.ModelChoiceField(
+        queryset=Role.objects.all(),
+        required=True,
+        label="User Role",
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+        })
+    )
 
     class Meta:
         model = User
-        fields = ('email', 'phone_number', 'password1', 'password2')
+        fields = ('email', 'phone_number', 'role', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        # Extract current_user from kwargs if provided
+        current_user = kwargs.pop('current_user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter roles based on current user permissions
+        if current_user and current_user.is_operator():
+            # Operators cannot assign Admin role
+            self.fields['role'].queryset = Role.objects.exclude(role_name='Admin')
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -23,10 +42,8 @@ class CustomUserCreationForm(UserCreationForm):
         # save phone number from form
         user.phone_number = self.cleaned_data.get('phone_number')
 
-        # Set default role sebagai Visitor untuk user baru
-        if not user.role:
-            default_role, created = Role.objects.get_or_create(role_name='Visitor')
-            user.role = default_role
+        # Set role from form data instead of default
+        user.role = self.cleaned_data.get('role')
 
         if commit:
             user.save()
@@ -160,6 +177,8 @@ class UserUpdateForm(forms.ModelForm):
         fields = ['email', 'first_name', 'last_name', 'role', 'phone_number']
 
     def __init__(self, *args, **kwargs):
+        # Extract current_user from kwargs if provided
+        current_user = kwargs.pop('current_user', None)
         super().__init__(*args, **kwargs)
 
         # Add help text for fields
@@ -172,6 +191,11 @@ class UserUpdateForm(forms.ModelForm):
         self.fields['email'].label = "Email Address"
         self.fields['first_name'].label = "First Name"
         self.fields['last_name'].label = "Last Name"
+        
+        # Filter roles based on current user permissions
+        if current_user and current_user.is_operator():
+            # Operators cannot assign Admin role
+            self.fields['role'].queryset = Role.objects.exclude(role_name='Admin')
 
     def save(self, commit=True):
         user = super().save(commit=False)

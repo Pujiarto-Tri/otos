@@ -201,6 +201,161 @@
             color: #bfdbfe;
         }
 
+        /* Image resizing and dragging styles */
+        .image-resizer {
+            position: relative;
+            display: inline-block;
+            border: 2px dashed transparent;
+            transition: border-color 0.2s ease;
+        }
+        
+        .image-resizer:hover {
+            border-color: #3b82f6;
+        }
+        
+        .image-resizer.selected {
+            border-color: #1d4ed8;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .resize-handle {
+            position: absolute;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+        
+        .image-resizer.selected .resize-handle {
+            opacity: 1;
+        }
+        
+        .resize-handle.nw {
+            top: -6px;
+            left: -6px;
+            cursor: nw-resize;
+        }
+        
+        .resize-handle.ne {
+            top: -6px;
+            right: -6px;
+            cursor: ne-resize;
+        }
+        
+        .resize-handle.sw {
+            bottom: -6px;
+            left: -6px;
+            cursor: sw-resize;
+        }
+        
+        .resize-handle.se {
+            bottom: -6px;
+            right: -6px;
+            cursor: se-resize;
+        }
+        
+        .resize-handle.n {
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: n-resize;
+        }
+        
+        .resize-handle.s {
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: s-resize;
+        }
+        
+        .resize-handle.e {
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: e-resize;
+        }
+        
+        .resize-handle.w {
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: w-resize;
+        }
+        
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .crop-area {
+            position: absolute;
+            border: 2px dashed #fff;
+            background: transparent;
+            min-width: 20px;
+            min-height: 20px;
+            cursor: move;
+            pointer-events: all;
+            z-index: 6;
+        }
+        
+        .crop-handle {
+            position: absolute;
+            background: #fff;
+            border: 2px solid #3b82f6;
+            width: 10px;
+            height: 10px;
+            z-index: 7;
+        }
+        
+        .crop-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+        .crop-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+        .crop-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+        .crop-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+        
+        .image-edit-toolbar {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 15;
+        }
+        
+        .image-resizer.selected .image-edit-toolbar {
+            opacity: 1;
+        }
+        
+        .toolbar-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 3px 6px;
+            margin: 0 2px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         /* Text inputs and textareas */
         textarea,
         input[type="text"],
@@ -931,7 +1086,9 @@
                                                                         <div class="mt-2">
                                                                             <img src="{{ form.instance.choice_image.url }}" 
                                                                                  alt="Legacy choice image" 
-                                                                                 class="max-w-xs h-auto rounded-lg border border-yellow-300">
+                                                                                 class="max-w-xs h-auto rounded-lg border border-yellow-300 cursor-pointer hover:border-blue-400 transition-all duration-200 legacy-image"
+                                                                                 data-original-url="{{ form.instance.choice_image.url }}"
+                                                                                 onclick="showLegacyImageOptions(this)">
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1769,27 +1926,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (data.url) {
+              // Create image resizer container
+              const resizer = document.createElement('div');
+              resizer.className = 'image-resizer';
+              resizer.style.display = 'inline-block';
+              resizer.style.position = 'relative';
+              resizer.style.margin = '10px 0';
+              
               // Create image element
               const img = document.createElement('img');
               img.src = data.url;
               img.style.maxWidth = '100%';
               img.style.height = 'auto';
               img.style.display = 'block';
-              img.style.margin = '10px 0';
               img.style.borderRadius = '8px';
-              img.style.cursor = 'pointer';
-              img.onclick = function() {
-                window.openImageModal(data.url, 'Uploaded Image');
-              };
+              img.classList.add('editable-image');
+              img.setAttribute('data-original-url', data.url);
               
-              // Insert image at cursor position
+              // Create resize handles
+              const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+              handles.forEach(handle => {
+                const handleEl = document.createElement('div');
+                handleEl.className = `resize-handle ${handle}`;
+                handleEl.setAttribute('data-handle', handle);
+                resizer.appendChild(handleEl);
+              });
+              
+              // Create toolbar
+              const toolbar = document.createElement('div');
+              toolbar.className = 'image-edit-toolbar';
+              toolbar.innerHTML = `
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)" title="25%">25%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)" title="50%">50%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)" title="75%">75%</button>
+                <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)" title="100%">100%</button>
+                <button type="button" class="toolbar-btn" onclick="startCropMode(this)" title="Crop">✂️</button>
+                <button type="button" class="toolbar-btn" onclick="resetImageSize(this)" title="Reset">↻</button>
+                <button type="button" class="toolbar-btn" onclick="removeImageFromResizer(this)" title="Remove">🗑️</button>
+                <button type="button" class="toolbar-btn" onclick="previewImageFromResizer(this)" title="Preview">👁️</button>
+              `;
+              resizer.appendChild(toolbar);
+              
+              // Add image to resizer
+              resizer.appendChild(img);
+              
+              // Initialize drag and resize functionality
+              initializeImageResizer(resizer, editor);
+              
+              // Insert resizer at cursor position
               const selection = window.getSelection();
               if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                range.insertNode(img);
+                range.insertNode(resizer);
                 range.collapse(false);
               } else {
-                editor.appendChild(img);
+                editor.appendChild(resizer);
               }
               
               // Update textarea
@@ -1813,7 +2004,7 @@ document.addEventListener('DOMContentLoaded', function() {
               editor.dispatchEvent(new Event('input', { bubbles: true }));
               
               // Show success message
-              showNotification('Image uploaded successfully!', 'success');
+              showNotification('Image uploaded successfully! Click and drag to resize, or use toolbar for more options.', 'success');
             } else {
               showNotification('Failed to upload image: ' + (data.error || 'Unknown error'), 'error');
             }
@@ -2111,6 +2302,65 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize choice counter on page load
   updateChoiceCounter();
+  
+  // Make existing images in editors clickable for editing
+  document.querySelectorAll('[data-wysiwyg="true"] img').forEach(img => {
+    if (!img.closest('.image-resizer')) {
+      wrapImageInResizer(img);
+    }
+  });
+
+  // Function to wrap existing images in resizer containers
+  function wrapImageInResizer(img) {
+    const editor = img.closest('[data-wysiwyg="true"]');
+    if (!editor) return;
+    
+    // Create resizer container
+    const resizer = document.createElement('div');
+    resizer.className = 'image-resizer';
+    resizer.style.display = 'inline-block';
+    resizer.style.position = 'relative';
+    resizer.style.margin = '10px 0';
+    
+    // Store original URL if not already set
+    if (!img.getAttribute('data-original-url')) {
+      img.setAttribute('data-original-url', img.src);
+    }
+    
+    // Add editable-image class
+    img.classList.add('editable-image');
+    
+    // Create resize handles
+    const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+    handles.forEach(handle => {
+      const handleEl = document.createElement('div');
+      handleEl.className = `resize-handle ${handle}`;
+      handleEl.setAttribute('data-handle', handle);
+      resizer.appendChild(handleEl);
+    });
+    
+    // Create toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'image-edit-toolbar';
+    toolbar.innerHTML = `
+      <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)" title="25%">25%</button>
+      <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)" title="50%">50%</button>
+      <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)" title="75%">75%</button>
+      <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)" title="100%">100%</button>
+      <button type="button" class="toolbar-btn" onclick="startCropMode(this)" title="Crop">✂️</button>
+      <button type="button" class="toolbar-btn" onclick="resetImageSize(this)" title="Reset">↻</button>
+      <button type="button" class="toolbar-btn" onclick="removeImageFromResizer(this)" title="Remove">🗑️</button>
+      <button type="button" class="toolbar-btn" onclick="previewImageFromResizer(this)" title="Preview">👁️</button>
+    `;
+    resizer.appendChild(toolbar);
+    
+    // Move image into resizer
+    img.parentNode.insertBefore(resizer, img);
+    resizer.appendChild(img);
+    
+    // Initialize drag and resize functionality
+    initializeImageResizer(resizer, editor);
+  }
   
   // Render existing LaTeX formulas on page load
   setTimeout(() => {
@@ -2757,6 +3007,823 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
             }
+
+            // Image editing functionality
+            window.showImageEditOptions = function(imgElement, editor) {
+                // Remove any existing edit menu
+                const existingMenu = document.querySelector('.image-edit-menu');
+                if (existingMenu) {
+                    existingMenu.remove();
+                }
+
+                // Create edit options menu
+                const menu = document.createElement('div');
+                menu.className = 'image-edit-menu absolute bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50';
+                menu.style.minWidth = '200px';
+
+                // Position the menu near the image
+                const rect = imgElement.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.top = (rect.top + window.scrollY - 10) + 'px';
+                menu.style.left = (rect.right + 10) + 'px';
+
+                // Add menu options
+                menu.innerHTML = `
+                    <div class="space-y-1">
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeImage(this, 'small')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Small (25%)
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeImage(this, 'medium')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Medium (50%)
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeImage(this, 'large')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Large (75%)
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeImage(this, 'full')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Full (100%)
+                        </button>
+                        <hr class="my-1 border-gray-200 dark:border-gray-600">
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="openImageCropModal(this)">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21L21 7M7 21H3V17M21 7V3H17"></path>
+                            </svg>
+                            Crop Image
+                        </button>
+                        <hr class="my-1 border-gray-200 dark:border-gray-600">
+                        <button class="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded flex items-center" onclick="previewImage(this)">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Preview Full Size
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center" onclick="removeImage(this)">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Remove Image
+                        </button>
+                    </div>
+                `;
+
+                // Store references
+                menu.imgElement = imgElement;
+                menu.editor = editor;
+
+                // Add to document
+                document.body.appendChild(menu);
+
+                // Close menu when clicking outside
+                setTimeout(() => {
+                    const closeHandler = function(e) {
+                        if (!menu.contains(e.target) && e.target !== imgElement) {
+                            menu.remove();
+                            document.removeEventListener('click', closeHandler);
+                        }
+                    };
+                    document.addEventListener('click', closeHandler);
+                }, 100);
+            };
+
+            // Resize image function
+            window.resizeImage = function(button, size) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+                const editor = menu.editor;
+
+                // Define size percentages
+                const sizes = {
+                    'small': '25%',
+                    'medium': '50%', 
+                    'large': '75%',
+                    'full': '100%'
+                };
+
+                // Apply new size
+                imgElement.style.maxWidth = sizes[size];
+                imgElement.style.width = sizes[size];
+
+                // Update textarea
+                syncEditorToTextarea(editor);
+
+                // Show notification
+                showNotification(`Image resized to ${size}`, 'success');
+
+                // Close menu
+                menu.remove();
+            };
+
+            // Preview image function
+            window.previewImage = function(button) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+                const originalUrl = imgElement.getAttribute('data-original-url') || imgElement.src;
+                
+                window.openImageModal(originalUrl, 'Image Preview');
+                menu.remove();
+            };
+
+            // Remove image function
+            window.removeImage = function(button) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+                const editor = menu.editor;
+
+                if (confirm('Are you sure you want to remove this image?')) {
+                    imgElement.remove();
+                    syncEditorToTextarea(editor);
+                    showNotification('Image removed', 'success');
+                }
+                menu.remove();
+            };
+
+            // Helper function to sync editor content to textarea
+            function syncEditorToTextarea(editor) {
+                let textarea = null;
+                if (editor.id === 'wysiwyg-question-text-admin') {
+                    textarea = document.querySelector('#id_question_text');
+                } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+                    textarea = document.querySelector('#id_explanation');
+                } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
+                    const choiceNumber = editor.id.split('-').pop();
+                    const choiceIndex = parseInt(choiceNumber) - 1;
+                    textarea = document.querySelector(`#id_choices-${choiceIndex}-choice_text`);
+                }
+
+                if (textarea) {
+                    textarea.value = editor.innerHTML;
+                }
+
+                // Trigger input event
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            // Crop modal function
+            window.openImageCropModal = function(button) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+                const editor = menu.editor;
+                
+                // For now, show a simple crop interface
+                // In a full implementation, you might want to integrate a cropping library like Cropper.js
+                const cropOptions = [
+                    { name: 'Square (1:1)', ratio: '1:1' },
+                    { name: 'Wide (16:9)', ratio: '16:9' },
+                    { name: 'Portrait (3:4)', ratio: '3:4' },
+                    { name: 'Custom', ratio: 'custom' }
+                ];
+
+                let optionsHtml = '<div class="space-y-2 p-4">';
+                optionsHtml += '<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Crop Options</h3>';
+                optionsHtml += '<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Select an aspect ratio to crop your image:</p>';
+                
+                cropOptions.forEach((option, index) => {
+                    optionsHtml += `
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded border border-gray-200 dark:border-gray-600" 
+                                onclick="applyCrop('${option.ratio}', this)">
+                            ${option.name}
+                        </button>
+                    `;
+                });
+                
+                optionsHtml += '</div>';
+
+                // Create crop modal
+                const cropModal = document.createElement('div');
+                cropModal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+                cropModal.innerHTML = `
+                    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full mx-4">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Crop Image</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        ${optionsHtml}
+                    </div>
+                `;
+
+                // Store references for crop function
+                cropModal.imgElement = imgElement;
+                cropModal.editor = editor;
+
+                document.body.appendChild(cropModal);
+                menu.remove();
+            };
+
+            // Apply crop function
+            window.applyCrop = function(ratio, button) {
+                const modal = button.closest('.fixed');
+                const imgElement = modal.imgElement;
+                const editor = modal.editor;
+
+                // Apply crop styles based on ratio
+                if (ratio === '1:1') {
+                    imgElement.style.aspectRatio = '1';
+                    imgElement.style.objectFit = 'cover';
+                } else if (ratio === '16:9') {
+                    imgElement.style.aspectRatio = '16/9';
+                    imgElement.style.objectFit = 'cover';
+                } else if (ratio === '3:4') {
+                    imgElement.style.aspectRatio = '3/4';
+                    imgElement.style.objectFit = 'cover';
+                } else if (ratio === 'custom') {
+                    // For custom, just set object-fit to cover
+                    imgElement.style.objectFit = 'cover';
+                }
+
+                // Ensure the image has a defined height for aspect ratio to work
+                if (ratio !== 'custom') {
+                    imgElement.style.height = 'auto';
+                    imgElement.style.maxHeight = '300px';
+                }
+
+                // Update textarea
+                syncEditorToTextarea(editor);
+
+                // Show notification
+                showNotification(`Image cropped to ${ratio === 'custom' ? 'custom' : ratio} aspect ratio`, 'success');
+
+                // Close modal
+                modal.remove();
+            };
+
+            // Handle legacy image options
+            window.showLegacyImageOptions = function(imgElement) {
+                // Remove any existing edit menu
+                const existingMenu = document.querySelector('.image-edit-menu');
+                if (existingMenu) {
+                    existingMenu.remove();
+                }
+
+                // Create edit options menu for legacy images
+                const menu = document.createElement('div');
+                menu.className = 'image-edit-menu absolute bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50';
+                menu.style.minWidth = '200px';
+
+                // Position the menu near the image
+                const rect = imgElement.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.top = (rect.top + window.scrollY - 10) + 'px';
+                menu.style.left = (rect.right + 10) + 'px';
+
+                // Add menu options for legacy images
+                menu.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                            Legacy Image Options
+                        </div>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeLegacyImage(this, 'small')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Small
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeLegacyImage(this, 'medium')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Medium
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center" onclick="resizeLegacyImage(this, 'large')">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 13l6 6"></path>
+                            </svg>
+                            Resize to Large
+                        </button>
+                        <button class="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded flex items-center" onclick="previewLegacyImage(this)">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Preview Full Size
+                        </button>
+                    </div>
+                `;
+
+                // Store reference
+                menu.imgElement = imgElement;
+
+                // Add to document
+                document.body.appendChild(menu);
+
+                // Close menu when clicking outside
+                setTimeout(() => {
+                    const closeHandler = function(e) {
+                        if (!menu.contains(e.target) && e.target !== imgElement) {
+                            menu.remove();
+                            document.removeEventListener('click', closeHandler);
+                        }
+                    };
+                    document.addEventListener('click', closeHandler);
+                }, 100);
+            };
+
+            // Resize legacy image function
+            window.resizeLegacyImage = function(button, size) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+
+                // Define size classes
+                const sizes = {
+                    'small': 'max-w-32',
+                    'medium': 'max-w-48', 
+                    'large': 'max-w-64'
+                };
+
+                // Remove existing max-width classes
+                imgElement.classList.remove('max-w-xs', 'max-w-32', 'max-w-48', 'max-w-64');
+                
+                // Apply new size class
+                imgElement.classList.add(sizes[size]);
+
+                // Show notification
+                showNotification(`Legacy image resized to ${size}`, 'success');
+
+                // Close menu
+                menu.remove();
+            };
+
+            // Preview legacy image function
+            window.previewLegacyImage = function(button) {
+                const menu = button.closest('.image-edit-menu');
+                const imgElement = menu.imgElement;
+                const originalUrl = imgElement.getAttribute('data-original-url') || imgElement.src;
+                
+                window.openImageModal(originalUrl, 'Legacy Image Preview');
+                menu.remove();
+            };
+
+            // Initialize image resizer functionality
+            window.initializeImageResizer = function(resizer, editor) {
+                const img = resizer.querySelector('img');
+                let isResizing = false;
+                let startX, startY, startWidth, startHeight, currentHandle;
+                
+                // Add click handler to select image
+                resizer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Remove selection from other images
+                    document.querySelectorAll('.image-resizer.selected').forEach(r => {
+                        if (r !== resizer) r.classList.remove('selected');
+                    });
+                    resizer.classList.add('selected');
+                });
+                
+                // Add resize handle functionality
+                resizer.querySelectorAll('.resize-handle').forEach(handle => {
+                    handle.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        isResizing = true;
+                        currentHandle = this.getAttribute('data-handle');
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startWidth = img.offsetWidth;
+                        startHeight = img.offsetHeight;
+                        
+                        resizer.classList.add('selected');
+                        document.body.style.userSelect = 'none';
+                        
+                        // Add global mouse events
+                        document.addEventListener('mousemove', handleResize);
+                        document.addEventListener('mouseup', stopResize);
+                    });
+                });
+                
+                function handleResize(e) {
+                    if (!isResizing) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    
+                    // Calculate new dimensions based on handle direction
+                    switch (currentHandle) {
+                        case 'se': // Southeast
+                            newWidth = startWidth + dx;
+                            newHeight = startHeight + dy;
+                            break;
+                        case 'sw': // Southwest
+                            newWidth = startWidth - dx;
+                            newHeight = startHeight + dy;
+                            break;
+                        case 'ne': // Northeast
+                            newWidth = startWidth + dx;
+                            newHeight = startHeight - dy;
+                            break;
+                        case 'nw': // Northwest
+                            newWidth = startWidth - dx;
+                            newHeight = startHeight - dy;
+                            break;
+                        case 'e': // East
+                            newWidth = startWidth + dx;
+                            break;
+                        case 'w': // West
+                            newWidth = startWidth - dx;
+                            break;
+                        case 's': // South
+                            newHeight = startHeight + dy;
+                            break;
+                        case 'n': // North
+                            newHeight = startHeight - dy;
+                            break;
+                    }
+                    
+                    // Apply minimum constraints
+                    newWidth = Math.max(50, newWidth);
+                    newHeight = Math.max(50, newHeight);
+                    
+                    // Apply new dimensions
+                    img.style.width = newWidth + 'px';
+                    img.style.height = newHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                }
+                
+                function stopResize() {
+                    if (!isResizing) return;
+                    
+                    isResizing = false;
+                    document.body.style.userSelect = '';
+                    
+                    // Remove global mouse events
+                    document.removeEventListener('mousemove', handleResize);
+                    document.removeEventListener('mouseup', stopResize);
+                    
+                    // Sync content to textarea
+                    syncEditorToTextarea(editor);
+                    
+                    showNotification('Image resized successfully!', 'success');
+                }
+            };
+
+            // Toolbar functions for image resizer
+            window.startCropMode = function(button) {
+                const resizer = button.closest('.image-resizer');
+                const img = resizer.querySelector('img');
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                // Toggle crop mode
+                if (resizer.querySelector('.crop-overlay')) {
+                    exitCropMode(resizer);
+                } else {
+                    enterCropMode(resizer);
+                }
+            };
+            
+            function enterCropMode(resizer) {
+                const img = resizer.querySelector('img');
+                
+                // Create crop overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'crop-overlay';
+                
+                // Create crop area (starts at center)
+                const cropArea = document.createElement('div');
+                cropArea.className = 'crop-area';
+                const imgRect = img.getBoundingClientRect();
+                const resizerRect = resizer.getBoundingClientRect();
+                
+                // Position crop area in center (25% of image size)
+                const cropWidth = Math.min(200, img.offsetWidth * 0.5);
+                const cropHeight = Math.min(200, img.offsetHeight * 0.5);
+                const left = (img.offsetWidth - cropWidth) / 2;
+                const top = (img.offsetHeight - cropHeight) / 2;
+                
+                cropArea.style.left = left + 'px';
+                cropArea.style.top = top + 'px';
+                cropArea.style.width = cropWidth + 'px';
+                cropArea.style.height = cropHeight + 'px';
+                
+                // Add crop handles
+                ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+                    const handle = document.createElement('div');
+                    handle.className = `crop-handle ${pos}`;
+                    cropArea.appendChild(handle);
+                });
+                
+                overlay.appendChild(cropArea);
+                resizer.appendChild(overlay);
+                
+                // Initialize crop functionality
+                initializeCropArea(cropArea, img, resizer);
+                
+                // Update toolbar button
+                const button = resizer.querySelector('[onclick*="startCropMode"]');
+                button.innerHTML = '✓';
+                button.title = 'Apply Crop';
+                button.type = 'button';
+                button.onclick = function(e) { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    applyCropFromResizer(this); 
+                };
+                
+                showNotification('Crop mode active. Drag the crop area or resize it, then click ✓ to apply.', 'info');
+            }
+            
+            function exitCropMode(resizer) {
+                const overlay = resizer.querySelector('.crop-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+                
+                // Reset toolbar button
+                const button = resizer.querySelector('[onclick*="applyCropFromResizer"]') || 
+                              resizer.querySelector('[title="Apply Crop"]');
+                if (button) {
+                    button.innerHTML = '✂️';
+                    button.title = 'Crop';
+                    button.type = 'button';
+                    button.onclick = function(e) { 
+                        e.preventDefault(); 
+                        e.stopPropagation(); 
+                        startCropMode(this); 
+                    };
+                }
+            }
+            
+            function initializeCropArea(cropArea, img, resizer) {
+                let isDragging = false;
+                let isResizingCrop = false;
+                let startX, startY, startLeft, startTop, startWidth, startHeight, currentCropHandle;
+                
+                // Make crop area draggable
+                cropArea.addEventListener('mousedown', function(e) {
+                    if (e.target.classList.contains('crop-handle')) return;
+                    
+                    e.preventDefault();
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = parseInt(cropArea.style.left);
+                    startTop = parseInt(cropArea.style.top);
+                    
+                    document.addEventListener('mousemove', dragCropArea);
+                    document.addEventListener('mouseup', stopCropDrag);
+                });
+                
+                // Make crop handles resizable
+                cropArea.querySelectorAll('.crop-handle').forEach(handle => {
+                    handle.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        isResizingCrop = true;
+                        currentCropHandle = this.classList[1];
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startLeft = parseInt(cropArea.style.left);
+                        startTop = parseInt(cropArea.style.top);
+                        startWidth = parseInt(cropArea.style.width);
+                        startHeight = parseInt(cropArea.style.height);
+                        
+                        document.addEventListener('mousemove', resizeCropArea);
+                        document.addEventListener('mouseup', stopCropResize);
+                    });
+                });
+                
+                function dragCropArea(e) {
+                    if (!isDragging) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+                    
+                    // Constrain to image bounds
+                    newLeft = Math.max(0, Math.min(newLeft, img.offsetWidth - parseInt(cropArea.style.width)));
+                    newTop = Math.max(0, Math.min(newTop, img.offsetHeight - parseInt(cropArea.style.height)));
+                    
+                    cropArea.style.left = newLeft + 'px';
+                    cropArea.style.top = newTop + 'px';
+                }
+                
+                function resizeCropArea(e) {
+                    if (!isResizingCrop) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    let newLeft = startLeft;
+                    let newTop = startTop;
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    
+                    switch (currentCropHandle) {
+                        case 'se':
+                            newWidth = startWidth + dx;
+                            newHeight = startHeight + dy;
+                            break;
+                        case 'sw':
+                            newLeft = startLeft + dx;
+                            newWidth = startWidth - dx;
+                            newHeight = startHeight + dy;
+                            break;
+                        case 'ne':
+                            newTop = startTop + dy;
+                            newWidth = startWidth + dx;
+                            newHeight = startHeight - dy;
+                            break;
+                        case 'nw':
+                            newLeft = startLeft + dx;
+                            newTop = startTop + dy;
+                            newWidth = startWidth - dx;
+                            newHeight = startHeight - dy;
+                            break;
+                    }
+                    
+                    // Apply constraints
+                    newWidth = Math.max(20, Math.min(newWidth, img.offsetWidth - newLeft));
+                    newHeight = Math.max(20, Math.min(newHeight, img.offsetHeight - newTop));
+                    newLeft = Math.max(0, Math.min(newLeft, img.offsetWidth - newWidth));
+                    newTop = Math.max(0, Math.min(newTop, img.offsetHeight - newHeight));
+                    
+                    cropArea.style.left = newLeft + 'px';
+                    cropArea.style.top = newTop + 'px';
+                    cropArea.style.width = newWidth + 'px';
+                    cropArea.style.height = newHeight + 'px';
+                }
+                
+                function stopCropDrag() {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', dragCropArea);
+                    document.removeEventListener('mouseup', stopCropDrag);
+                }
+                
+                function stopCropResize() {
+                    isResizingCrop = false;
+                    document.removeEventListener('mousemove', resizeCropArea);
+                    document.removeEventListener('mouseup', stopCropResize);
+                }
+            }
+            
+            window.applyCropFromResizer = function(button) {
+                const resizer = button.closest('.image-resizer');
+                const img = resizer.querySelector('img');
+                const cropArea = resizer.querySelector('.crop-area');
+                const editor = resizer.closest('[data-wysiwyg="true"]');
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                if (!cropArea) return;
+                
+                // Get crop dimensions
+                const cropLeft = parseInt(cropArea.style.left);
+                const cropTop = parseInt(cropArea.style.top);
+                const cropWidth = parseInt(cropArea.style.width);
+                const cropHeight = parseInt(cropArea.style.height);
+                
+                // Apply crop using CSS clip-path
+                img.style.clipPath = `inset(${cropTop}px ${img.offsetWidth - cropLeft - cropWidth}px ${img.offsetHeight - cropTop - cropHeight}px ${cropLeft}px)`;
+                
+                // Exit crop mode
+                exitCropMode(resizer);
+                
+                // Sync content
+                syncEditorToTextarea(editor);
+                
+                showNotification('Crop applied successfully!', 'success');
+            };
+            
+            window.resizeImageToPercent = function(button, percentage) {
+                const resizer = button.closest('.image-resizer');
+                const img = resizer.querySelector('img');
+                const editor = resizer.closest('[data-wysiwyg="true"]');
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                // Get the original image dimensions
+                const tempImg = new Image();
+                tempImg.onload = function() {
+                    const originalWidth = this.naturalWidth;
+                    const originalHeight = this.naturalHeight;
+                    
+                    // Calculate new dimensions based on percentage
+                    const newWidth = (originalWidth * percentage) / 100;
+                    const newHeight = (originalHeight * percentage) / 100;
+                    
+                    // Apply new size
+                    img.style.width = newWidth + 'px';
+                    img.style.height = newHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    
+                    // Exit crop mode if active
+                    exitCropMode(resizer);
+                    
+                    // Sync content
+                    syncEditorToTextarea(editor);
+                    
+                    showNotification(`Image resized to ${percentage}%!`, 'success');
+                };
+                tempImg.src = img.dataset.originalSrc || img.src;
+            };
+            
+            window.resetImageSize = function(button) {
+                const resizer = button.closest('.image-resizer');
+                const img = resizer.querySelector('img');
+                const editor = resizer.closest('[data-wysiwyg="true"]');
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                // Reset all modifications
+                img.style.width = '';
+                img.style.height = '';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '';
+                img.style.clipPath = '';
+                img.style.aspectRatio = '';
+                img.style.objectFit = '';
+                
+                // Exit crop mode if active
+                exitCropMode(resizer);
+                
+                // Sync content
+                syncEditorToTextarea(editor);
+                
+                showNotification('Image reset to original size!', 'success');
+            };
+            
+            window.removeImageFromResizer = function(button) {
+                const resizer = button.closest('.image-resizer');
+                const editor = resizer.closest('[data-wysiwyg="true"]');
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                if (confirm('Are you sure you want to remove this image?')) {
+                    resizer.remove();
+                    syncEditorToTextarea(editor);
+                    showNotification('Image removed successfully!', 'success');
+                }
+            };
+            
+            window.previewImageFromResizer = function(button) {
+                const resizer = button.closest('.image-resizer');
+                const img = resizer.querySelector('img');
+                const originalUrl = img.getAttribute('data-original-url') || img.src;
+                
+                // Prevent form submission
+                if (button && button.tagName === 'BUTTON') {
+                    button.type = 'button';
+                }
+                
+                window.openImageModal(originalUrl, 'Image Preview');
+            };
+            
+            // Global click handler to deselect images
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.image-resizer')) {
+                    document.querySelectorAll('.image-resizer.selected').forEach(r => {
+                        r.classList.remove('selected');
+                    });
+                }
+            });
+
+            // Add event delegation for toolbar buttons to prevent form submission
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('toolbar-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // The onclick handlers will still execute
+                }
+            });
         });
     </script>
 
