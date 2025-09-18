@@ -57,7 +57,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                     </svg>
                     <div class="text-sm text-yellow-800 dark:text-yellow-300">
-                        <strong>Peringatan:</strong> Total skor harus 1000 poin untuk simulasi UTBK yang akurat. Saat ini: {{ total_score }} poin.
+                        <strong>Peringatan:</strong> Total skor harus 7000 poin untuk simulasi UTBK yang akurat (7 subtest × 1000 poin). Saat ini: {{ total_score }} poin.
                     </div>
                 </div>
             </div>
@@ -141,7 +141,7 @@
                 <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
                     <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Petunjuk Konfigurasi:</h4>
                     <ul class="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                        <li>• Total skor dari semua kategori harus = 1000 poin</li>
+                        <li>• Total skor dari semua kategori harus = 7000 poin (7 subtest × 1000 poin)</li>
                         <li>• Pastikan setiap kategori memiliki cukup soal sesuai jumlah yang diminta</li>
                         <li>• Urutan kategori menentukan urutan tampil saat tryout</li>
                     </ul>
@@ -295,7 +295,7 @@
                         <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
                             <div id="score-progress" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                         </div>
-                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">Target: 1000 poin</div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">Target: 7000 poin</div>
                     </div>
                 </div>
             </div>
@@ -340,14 +340,14 @@ document.addEventListener('DOMContentLoaded', function() {
         totalElement.textContent = total;
         
         // Update progress bar
-        const percentage = Math.min((total / 1000) * 100, 100);
+        const percentage = Math.min((total / 7000) * 100, 100);
         progressElement.style.width = percentage + '%';
         
         // Color coding
-        if (Math.abs(total - 1000) < 0.01) {
+        if (Math.abs(total - 7000) < 0.01) {
             totalElement.className = 'text-lg font-bold text-green-600 dark:text-green-400';
             progressElement.className = 'bg-green-600 h-2.5 rounded-full transition-all duration-300';
-        } else if (total > 1000) {
+        } else if (total > 7000) {
             totalElement.className = 'text-lg font-bold text-red-600 dark:text-red-400';
             progressElement.className = 'bg-red-600 h-2.5 rounded-full transition-all duration-300';
         } else {

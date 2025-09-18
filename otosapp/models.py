@@ -358,12 +358,12 @@ class TryoutPackage(models.Model):
         return sum([pc.question_count for pc in self.tryoutpackagecategory_set.all()])
     
     def get_total_max_score(self):
-        """Get total maximum score (should be 1000 for UTBK)"""
+        """Get total maximum score (should be 7000 for UTBK with 7 subtests)"""
         return sum([pc.max_score for pc in self.tryoutpackagecategory_set.all()])
     
     def is_scoring_complete(self):
-        """Check if total max score equals 1000"""
-        return abs(self.get_total_max_score() - 1000) < 0.01
+        """Check if total max score equals 7000"""
+        return abs(self.get_total_max_score() - 7000) < 0.01
     
     def get_category_composition(self):
         """Get formatted string of category composition"""
@@ -386,7 +386,7 @@ class TryoutPackageCategory(models.Model):
     package = models.ForeignKey(TryoutPackage, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     question_count = models.PositiveIntegerField(help_text="Jumlah soal dari kategori ini dalam paket")
-    max_score = models.FloatField(help_text="Skor maksimum untuk kategori ini (kontribusi ke total 1000)")
+    max_score = models.FloatField(help_text="Skor maksimum untuk kategori ini (kontribusi ke total 7000 untuk 7 subtest)")
     order = models.PositiveIntegerField(default=1, help_text="Urutan kategori dalam paket")
     
     class Meta:
@@ -682,8 +682,8 @@ class Test(models.Model):
     def is_passed(self):
         """Check if test score meets the category's passing requirement"""
         if self.tryout_package:
-            # For package tests, use 60% of 1000 as passing score
-            return self.score >= 600
+            # For package tests, use 60% of 7000 as passing score
+            return self.score >= 4200
         
         answers = self.answers.all()
         if not answers.exists():
@@ -856,8 +856,8 @@ class Test(models.Model):
         
         return {
             'raw_score': self.score,
-            'max_score': 1000,
-            'percentage': (self.score / 1000) * 100,
+            'max_score': 7000,
+            'percentage': (self.score / 7000) * 100,
             'grade': self._get_utbk_grade(),
             'interpretation': self._get_score_interpretation()
         }
@@ -1263,7 +1263,7 @@ class University(models.Model):
     minimum_utbk_score = models.IntegerField(
         default=400, 
         verbose_name="Nilai UTBK Minimum (Aman)",
-        help_text="Nilai minimum UTBK yang aman untuk masuk universitas ini (0-1000)"
+        help_text="Nilai minimum UTBK yang aman untuk masuk universitas ini (0-7000)"
     )
     
     # University rank/tier for sorting
