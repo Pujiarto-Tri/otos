@@ -549,6 +549,22 @@
         .dark .toolbar-btn:hover {
             background: #4b5563;
         }
+        
+        /* Enhanced styling for selected image wrapper */
+        .image-resizer.selected {
+            border-color: #3B82F6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Ensure toolbar is properly positioned and visible */
+        .image-edit-toolbar {
+            pointer-events: auto;
+            user-select: none;
+        }
+        
+        .image-edit-toolbar button {
+            pointer-events: auto;
+        }
     </style>
 {% endblock %}
 
@@ -1523,10 +1539,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Fix checkbox duplication issue and ensure proper naming
-  console.log('[DEBUG] Fixing checkbox duplication...');
   for (let i = 0; i < 5; i++) {
     const checkboxes = document.querySelectorAll(`input[name="choices-${i}-is_correct"]`);
-    console.log(`Found ${checkboxes.length} checkboxes for choices-${i}-is_correct`);
     
     if (checkboxes.length > 1) {
       // Keep the Django-generated one (usually has proper ID) and remove others
@@ -1557,10 +1571,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Verify final state
-  console.log('[DEBUG] Final checkbox verification:');
   for (let i = 0; i < 5; i++) {
     const checkbox = document.querySelector(`input[name="choices-${i}-is_correct"]`);
-    console.log(`Choice ${i+1}: ${checkbox ? 'HAS CHECKBOX' : 'NO CHECKBOX'} - ${checkbox ? checkbox.name : 'N/A'}`);
+  }
   }
 
   // Initialize Flowbite WYSIWYG editors
@@ -1652,46 +1665,144 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Global function to sync all WYSIWYG content to textareas
-  window.syncAllWysiwygContent = function() {
-    // Sync question content
-    const questionEditor = document.querySelector('#wysiwyg-question-text-teacher');
-    const questionTextarea = document.querySelector('#id_question_text');
-    if (questionEditor && questionTextarea) {
-      questionTextarea.value = questionEditor.innerHTML;
-    }
-    
-    // Sync explanation content
-    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-teacher');
-    const explanationTextarea = document.querySelector('#id_explanation');
-    if (explanationEditor && explanationTextarea) {
-      explanationTextarea.value = explanationEditor.innerHTML;
-    }
-    
-    // Sync all choice editors
-    for (let i = 1; i <= 5; i++) {
-      const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
-      const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
-      
-      if (choiceEditor && choiceTextarea) {
-        let htmlContent = choiceEditor.innerHTML;
-        
-        // Get text content to check if it's truly empty
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        const textContent = tempDiv.textContent || tempDiv.innerText || '';
-        
-        // Clean up empty WYSIWYG content (just empty tags)
-        if (!textContent.trim()) {
-          htmlContent = '';
-        }
-        
-        choiceTextarea.value = htmlContent;
-      }
-    }
-  };
-  
-  // Real-time choice validation function
+            // Global function to sync all WYSIWYG content to textareas
+            window.syncAllWysiwygContent = function() {
+                // Sync question content
+                const questionEditor = document.querySelector('#wysiwyg-question-text-teacher');
+                const questionTextarea = document.querySelector('#id_question_text');
+                if (questionEditor && questionTextarea) {
+                    questionTextarea.value = cleanContentForSaving(questionEditor.innerHTML);
+                }
+                
+                // Sync explanation content
+                const explanationEditor = document.querySelector('#wysiwyg-explanation-text-teacher');
+                const explanationTextarea = document.querySelector('#id_explanation');
+                if (explanationEditor && explanationTextarea) {
+                    explanationTextarea.value = cleanContentForSaving(explanationEditor.innerHTML);
+                }
+                
+                // Sync all choice editors
+                for (let i = 1; i <= 5; i++) {
+                    const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+                    const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
+                    
+                    if (choiceEditor && choiceTextarea) {
+                        let htmlContent = cleanContentForSaving(choiceEditor.innerHTML);
+                        
+                        // Get text content to check if it's truly empty
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = htmlContent;
+                        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                        
+                        // Clean up empty WYSIWYG content (just empty tags)
+                        if (!textContent.trim()) {
+                            htmlContent = '';
+                        }
+                        
+                        choiceTextarea.value = htmlContent;
+                    }
+                }
+            };
+            
+            // Function to clean content before saving (removes toolbar elements)
+            function cleanContentForSaving(htmlContent) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                
+                // Remove all toolbar elements by class
+                tempDiv.querySelectorAll('.image-edit-toolbar').forEach(toolbar => toolbar.remove());
+                
+                // Remove all image resizer wrappers but keep the images
+                tempDiv.querySelectorAll('.image-resizer').forEach(resizer => {
+                    const img = resizer.querySelector('img');
+                    if (img) {
+                        // Move image out of resizer wrapper
+                        resizer.parentNode.insertBefore(img, resizer);
+                    }
+                    resizer.remove();
+                });
+                
+                // Remove any toolbar buttons by onclick attributes
+                tempDiv.querySelectorAll('button[onclick*="resizeImagePercent"]').forEach(btn => btn.remove());
+                tempDiv.querySelectorAll('button[onclick*="removeImageFromResizer"]').forEach(btn => btn.remove());
+                
+                // Remove any toolbar buttons by class
+                tempDiv.querySelectorAll('.toolbar-btn').forEach(btn => btn.remove());
+                
+                // Remove any remaining button elements that might be toolbar related
+                tempDiv.querySelectorAll('button').forEach(btn => {
+                    const btnText = btn.textContent.trim();
+                    // Remove buttons with resize percentages or × symbol
+                    if (btnText.match(/^(25%|50%|75%|100%|×)$/)) {
+                        btn.remove();
+                    }
+                });
+                
+                // Remove resize handles and related divs
+                tempDiv.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
+                tempDiv.querySelectorAll('[class*="resize-handle"]').forEach(handle => handle.remove());
+                tempDiv.querySelectorAll('.resizable-image').forEach(wrapper => {
+                    const img = wrapper.querySelector('img');
+                    if (img) {
+                        wrapper.parentNode.insertBefore(img, wrapper);
+                    }
+                    wrapper.remove();
+                });
+                
+                // More aggressive text cleaning - remove text nodes with toolbar patterns
+                const walker = document.createTreeWalker(
+                    tempDiv,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    textNodes.push(node);
+                }
+                
+                textNodes.forEach(textNode => {
+                    let text = textNode.textContent;
+                    // Remove various toolbar text patterns
+                    text = text.replace(/\b25%\s*50%\s*75%\s*100%\s*×\s*/g, '');
+                    text = text.replace(/\b25%\s*50%\s*75%\s*100%\s*/g, '');
+                    text = text.replace(/\b25%\s*/g, '');
+                    text = text.replace(/\b50%\s*/g, '');
+                    text = text.replace(/\b75%\s*/g, '');
+                    text = text.replace(/\b100%\s*/g, '');
+                    text = text.replace(/\s*×\s*/g, '');
+                    text = text.replace(/^\s*25%\s*50%\s*75%\s*100%\s*×.*$/, '');
+                    
+                    // Clean up extra whitespace
+                    text = text.replace(/\s+/g, ' ').trim();
+                    
+                    if (text !== textNode.textContent) {
+                        if (text === '') {
+                            textNode.remove();
+                        } else {
+                            textNode.textContent = text;
+                        }
+                    }
+                });
+                
+                // Final cleanup of HTML content as string
+                let cleanedHTML = tempDiv.innerHTML;
+                
+                // Remove any remaining toolbar text patterns in HTML
+                cleanedHTML = cleanedHTML.replace(/25%\s*50%\s*75%\s*100%\s*×/g, '');
+                cleanedHTML = cleanedHTML.replace(/25%\s*50%\s*75%\s*100%/g, '');
+                cleanedHTML = cleanedHTML.replace(/\b(25%|50%|75%|100%)\s*/g, '');
+                cleanedHTML = cleanedHTML.replace(/\s*×\s*/g, '');
+                
+                // Clean up empty elements and extra whitespace
+                cleanedHTML = cleanedHTML.replace(/<(\w+)[^>]*>\s*<\/\1>/g, '');
+                cleanedHTML = cleanedHTML.replace(/>\s+</g, '><');
+                cleanedHTML = cleanedHTML.trim();
+                
+                return cleanedHTML;
+            }  // Real-time choice validation function
   function validateChoiceRequirements(choiceNumber) {
     const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${choiceNumber}`);
     const choiceItem = choiceEditor?.closest('.choice-item');
@@ -2373,15 +2484,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const choicesSection = document.getElementById('choicesSection');
             const essayAnswerSection = document.getElementById('essayAnswerSection');
             
-            console.log('[DEBUG] Question type initialization:', {
-                radios: questionTypeRadios.length,
-                choicesSection: !!choicesSection,
-                essayAnswerSection: !!essayAnswerSection
-            });
-            
             function toggleSections() {
                 const selectedType = document.querySelector('input[name="question_type"]:checked');
-                console.log('[DEBUG] toggleSections called, selectedType:', selectedType ? selectedType.value : 'NONE');
                 
                 if (selectedType) {
                     document.body.style.cursor = 'wait';
@@ -2435,39 +2539,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.addEventListener('submit', function(e) {
                     const category = document.querySelector('#id_category');
                     
-                    // Sync question content
-                    const questionEditor = document.querySelector('#wysiwyg-question-text-teacher');
-                    if (questionEditor && questionTextarea) {
-                        questionTextarea.value = questionEditor.innerHTML;
-                    }
-
-                    // Sync explanation content
-                    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-teacher');
-                    if (explanationEditor && explanationTextarea) {
-                        explanationTextarea.value = explanationEditor.innerHTML;
-                    }
-                    
-                    // Sync all choice editors content
-                    for (let i = 1; i <= 5; i++) {
-                        const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
-                        const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
-                        
-                        if (choiceEditor && choiceTextarea) {
-                            let htmlContent = choiceEditor.innerHTML;
-                            
-                            // Get text content to check if it's truly empty
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = htmlContent;
-                            const textContent = tempDiv.textContent || tempDiv.innerText || '';
-                            
-                            // Clean up empty WYSIWYG content (just empty tags)
-                            if (!textContent.trim()) {
-                                htmlContent = '';
-                            }
-                            
-                            choiceTextarea.value = htmlContent;
-                        }
-                    }
+                    // Use the comprehensive sync function that includes cleaning
+                    window.syncAllWysiwygContent();
                     
                     // Debug: Log all checkbox states before submission and ensure they're all present
                     console.log('=== CHECKBOX DEBUG BEFORE SUBMIT ===');
@@ -2642,9 +2715,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const checkboxName = `choices-${choiceNumber - 1}-is_correct`;
                 let checkbox = document.querySelector(`input[name="${checkboxName}"]`);
                 
-                console.log(`[DEBUG] Looking for checkbox with name: ${checkboxName}`);
-                console.log(`[DEBUG] Found checkbox:`, checkbox);
-                
                 if (!checkbox) {
                     console.warn(`No checkbox found for choice ${choiceNumber} with name ${checkboxName}`);
                     // Try alternative selector
@@ -2681,9 +2751,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     checkbox.removeAttribute('value');
                 }
-                
-                console.log(`[DEBUG] Choice ${choiceNumber} (${checkboxName}) marked as: ${checkbox.checked ? 'CORRECT' : 'INCORRECT'}`);
-                console.log(`[DEBUG] Checkbox value attribute:`, checkbox.getAttribute('value'));
                 
                 // Update button appearance
                 updateCorrectAnswerButton(button, checkbox.checked);
@@ -2839,8 +2906,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Initialize choice checkboxes function
             function initializeChoiceCheckboxes() {
-                console.log('[DEBUG] Initializing choice checkboxes...');
-                
                 // Process each choice individually to ensure correct mapping
                 for (let i = 0; i < 5; i++) {
                     const checkbox = document.querySelector(`input[name="choices-${i}-is_correct"][type="checkbox"]`);
@@ -3337,6 +3402,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 editor.dispatchEvent(new Event('input', { bubbles: true }));
             }
             
+            // Alias for compatibility with image resizer
+            function syncEditorToTextarea(editor) {
+                updateEditorContent(editor);
+            }
+                
+                // Trigger input event for any listeners
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
             // Global click handler to deselect images
             document.addEventListener('click', function(e) {
                 // Deselect images when clicking outside any image container
@@ -3539,6 +3613,286 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 100);
                 }
             });
+            
+            // Simple Image Resizer Functionality
+            function wrapImageInResizer(img) {
+                // Check if already wrapped
+                const existingWrapper = img.closest('.image-resizer');
+                if (existingWrapper) {
+                    // Check if wrapper has toolbar
+                    let existingToolbar = existingWrapper.querySelector('.image-edit-toolbar');
+                    if (existingToolbar) {
+                        // Ensure toolbar is visible and functional
+                        existingToolbar.style.display = 'block';
+                        existingToolbar.style.opacity = '1';
+                        existingToolbar.style.visibility = 'visible';
+                        // Re-attach click handler
+                        addImageClickHandler(img, existingToolbar, existingWrapper);
+                        return;
+                    }
+                    
+                    // Add toolbar to existing wrapper
+                    const toolbar = createToolbar();
+                    existingWrapper.appendChild(toolbar);
+                    addImageClickHandler(img, toolbar, existingWrapper);
+                    return;
+                }
+                
+                // Create wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-resizer';
+                wrapper.style.cssText = `
+                    display: inline-block;
+                    position: relative;
+                    margin: 10px 0;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                    border-radius: 4px;
+                    transition: border-color 0.2s ease;
+                `;
+                
+                // Create and add toolbar
+                const toolbar = createToolbar();
+                
+                // Insert wrapper and move image
+                img.parentNode.insertBefore(wrapper, img);
+                wrapper.appendChild(img);
+                wrapper.appendChild(toolbar);
+                
+                // Add click handler
+                addImageClickHandler(img, toolbar, wrapper);
+            }
+            
+            // Helper function to create toolbar
+            function createToolbar() {
+                const toolbar = document.createElement('div');
+                toolbar.className = 'image-edit-toolbar';
+                toolbar.style.cssText = `
+                    display: none;
+                    position: absolute;
+                    top: -45px;
+                    right: 0px;
+                    background: rgba(31, 41, 55, 0.95);
+                    padding: 8px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    white-space: nowrap;
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: opacity 0.2s ease, visibility 0.2s ease;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(75, 85, 99, 0.5);
+                    min-width: 200px;
+                    backdrop-filter: blur(4px);
+                `;
+                
+                toolbar.innerHTML = `
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button type="button" onclick="resizeImagePercent(this, 25)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">25%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 50)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">50%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 75)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">75%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 100)" style="
+                            padding: 6px 10px; 
+                            background: #16A34A; 
+                            color: white; 
+                            border: 1px solid #15803D; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 40px;
+                            font-weight: 500;
+                        " onmouseover="this.style.background='#15803D'" onmouseout="this.style.background='#16A34A'">100%</button>
+                        <button type="button" onclick="removeImageFromResizer(this)" style="
+                            padding: 6px 8px; 
+                            background: #DC2626; 
+                            color: white; 
+                            border: 1px solid #B91C1C; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 25px;
+                        " onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'" title="Remove Image">×</button>
+                    </div>
+                `;
+                
+                return toolbar;
+            }
+            
+            // Helper function to add click handler
+            function addImageClickHandler(img, toolbar, wrapper) {
+                // Remove any existing event listeners
+                img.onclick = null;
+                
+                img.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Hide all other toolbars first
+                    document.querySelectorAll('.image-edit-toolbar').forEach(t => {
+                        if (t !== toolbar) {
+                            t.style.display = 'none';
+                            t.style.opacity = '0';
+                            t.style.visibility = 'hidden';
+                        }
+                    });
+                    document.querySelectorAll('.image-resizer').forEach(r => {
+                        r.classList.remove('selected');
+                    });
+                    
+                    // Show this toolbar with multiple fallbacks
+                    toolbar.style.display = 'block';
+                    toolbar.style.opacity = '1';
+                    toolbar.style.visibility = 'visible';
+                    
+                    // Smart positioning to avoid being cut off
+                    const imgRect = img.getBoundingClientRect();
+                    const toolbarHeight = 50; // Estimated toolbar height
+                    const viewportHeight = window.innerHeight;
+                    
+                    // Position above image if there's space, otherwise below
+                    if (imgRect.top > toolbarHeight + 20) {
+                        toolbar.style.top = '-45px';
+                        toolbar.style.bottom = 'auto';
+                    } else {
+                        toolbar.style.top = 'auto';
+                        toolbar.style.bottom = '-45px';
+                    }
+                    
+                    // Ensure toolbar doesn't go off-screen horizontally
+                    toolbar.style.right = '0px';
+                    toolbar.style.left = 'auto';
+                    
+                    wrapper.classList.add('selected');
+                });
+            }
+            
+            // Resize function
+            window.resizeImagePercent = function(button, percentage) {
+                const wrapper = button.closest('.image-resizer');
+                const img = wrapper.querySelector('img');
+                const originalWidth = img.naturalWidth;
+                const originalHeight = img.naturalHeight;
+                
+                const newWidth = (originalWidth * percentage) / 100;
+                const newHeight = (originalHeight * percentage) / 100;
+                
+                img.style.width = newWidth + 'px';
+                img.style.height = newHeight + 'px';
+                img.style.maxWidth = 'none';
+                img.style.maxHeight = 'none';
+                
+                // Sync content to textarea
+                const editor = wrapper.closest('[data-wysiwyg="true"]');
+                if (editor) {
+                    syncEditorToTextarea(editor);
+                }
+            };
+            
+            // Remove image function
+            window.removeImageFromResizer = function(button) {
+                if (confirm('Are you sure you want to remove this image?')) {
+                    const wrapper = button.closest('.image-resizer');
+                    const editor = wrapper.closest('[data-wysiwyg="true"]');
+                    
+                    // Remove the entire wrapper
+                    wrapper.remove();
+                    
+                    // Sync content to textarea
+                    if (editor) {
+                        syncEditorToTextarea(editor);
+                    }
+                }
+            };
+            
+            // Initialize images
+            function initializeImageResizers() {
+                // Only run on pages with WYSIWYG editors
+                const editors = document.querySelectorAll('[data-wysiwyg="true"]');
+                if (editors.length === 0) {
+                    return; // Exit if no WYSIWYG editors found
+                }
+                
+                editors.forEach((editor, index) => {
+                    const images = editor.querySelectorAll('img');
+                    
+                    images.forEach((img, imgIndex) => {
+                        wrapImageInResizer(img);
+                    });
+                });
+            }
+            
+            // Hide toolbar when clicking outside
+            document.addEventListener('click', function(e) {
+                // Only run if we have image resizers on the page
+                const hasResizers = document.querySelector('.image-resizer');
+                if (!hasResizers) return;
+                
+                if (!e.target.closest('.image-resizer')) {
+                    document.querySelectorAll('.image-edit-toolbar').forEach(toolbar => {
+                        toolbar.style.display = 'none';
+                        toolbar.style.opacity = '0';
+                        toolbar.style.visibility = 'hidden';
+                    });
+                    document.querySelectorAll('.image-resizer').forEach(wrapper => {
+                        wrapper.classList.remove('selected');
+                    });
+                }
+            });
+
+            // Add event delegation for toolbar buttons to prevent form submission
+            document.addEventListener('click', function(e) {
+                // Only run if we have image resizers on the page
+                const hasResizers = document.querySelector('.image-resizer');
+                if (!hasResizers) return;
+                
+                if (e.target.classList.contains('toolbar-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // The onclick handlers will still execute
+                }
+            });
+            
+            // Initialize on load
+            setTimeout(() => {
+                // Only initialize image resizers on question form pages
+                if (document.querySelector('#wysiwyg-question-text-teacher') || 
+                    document.querySelector('#wysiwyg-explanation-teacher') ||
+                    document.querySelector('[id^="wysiwyg-choice-text-"]')) {
+                    initializeImageResizers();
+                }
+            }, 500);
             
             // Mobile-friendly enhancements
             if (window.innerWidth <= 768) {

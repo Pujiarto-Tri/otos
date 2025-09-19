@@ -70,6 +70,7 @@ def smart_question_text(text):
     """
     Smart format for question text that handles both plain text and HTML content.
     If text contains HTML tags, treat as HTML. Otherwise, convert plain text to HTML with line breaks.
+    Also cleans up any toolbar remnants.
     """
     import re
     from django.utils.safestring import mark_safe
@@ -78,12 +79,50 @@ def smart_question_text(text):
     if not text:
         return ""
     
+    def clean_toolbar_content(html_text):
+        """Clean toolbar elements and text from HTML content"""
+        # Remove toolbar HTML elements
+        html_text = re.sub(r'<div[^>]*class="[^"]*image-edit-toolbar[^"]*"[^>]*>.*?</div>', '', html_text, flags=re.DOTALL)
+        html_text = re.sub(r'<div[^>]*class="[^"]*resize-handle[^"]*"[^>]*>.*?</div>', '', html_text, flags=re.DOTALL)
+        html_text = re.sub(r'<div[^>]*class="[^"]*image-resizer[^"]*"[^>]*>(.*?)</div>', r'\1', html_text, flags=re.DOTALL)
+        html_text = re.sub(r'<div[^>]*class="[^"]*resizable-image[^"]*"[^>]*>(.*?)</div>', r'\1', html_text, flags=re.DOTALL)
+        
+        # Remove toolbar buttons
+        html_text = re.sub(r'<button[^>]*onclick="[^"]*resizeImagePercent[^"]*"[^>]*>.*?</button>', '', html_text, flags=re.DOTALL)
+        html_text = re.sub(r'<button[^>]*onclick="[^"]*removeImageFromResizer[^"]*"[^>]*>.*?</button>', '', html_text, flags=re.DOTALL)
+        html_text = re.sub(r'<button[^>]*class="[^"]*toolbar-btn[^"]*"[^>]*>.*?</button>', '', html_text, flags=re.DOTALL)
+        
+        # Remove buttons with specific toolbar text
+        html_text = re.sub(r'<button[^>]*>(25%|50%|75%|100%|×)</button>', '', html_text)
+        
+        # Remove any resize-related attributes and classes
+        html_text = re.sub(r'data-handle="[^"]*"', '', html_text)
+        html_text = re.sub(r'class="[^"]*resize-handle[^"]*"', '', html_text)
+        html_text = re.sub(r'class="[^"]*image-resizer[^"]*"', '', html_text)
+        html_text = re.sub(r'class="[^"]*resizable-image[^"]*"', '', html_text)
+        
+        # Remove standalone toolbar text patterns
+        html_text = re.sub(r'\b25%\s*50%\s*75%\s*100%\s*×\b', '', html_text)
+        html_text = re.sub(r'\b25%\s*50%\s*75%\s*100%\b', '', html_text)
+        html_text = re.sub(r'\b(25%|50%|75%|100%)\s*', '', html_text)
+        html_text = re.sub(r'\s*×\s*', '', html_text)
+        
+        # Clean up empty elements and extra whitespace
+        html_text = re.sub(r'<div[^>]*>\s*</div>', '', html_text)
+        html_text = re.sub(r'<div[^>]*class=""\s*>', '<div>', html_text)
+        html_text = re.sub(r'>\s+<', '><', html_text)
+        html_text = re.sub(r'\s+', ' ', html_text)
+        html_text = html_text.strip()
+        
+        return html_text
+    
     # Check if text contains HTML tags (especially WYSIWYG content)
     html_pattern = r'<(?:span|div|p|br|strong|em|u|ol|ul|li|h[1-6]|img|table|tr|td|th|thead|tbody)[^>]*>'
     
     if re.search(html_pattern, text, re.IGNORECASE):
-        # Text contains HTML, treat as HTML content
-        return mark_safe(text)
+        # Text contains HTML, clean toolbar content and treat as HTML
+        cleaned_text = clean_toolbar_content(text)
+        return mark_safe(cleaned_text)
     else:
         # Plain text, convert to HTML with proper escaping and line breaks
         escaped_text = escape(text)

@@ -1642,46 +1642,144 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Global function to sync all WYSIWYG content to textareas
-  window.syncAllWysiwygContent = function() {
-    // Sync question content
-    const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
-    const questionTextarea = document.querySelector('#id_question_text');
-    if (questionEditor && questionTextarea) {
-      questionTextarea.value = questionEditor.innerHTML;
-    }
-    
-    // Sync explanation content
-    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
-    const explanationTextarea = document.querySelector('#id_explanation');
-    if (explanationEditor && explanationTextarea) {
-      explanationTextarea.value = explanationEditor.innerHTML;
-    }
-    
-    // Sync all choice editors
-    for (let i = 1; i <= 5; i++) {
-      const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
-      const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
-      
-      if (choiceEditor && choiceTextarea) {
-        let htmlContent = choiceEditor.innerHTML;
-        
-        // Get text content to check if it's truly empty
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        const textContent = tempDiv.textContent || tempDiv.innerText || '';
-        
-        // Clean up empty WYSIWYG content (just empty tags)
-        if (!textContent.trim()) {
-          htmlContent = '';
-        }
-        
-        choiceTextarea.value = htmlContent;
-      }
-    }
-  };
-  
-  // Real-time choice validation function
+            // Global function to sync all WYSIWYG content to textareas
+            window.syncAllWysiwygContent = function() {
+                // Sync question content
+                const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+                const questionTextarea = document.querySelector('#id_question_text');
+                if (questionEditor && questionTextarea) {
+                    questionTextarea.value = cleanContentForSaving(questionEditor.innerHTML);
+                }
+                
+                // Sync explanation content
+                const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
+                const explanationTextarea = document.querySelector('#id_explanation');
+                if (explanationEditor && explanationTextarea) {
+                    explanationTextarea.value = cleanContentForSaving(explanationEditor.innerHTML);
+                }
+                
+                // Sync all choice editors
+                for (let i = 1; i <= 5; i++) {
+                    const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
+                    const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
+                    
+                    if (choiceEditor && choiceTextarea) {
+                        let htmlContent = cleanContentForSaving(choiceEditor.innerHTML);
+                        
+                        // Get text content to check if it's truly empty
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = htmlContent;
+                        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                        
+                        // Clean up empty WYSIWYG content (just empty tags)
+                        if (!textContent.trim()) {
+                            htmlContent = '';
+                        }
+                        
+                        choiceTextarea.value = htmlContent;
+                    }
+                }
+            };
+            
+            // Function to clean content before saving (removes toolbar elements)
+            function cleanContentForSaving(htmlContent) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                
+                // Remove all toolbar elements by class
+                tempDiv.querySelectorAll('.image-edit-toolbar').forEach(toolbar => toolbar.remove());
+                
+                // Remove all image resizer wrappers but keep the images
+                tempDiv.querySelectorAll('.image-resizer').forEach(resizer => {
+                    const img = resizer.querySelector('img');
+                    if (img) {
+                        // Move image out of resizer wrapper
+                        resizer.parentNode.insertBefore(img, resizer);
+                    }
+                    resizer.remove();
+                });
+                
+                // Remove any toolbar buttons by onclick attributes
+                tempDiv.querySelectorAll('button[onclick*="resizeImagePercent"]').forEach(btn => btn.remove());
+                tempDiv.querySelectorAll('button[onclick*="removeImageFromResizer"]').forEach(btn => btn.remove());
+                
+                // Remove any toolbar buttons by class
+                tempDiv.querySelectorAll('.toolbar-btn').forEach(btn => btn.remove());
+                
+                // Remove any remaining button elements that might be toolbar related
+                tempDiv.querySelectorAll('button').forEach(btn => {
+                    const btnText = btn.textContent.trim();
+                    // Remove buttons with resize percentages or × symbol
+                    if (btnText.match(/^(25%|50%|75%|100%|×)$/)) {
+                        btn.remove();
+                    }
+                });
+                
+                // Remove resize handles and related divs
+                tempDiv.querySelectorAll('.resize-handle').forEach(handle => handle.remove());
+                tempDiv.querySelectorAll('[class*="resize-handle"]').forEach(handle => handle.remove());
+                tempDiv.querySelectorAll('.resizable-image').forEach(wrapper => {
+                    const img = wrapper.querySelector('img');
+                    if (img) {
+                        wrapper.parentNode.insertBefore(img, wrapper);
+                    }
+                    wrapper.remove();
+                });
+                
+                // More aggressive text cleaning - remove text nodes with toolbar patterns
+                const walker = document.createTreeWalker(
+                    tempDiv,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    textNodes.push(node);
+                }
+                
+                textNodes.forEach(textNode => {
+                    let text = textNode.textContent;
+                    // Remove various toolbar text patterns
+                    text = text.replace(/\b25%\s*50%\s*75%\s*100%\s*×\s*/g, '');
+                    text = text.replace(/\b25%\s*50%\s*75%\s*100%\s*/g, '');
+                    text = text.replace(/\b25%\s*/g, '');
+                    text = text.replace(/\b50%\s*/g, '');
+                    text = text.replace(/\b75%\s*/g, '');
+                    text = text.replace(/\b100%\s*/g, '');
+                    text = text.replace(/\s*×\s*/g, '');
+                    text = text.replace(/^\s*25%\s*50%\s*75%\s*100%\s*×.*$/, '');
+                    
+                    // Clean up extra whitespace
+                    text = text.replace(/\s+/g, ' ').trim();
+                    
+                    if (text !== textNode.textContent) {
+                        if (text === '') {
+                            textNode.remove();
+                        } else {
+                            textNode.textContent = text;
+                        }
+                    }
+                });
+                
+                // Final cleanup of HTML content as string
+                let cleanedHTML = tempDiv.innerHTML;
+                
+                // Remove any remaining toolbar text patterns in HTML
+                cleanedHTML = cleanedHTML.replace(/25%\s*50%\s*75%\s*100%\s*×/g, '');
+                cleanedHTML = cleanedHTML.replace(/25%\s*50%\s*75%\s*100%/g, '');
+                cleanedHTML = cleanedHTML.replace(/\b(25%|50%|75%|100%)\s*/g, '');
+                cleanedHTML = cleanedHTML.replace(/\s*×\s*/g, '');
+                
+                // Clean up empty elements and extra whitespace
+                cleanedHTML = cleanedHTML.replace(/<(\w+)[^>]*>\s*<\/\1>/g, '');
+                cleanedHTML = cleanedHTML.replace(/>\s+</g, '><');
+                cleanedHTML = cleanedHTML.trim();
+                
+                return cleanedHTML;
+            }  // Real-time choice validation function
   function validateChoiceRequirements(choiceNumber) {
     const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${choiceNumber}`);
     const choiceItem = choiceEditor?.closest('.choice-item');
@@ -2453,39 +2551,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.addEventListener('submit', function(e) {
                     const category = document.querySelector('#id_category');
                     
-                    // Sync question content
-                    const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
-                    if (questionEditor && questionTextarea) {
-                        questionTextarea.value = questionEditor.innerHTML;
-                    }
-
-                    // Sync explanation content
-                    const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
-                    if (explanationEditor && explanationTextarea) {
-                        explanationTextarea.value = explanationEditor.innerHTML;
-                    }
-                    
-                    // Sync all choice editors content
-                    for (let i = 1; i <= 5; i++) {
-                        const choiceEditor = document.querySelector(`#wysiwyg-choice-text-${i}`);
-                        const choiceTextarea = document.querySelector(`#id_choices-${i-1}-choice_text`);
-                        
-                        if (choiceEditor && choiceTextarea) {
-                            let htmlContent = choiceEditor.innerHTML;
-                            
-                            // Get text content to check if it's truly empty
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = htmlContent;
-                            const textContent = tempDiv.textContent || tempDiv.innerText || '';
-                            
-                            // Clean up empty WYSIWYG content (just empty tags)
-                            if (!textContent.trim()) {
-                                htmlContent = '';
-                            }
-                            
-                            choiceTextarea.value = htmlContent;
-                        }
-                    }
+                    // Use the comprehensive sync function that includes cleaning
+                    window.syncAllWysiwygContent();
                     
                     // Debug: Log all checkbox states before submission and ensure they're all present
                     console.log('=== CHECKBOX DEBUG BEFORE SUBMIT ===');
@@ -3834,6 +3901,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Add event delegation for toolbar buttons to prevent form submission
             document.addEventListener('click', function(e) {
+                // Only run if we have image resizers on the page
+                const hasResizers = document.querySelector('.image-resizer');
+                if (!hasResizers) return;
+                
                 if (e.target.classList.contains('toolbar-btn')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -4067,7 +4138,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Initialize images
             function initializeImageResizers() {
+                // Only run on pages with WYSIWYG editors
                 const editors = document.querySelectorAll('[data-wysiwyg="true"]');
+                if (editors.length === 0) {
+                    return; // Exit if no WYSIWYG editors found
+                }
                 
                 editors.forEach((editor, index) => {
                     const images = editor.querySelectorAll('img');
@@ -4080,6 +4155,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Hide toolbar when clicking outside
             document.addEventListener('click', function(e) {
+                // Only run if we have image resizers on the page
+                const hasResizers = document.querySelector('.image-resizer');
+                if (!hasResizers) return;
+                
                 if (!e.target.closest('.image-resizer')) {
                     document.querySelectorAll('.image-edit-toolbar').forEach(toolbar => {
                         toolbar.style.display = 'none';
@@ -4092,7 +4171,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Initialize on load
             setTimeout(() => {
-                initializeImageResizers();
+                // Only initialize image resizers on question form pages
+                if (document.querySelector('#wysiwyg-question-text-admin') || 
+                    document.querySelector('#wysiwyg-explanation-admin') ||
+                    document.querySelector('[id^="wysiwyg-choice-text-"]')) {
+                    initializeImageResizers();
+                }
             }, 500);
         });
     </script>
