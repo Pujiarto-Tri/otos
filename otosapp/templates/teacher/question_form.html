@@ -2902,6 +2902,113 @@ document.addEventListener('DOMContentLoaded', function() {
             document.addEventListener('DOMContentLoaded', function() {
                 initializeChoiceCheckboxes();
                 if (typeof updateChoiceRequirements === 'function') updateChoiceRequirements();
+                
+                // Initialize existing images
+                // Add delay to ensure WYSIWYG is fully loaded
+                setTimeout(initializeExistingImages, 1000);
+                
+                // Also try after a longer delay to catch slow-loading content
+                setTimeout(initializeExistingImages, 3000);
+            });
+            
+            // Also initialize when window loads
+            window.addEventListener('load', function() {
+                setTimeout(initializeExistingImages, 500);
+            });
+            
+            // Function to handle WYSIWYG editor clicks (to catch existing images)
+            function handleEditorClick(event) {
+                if (event.target.tagName === 'IMG') {
+                    const img = event.target;
+                    
+                    // If image is not wrapped, wrap it
+                    if (!img.closest('.image-container')) {
+                        // Create wrapper immediately
+                        const imageContainer = document.createElement('div');
+                        imageContainer.className = 'image-container';
+                        imageContainer.style.display = 'inline-block';
+                        imageContainer.style.margin = '10px 0';
+                        imageContainer.style.maxWidth = '100%';
+                        
+                        // Create resizer overlay
+                        const resizer = document.createElement('div');
+                        resizer.className = 'image-resizer';
+                        
+                        // Create resize handles
+                        const handles = ['nw-resize', 'ne-resize', 'sw-resize', 'se-resize', 'n-resize', 's-resize', 'w-resize', 'e-resize'];
+                        handles.forEach(handleClass => {
+                            const handle = document.createElement('div');
+                            handle.className = `resize-handle ${handleClass}`;
+                            resizer.appendChild(handle);
+                        });
+                        
+                        // Create toolbar
+                        const toolbar = document.createElement('div');
+                        toolbar.className = 'image-toolbar';
+                        toolbar.innerHTML = `
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)">25%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)">50%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)">75%</button>
+                            <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)">100%</button>
+                            <button type="button" class="toolbar-btn" onclick="cropImage(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h3m4 1v2m0 0V2a1 1 0 011-1h3m0 1v2m0 0h2a1 1 0 011 1v3m-1 4h2m0 0v3a1 1 0 01-1 1h-3m-4-1v2m0 0v2a1 1 0 01-1 1H7m-4-1v-2m0 0H2a1 1 0 01-1-1V7m1-4h2"/>
+                                </svg>
+                                Crop
+                            </button>
+                            <button type="button" class="toolbar-btn" onclick="resetImageSize(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Reset
+                            </button>
+                            <button type="button" class="toolbar-btn" onclick="openImageModal('${img.src}', 'Image Preview')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                Preview
+                            </button>
+                            <button type="button" class="toolbar-btn danger" onclick="removeImage(this)">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Delete
+                        </button>
+                    `;
+                        
+                        // Wrap the image
+                        img.parentNode.insertBefore(imageContainer, img);
+                        imageContainer.appendChild(img);
+                        imageContainer.appendChild(resizer);
+                        imageContainer.appendChild(toolbar);
+                        
+                        // Update image styles
+                        img.style.cursor = 'pointer';
+                        img.dataset.originalSrc = img.src;
+                        
+                        // Add resize functionality
+                        addResizeListeners(imageContainer);
+                        
+                        // Now select it
+                        selectImage(imageContainer);
+                    } else {
+                        // Image is already wrapped, just select it
+                        selectImage(img.closest('.image-container'));
+                    }
+                    
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            }
+            
+            // Add click handlers to WYSIWYG editors
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    const editors = document.querySelectorAll('[data-wysiwyg="true"]');
+                    editors.forEach(editor => {
+                        editor.addEventListener('click', handleEditorClick);
+                    });
+                }, 1500);
             });
             
             // Image Modal Functions
@@ -3026,10 +3133,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // Function to select an image and show toolbar/resizer
+            function selectImage(imageContainer) {
+                // Deselect all other images
+                document.querySelectorAll('.image-container').forEach(container => {
+                    container.classList.remove('selected');
+                    const resizer = container.querySelector('.image-resizer');
+                    if (resizer) resizer.classList.remove('selected');
+                });
+                
+                // Select this image
+                imageContainer.classList.add('selected');
+                const resizer = imageContainer.querySelector('.image-resizer');
+                if (resizer) {
+                    resizer.classList.add('selected');
+                }
+            }
+
             window.addResizeListeners = function(imageContainer) {
                 const resizer = imageContainer.querySelector('.image-resizer');
                 const img = imageContainer.querySelector('img');
                 const handles = resizer.querySelectorAll('.resize-handle');
+                
+                if (!resizer || !img) {
+                    return;
+                }
+                
+                // Add click handler to resizer to select the image
+                resizer.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectImage(imageContainer);
+                });
                 
                 handles.forEach(handle => {
                     handle.addEventListener('mousedown', function(e) {
@@ -3204,18 +3339,32 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Global click handler to deselect images
             document.addEventListener('click', function(e) {
-                if (!e.target.closest('.image-container') && selectedImage) {
-                    selectedImage.classList.remove('selected');
-                    selectedImage = null;
+                // Deselect images when clicking outside any image container
+                if (!e.target.closest('.image-container')) {
+                    document.querySelectorAll('.image-container.selected').forEach(container => {
+                        container.classList.remove('selected');
+                        const resizer = container.querySelector('.image-resizer');
+                        if (resizer) resizer.classList.remove('selected');
+                    });
+                    if (selectedImage) {
+                        selectedImage.classList.remove('selected');
+                        selectedImage = null;
+                    }
                 }
             });
             
-            // Initialize existing images on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(() => {
-                    document.querySelectorAll('[data-wysiwyg="true"] img').forEach(img => {
+            // Function to initialize existing images
+            function initializeExistingImages() {
+                const editors = document.querySelectorAll('[data-wysiwyg="true"]');
+                
+                editors.forEach((editor, index) => {
+                    const images = editor.querySelectorAll('img');
+                    
+                    images.forEach((img, imgIndex) => {
                         // Skip if already in an image-container
-                        if (img.closest('.image-container')) return;
+                        if (img.closest('.image-container')) {
+                            return;
+                        }
                         
                         // Wrap existing images
                         const imageContainer = document.createElement('div');
@@ -3290,7 +3439,105 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Add resize functionality
                         addResizeListeners(imageContainer);
                     });
-                }, 1000);
+                });
+            }
+            
+            // Initialize existing images on page load with delay
+            setTimeout(() => {
+                initializeExistingImages();
+            }, 1500);
+            
+            // Manual function to re-initialize existing images (for debugging)
+            window.reinitializeImages = function() {
+                initializeExistingImages();
+            };
+            
+            // Additional safety check when user interacts with editors
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('[data-wysiwyg="true"]')) {
+                    // Check for unwrapped images when user clicks in editor
+                    setTimeout(() => {
+                        const editor = e.target.closest('[data-wysiwyg="true"]');
+                        if (editor) {
+                            editor.querySelectorAll('img').forEach(img => {
+                                if (!img.closest('.image-container')) {
+                                    // Re-run initialization for this specific image
+                                    const imageContainer = document.createElement('div');
+                                    imageContainer.className = 'image-container';
+                                    imageContainer.style.display = 'inline-block';
+                                    imageContainer.style.margin = '10px 0';
+                                    imageContainer.style.maxWidth = '100%';
+                                    
+                                    // Create resizer overlay
+                                    const resizer = document.createElement('div');
+                                    resizer.className = 'image-resizer';
+                                    
+                                    // Create resize handles
+                                    const handles = ['nw-resize', 'ne-resize', 'sw-resize', 'se-resize', 'n-resize', 's-resize', 'w-resize', 'e-resize'];
+                                    handles.forEach(handleClass => {
+                                        const handle = document.createElement('div');
+                                        handle.className = `resize-handle ${handleClass}`;
+                                        resizer.appendChild(handle);
+                                    });
+                                    
+                                    // Create toolbar
+                                    const toolbar = document.createElement('div');
+                                    toolbar.className = 'image-toolbar';
+                                    toolbar.innerHTML = `
+                                        <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 25)">25%</button>
+                                        <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 50)">50%</button>
+                                        <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 75)">75%</button>
+                                        <button type="button" class="toolbar-btn" onclick="resizeImageToPercent(this, 100)">100%</button>
+                                        <button type="button" class="toolbar-btn" onclick="cropImage(this)">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h3m4 1v2m0 0V2a1 1 0 011-1h3m0 1v2m0 0h2a1 1 0 011 1v3m-1 4h2m0 0v3a1 1 0 01-1 1h-3m-4-1v2m0 0v2a1 1 0 01-1 1H7m-4-1v-2m0 0H2a1 1 0 01-1-1V7m1-4h2"/>
+                                            </svg>
+                                            Crop
+                                        </button>
+                                        <button type="button" class="toolbar-btn" onclick="resetImageSize(this)">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                            </svg>
+                                            Reset
+                                        </button>
+                                        <button type="button" class="toolbar-btn" onclick="openImageModal('${img.src}', 'Image Preview')">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                            </svg>
+                                            Preview
+                                        </button>
+                                        <button type="button" class="toolbar-btn danger" onclick="removeImage(this)">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    `;
+                                    
+                                    // Wrap the image
+                                    img.parentNode.insertBefore(imageContainer, img);
+                                    imageContainer.appendChild(img);
+                                    imageContainer.appendChild(resizer);
+                                    imageContainer.appendChild(toolbar);
+                                    
+                                    // Update image styles
+                                    img.style.cursor = 'pointer';
+                                    img.dataset.originalSrc = img.src;
+                                    
+                                    // Add click handler
+                                    img.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        selectImage(imageContainer);
+                                    });
+                                    
+                                    // Add resize functionality
+                                    addResizeListeners(imageContainer);
+                                }
+                            });
+                        }
+                    }, 100);
+                }
             });
             
             // Mobile-friendly enhancements

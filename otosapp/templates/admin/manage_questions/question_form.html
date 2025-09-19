@@ -339,6 +339,22 @@
             opacity: 1;
         }
         
+        /* Enhanced styling for selected image wrapper */
+        .image-resizer.selected {
+            border-color: #3B82F6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Ensure toolbar is properly positioned and visible */
+        .image-edit-toolbar {
+            pointer-events: auto;
+            user-select: none;
+        }
+        
+        .image-edit-toolbar button {
+            pointer-events: auto;
+        }
+        
         .toolbar-btn {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -3824,6 +3840,260 @@ document.addEventListener('DOMContentLoaded', function() {
                     // The onclick handlers will still execute
                 }
             });
+            
+            // Simple Image Resizer Functionality
+            function wrapImageInResizer(img) {
+                // Check if already wrapped
+                const existingWrapper = img.closest('.image-resizer');
+                if (existingWrapper) {
+                    console.log('Image already wrapped');
+                    
+                    // Check if wrapper has toolbar
+                    let existingToolbar = existingWrapper.querySelector('.image-edit-toolbar');
+                    if (existingToolbar) {
+                        // Ensure toolbar is visible and functional
+                        existingToolbar.style.display = 'block';
+                        existingToolbar.style.opacity = '1';
+                        existingToolbar.style.visibility = 'visible';
+                        // Re-attach click handler
+                        addImageClickHandler(img, existingToolbar, existingWrapper);
+                        return;
+                    }
+                    
+                    // Add toolbar to existing wrapper
+                    const toolbar = createToolbar();
+                    existingWrapper.appendChild(toolbar);
+                    addImageClickHandler(img, toolbar, existingWrapper);
+                    return;
+                }
+                
+                // Create wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-resizer';
+                wrapper.style.cssText = `
+                    display: inline-block;
+                    position: relative;
+                    margin: 10px 0;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                    border-radius: 4px;
+                    transition: border-color 0.2s ease;
+                `;
+                
+                // Create and add toolbar
+                const toolbar = createToolbar();
+                
+                // Insert wrapper and move image
+                img.parentNode.insertBefore(wrapper, img);
+                wrapper.appendChild(img);
+                wrapper.appendChild(toolbar);
+                
+                // Add click handler
+                addImageClickHandler(img, toolbar, wrapper);
+            }
+            
+            // Helper function to create toolbar
+            function createToolbar() {
+                const toolbar = document.createElement('div');
+                toolbar.className = 'image-edit-toolbar';
+                toolbar.style.cssText = `
+                    display: none;
+                    position: absolute;
+                    top: -45px;
+                    right: 0px;
+                    background: rgba(31, 41, 55, 0.95);
+                    padding: 8px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    white-space: nowrap;
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: opacity 0.2s ease, visibility 0.2s ease;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(75, 85, 99, 0.5);
+                    min-width: 200px;
+                    backdrop-filter: blur(4px);
+                `;
+                
+                toolbar.innerHTML = `
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button type="button" onclick="resizeImagePercent(this, 25)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">25%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 50)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">50%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 75)" style="
+                            padding: 6px 10px; 
+                            background: #374151; 
+                            color: white; 
+                            border: 1px solid #4B5563; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 35px;
+                        " onmouseover="this.style.background='#4B5563'" onmouseout="this.style.background='#374151'">75%</button>
+                        <button type="button" onclick="resizeImagePercent(this, 100)" style="
+                            padding: 6px 10px; 
+                            background: #16A34A; 
+                            color: white; 
+                            border: 1px solid #15803D; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 40px;
+                            font-weight: 500;
+                        " onmouseover="this.style.background='#15803D'" onmouseout="this.style.background='#16A34A'">100%</button>
+                        <button type="button" onclick="removeImageFromResizer(this)" style="
+                            padding: 6px 8px; 
+                            background: #DC2626; 
+                            color: white; 
+                            border: 1px solid #B91C1C; 
+                            border-radius: 4px; 
+                            font-size: 11px; 
+                            cursor: pointer;
+                            transition: background 0.2s ease;
+                            min-width: 25px;
+                        " onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'" title="Remove Image">×</button>
+                    </div>
+                `;
+                
+                return toolbar;
+            }
+            
+            // Helper function to add click handler
+            function addImageClickHandler(img, toolbar, wrapper) {
+                // Remove any existing event listeners
+                img.onclick = null;
+                
+                img.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Hide all other toolbars first
+                    document.querySelectorAll('.image-edit-toolbar').forEach(t => {
+                        if (t !== toolbar) {
+                            t.style.display = 'none';
+                            t.style.opacity = '0';
+                            t.style.visibility = 'hidden';
+                        }
+                    });
+                    document.querySelectorAll('.image-resizer').forEach(r => {
+                        r.classList.remove('selected');
+                    });
+                    
+                    // Show this toolbar with multiple fallbacks
+                    toolbar.style.display = 'block';
+                    toolbar.style.opacity = '1';
+                    toolbar.style.visibility = 'visible';
+                    
+                    // Smart positioning to avoid being cut off
+                    const imgRect = img.getBoundingClientRect();
+                    const toolbarHeight = 50; // Estimated toolbar height
+                    const viewportHeight = window.innerHeight;
+                    
+                    // Position above image if there's space, otherwise below
+                    if (imgRect.top > toolbarHeight + 20) {
+                        toolbar.style.top = '-45px';
+                        toolbar.style.bottom = 'auto';
+                    } else {
+                        toolbar.style.top = 'auto';
+                        toolbar.style.bottom = '-45px';
+                    }
+                    
+                    // Ensure toolbar doesn't go off-screen horizontally
+                    toolbar.style.right = '0px';
+                    toolbar.style.left = 'auto';
+                    
+                    wrapper.classList.add('selected');
+                });
+            }
+            
+            // Resize function
+            window.resizeImagePercent = function(button, percentage) {
+                const wrapper = button.closest('.image-resizer');
+                const img = wrapper.querySelector('img');
+                const originalWidth = img.naturalWidth;
+                const originalHeight = img.naturalHeight;
+                
+                const newWidth = (originalWidth * percentage) / 100;
+                const newHeight = (originalHeight * percentage) / 100;
+                
+                img.style.width = newWidth + 'px';
+                img.style.height = newHeight + 'px';
+                img.style.maxWidth = 'none';
+                img.style.maxHeight = 'none';
+                
+                // Sync content to textarea
+                const editor = wrapper.closest('[data-wysiwyg="true"]');
+                if (editor) {
+                    syncEditorToTextarea(editor);
+                }
+            };
+            
+            // Remove image function
+            window.removeImageFromResizer = function(button) {
+                if (confirm('Are you sure you want to remove this image?')) {
+                    const wrapper = button.closest('.image-resizer');
+                    const editor = wrapper.closest('[data-wysiwyg="true"]');
+                    
+                    // Remove the entire wrapper
+                    wrapper.remove();
+                    
+                    // Sync content to textarea
+                    if (editor) {
+                        syncEditorToTextarea(editor);
+                    }
+                }
+            };
+            
+            // Initialize images
+            function initializeImageResizers() {
+                const editors = document.querySelectorAll('[data-wysiwyg="true"]');
+                
+                editors.forEach((editor, index) => {
+                    const images = editor.querySelectorAll('img');
+                    
+                    images.forEach((img, imgIndex) => {
+                        wrapImageInResizer(img);
+                    });
+                });
+            }
+            
+            // Hide toolbar when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.image-resizer')) {
+                    document.querySelectorAll('.image-edit-toolbar').forEach(toolbar => {
+                        toolbar.style.display = 'none';
+                    });
+                    document.querySelectorAll('.image-resizer').forEach(wrapper => {
+                        wrapper.classList.remove('selected');
+                    });
+                }
+            });
+            
+            // Initialize on load
+            setTimeout(() => {
+                initializeImageResizers();
+            }, 500);
         });
     </script>
 
