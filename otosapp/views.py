@@ -872,7 +872,7 @@ def teacher_question_create(request, category_id):
                     
                     if correct_choices == 0:
                         messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
-                        return render(request, 'teacher/question_form.html', {
+                        return render(request, 'admin/manage_questions/question_form.html', {
                             'form': form,
                             'formset': formset,
                             'category': category
@@ -947,7 +947,7 @@ def teacher_question_create(request, category_id):
         form = QuestionForm(initial={'category': category})
         formset = ChoiceFormSet()
 
-    return render(request, 'teacher/question_form.html', {'form': form, 'formset': formset, 'category': category})
+    return render(request, 'admin/manage_questions/question_form.html', {'form': form, 'formset': formset, 'category': category})
 
 
 @login_required
@@ -1029,7 +1029,7 @@ def teacher_question_update(request, question_id):
                     
                     if correct_choices == 0:
                         messages.error(request, 'Minimal satu pilihan harus ditandai sebagai jawaban yang benar.')
-                        return render(request, 'teacher/question_form.html', {
+                        return render(request, 'admin/manage_questions/question_form.html', {
                             'form': form,
                             'formset': formset,
                             'category': category,
@@ -1126,7 +1126,7 @@ def teacher_question_update(request, question_id):
         print(f'\n[DEBUG] teacher_question_update GET - Question ID: {question.id}')
         print(f'[DEBUG] Initial choice images data: {initial_data}')
 
-    return render(request, 'teacher/question_form.html', {
+    return render(request, 'admin/manage_questions/question_form.html', {
         'form': form, 
         'formset': formset, 
         'category': category, 

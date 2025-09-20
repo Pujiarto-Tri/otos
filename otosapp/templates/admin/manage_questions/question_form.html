@@ -545,7 +545,11 @@
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
         {% with header_title=page_title|default:"Question Form" header_subtitle=page_subtitle show_back_button=True header_icon='<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>' %}
-            {% include 'admin/manage_questions/includes/question_header.html' %}
+            {% if request.user.is_teacher %}
+                {% include 'teacher/manage_questions/includes/question_header.html' %}
+            {% else %}
+                {% include 'admin/manage_questions/includes/question_header.html' %}
+            {% endif %}
         {% endwith %}
 
     <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden question-form-card">
@@ -718,7 +722,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
-                                                    <div id="wysiwyg-question-text-admin" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Type your question here...">{{ form.question_text.value|default:"" }}</div>
+                                                    <div id="wysiwyg-question-text" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Type your question here...">{{ form.question_text.value|default:"" }}</div>
                                                 </div>
                                             </div>
                                             
@@ -854,7 +858,13 @@
                                                 radios.forEach(function(radio) {
                                                     // Make the native radio visually hidden but accessible via label card
                                                     radio.classList.add('sr-only');
-                                                    radio.addEventListener('change', refreshCards);
+                                                    radio.addEventListener('change', function() {
+                                                        refreshCards();
+                                                        // Also trigger the question type sections
+                                                        if (window.toggleQuestionTypeSections) {
+                                                            setTimeout(() => window.toggleQuestionTypeSections(), 50);
+                                                        }
+                                                    });
                                                 });
                                                 refreshCards();
                                             })();
@@ -1283,7 +1293,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="px-4 py-2 bg-white rounded-b-lg dark:bg-gray-800">
-                                                    <div id="wysiwyg-explanation-admin" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Tulis pembahasan (opsional)...">{{ form.explanation.value|default:"" }}</div>
+                                                    <div id="wysiwyg-explanation" data-wysiwyg="true" contenteditable="true" class="prose dark:prose-invert block w-full px-0 text-sm text-gray-800 bg-white border-0 dark:bg-gray-800 focus:ring-0 dark:text-white dark:placeholder-gray-400 wysiwyg-editor" data-placeholder="Tulis pembahasan (opsional)...">{{ form.explanation.value|default:"" }}</div>
                                                 </div>
                                             </div>
                                             
@@ -1554,8 +1564,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Initialize Flowbite WYSIWYG editors
-  const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
-  const explanationEditor = document.querySelector('#wysiwyg-explanation-admin');
+  const questionEditor = document.querySelector('#wysiwyg-question-text');
+  const explanationEditor = document.querySelector('#wysiwyg-explanation');
   const questionTextarea = document.querySelector('#id_question_text');
   const explanationTextarea = document.querySelector('#id_explanation');
 
@@ -1645,14 +1655,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Global function to sync all WYSIWYG content to textareas
             window.syncAllWysiwygContent = function() {
                 // Sync question content
-                const questionEditor = document.querySelector('#wysiwyg-question-text-admin');
+                const questionEditor = document.querySelector('#wysiwyg-question-text');
                 const questionTextarea = document.querySelector('#id_question_text');
                 if (questionEditor && questionTextarea) {
                     questionTextarea.value = cleanContentForSaving(questionEditor.innerHTML);
                 }
                 
                 // Sync explanation content
-                const explanationEditor = document.querySelector('#wysiwyg-explanation-text-admin');
+                const explanationEditor = document.querySelector('#wysiwyg-explanation');
                 const explanationTextarea = document.querySelector('#id_explanation');
                 if (explanationEditor && explanationTextarea) {
                     explanationTextarea.value = cleanContentForSaving(explanationEditor.innerHTML);
@@ -1946,9 +1956,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Sync content to textarea
         let textarea = null;
-        if (editor.id === 'wysiwyg-question-text-admin') {
+        if (editor.id === 'wysiwyg-question-text') {
           textarea = questionTextarea;
-        } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+        } else if (editor.id === 'wysiwyg-explanation') {
           textarea = explanationTextarea;
         } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
           // Handle choice editors
@@ -2099,9 +2109,9 @@ document.addEventListener('DOMContentLoaded', function() {
               
               // Update textarea
               let textarea = null;
-              if (editor.id === 'wysiwyg-question-text-admin') {
+              if (editor.id === 'wysiwyg-question-text') {
                 textarea = questionTextarea;
-              } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+              } else if (editor.id === 'wysiwyg-explanation') {
                 textarea = explanationTextarea;
               } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
                 // Handle choice editors
@@ -2190,9 +2200,9 @@ document.addEventListener('DOMContentLoaded', function() {
           const questionTextarea = document.getElementById('id_question_text');
           const explanationTextarea = document.getElementById('id_explanation');
           
-          if (window.currentMathEditor.id === 'wysiwyg-question-text-admin') {
+          if (window.currentMathEditor.id === 'wysiwyg-question-text') {
             questionTextarea.value = window.currentMathEditor.innerHTML;
-          } else if (window.currentMathEditor.id === 'wysiwyg-explanation-text-admin') {
+          } else if (window.currentMathEditor.id === 'wysiwyg-explanation') {
             explanationTextarea.value = window.currentMathEditor.innerHTML;
           } else if (window.currentMathEditor.id.startsWith('wysiwyg-choice-text-')) {
             // Handle choice editors
@@ -2291,9 +2301,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const questionTextarea = document.getElementById('id_question_text');
         const explanationTextarea = document.getElementById('id_explanation');
         
-        if (editor.id === 'wysiwyg-question-text-admin') {
+        if (editor.id === 'wysiwyg-question-text') {
           questionTextarea.value = editor.innerHTML;
-        } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+        } else if (editor.id === 'wysiwyg-explanation') {
           explanationTextarea.value = editor.innerHTML;
         } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
           // Handle choice editors
@@ -2326,9 +2336,9 @@ document.addEventListener('DOMContentLoaded', function() {
                   // Re-render with MathJax
                   window.MathJax.typesetPromise([this]).then(() => {
                     // Update textarea
-                    if (editor.id === 'wysiwyg-question-text-admin') {
+                    if (editor.id === 'wysiwyg-question-text') {
                       questionTextarea.value = editor.innerHTML;
-                    } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+                    } else if (editor.id === 'wysiwyg-explanation') {
                       explanationTextarea.value = editor.innerHTML;
                     } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
                       // Handle choice editors
@@ -2390,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Add event listener for close button
-  document.getElementById('closeLatexGuideBtnAdmin')?.addEventListener('click', function() {
+  document.getElementById('closeLatexGuideBtn')?.addEventListener('click', function() {
     window.closeLatexGuideModal();
   });
 
@@ -2495,54 +2505,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 essayAnswerSection: !!essayAnswerSection
             });
             
-            function toggleSections() {
+            // Make toggle function globally accessible
+            window.toggleQuestionTypeSections = function() {
                 const selectedType = document.querySelector('input[name="question_type"]:checked');
                 console.log('[DEBUG] toggleSections called, selectedType:', selectedType ? selectedType.value : 'NONE');
                 
                 if (selectedType) {
-                    document.body.style.cursor = 'wait';
+                    console.log('[DEBUG] Selected type:', selectedType.value);
                     
-                    setTimeout(() => {
-                        if (selectedType.value === 'multiple_choice') {
-                            if (choicesSection) choicesSection.style.display = 'block';
-                            if (essayAnswerSection) essayAnswerSection.style.display = 'none';
-                            if (choicesSection) choicesSection.classList.add('section-fade-in');
-                            
-                            console.log('[DEBUG] Showing multiple choice section');
-                            
-                            // Initialize choice checkboxes after section becomes visible
-                            setTimeout(() => {
-                                initializeChoiceCheckboxes();
-                            }, 100);
-                        } else if (selectedType.value === 'essay') {
-                            if (choicesSection) choicesSection.style.display = 'none';
-                            if (essayAnswerSection) essayAnswerSection.style.display = 'block';
-                            if (essayAnswerSection) essayAnswerSection.classList.add('section-fade-in');
-                            
-                            console.log('[DEBUG] Showing essay section');
+                    if (selectedType.value === 'multiple_choice') {
+                        if (choicesSection) {
+                            choicesSection.style.display = 'block';
+                            choicesSection.classList.add('section-fade-in');
+                        }
+                        if (essayAnswerSection) {
+                            essayAnswerSection.style.display = 'none';
                         }
                         
-                        document.body.style.cursor = '';
-                    }, 100);
+                        console.log('[DEBUG] Showing multiple choice section');
+                        
+                        // Initialize choice checkboxes after section becomes visible
+                        setTimeout(() => {
+                            initializeChoiceCheckboxes();
+                        }, 100);
+                    } else if (selectedType.value === 'essay') {
+                        if (choicesSection) {
+                            choicesSection.style.display = 'none';
+                        }
+                        if (essayAnswerSection) {
+                            essayAnswerSection.style.display = 'block';
+                            essayAnswerSection.classList.add('section-fade-in');
+                        }
+                        
+                        console.log('[DEBUG] Showing essay section');
+                    }
                 } else {
                     console.log('[DEBUG] No question type selected, ensuring multiple_choice is selected by default');
                     // If no type is selected, select multiple_choice by default
                     const multipleChoiceRadio = document.querySelector('input[name="question_type"][value="multiple_choice"]');
                     if (multipleChoiceRadio) {
                         multipleChoiceRadio.checked = true;
-                        setTimeout(toggleSections, 50);
+                        // Trigger the card refresh if exists
+                        const event = new Event('change', { bubbles: true });
+                        multipleChoiceRadio.dispatchEvent(event);
+                        setTimeout(() => window.toggleQuestionTypeSections(), 50);
                     }
                 }
-            }
+            };
             
             // Initial toggle based on selected value
             setTimeout(() => {
-                toggleSections();
+                window.toggleQuestionTypeSections();
             }, 100);
             
             // Add event listeners to radio buttons
             questionTypeRadios.forEach(function(radio) {
-                radio.addEventListener('change', toggleSections);
+                radio.addEventListener('change', function() {
+                    console.log('[DEBUG] Radio changed to:', this.value);
+                    setTimeout(() => window.toggleQuestionTypeSections(), 50);
+                });
             });
             
             // Form validation with enhanced UX
@@ -3235,9 +3256,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Helper function to sync editor content to textarea
             function syncEditorToTextarea(editor) {
                 let textarea = null;
-                if (editor.id === 'wysiwyg-question-text-admin') {
+                if (editor.id === 'wysiwyg-question-text') {
                     textarea = document.querySelector('#id_question_text');
-                } else if (editor.id === 'wysiwyg-explanation-text-admin') {
+                } else if (editor.id === 'wysiwyg-explanation') {
                     textarea = document.querySelector('#id_explanation');
                 } else if (editor.id.startsWith('wysiwyg-choice-text-')) {
                     const choiceNumber = editor.id.split('-').pop();
@@ -4172,8 +4193,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize on load
             setTimeout(() => {
                 // Only initialize image resizers on question form pages
-                if (document.querySelector('#wysiwyg-question-text-admin') || 
-                    document.querySelector('#wysiwyg-explanation-admin') ||
+                if (document.querySelector('#wysiwyg-question-text') || 
+                    document.querySelector('#wysiwyg-explanation') ||
                     document.querySelector('[id^="wysiwyg-choice-text-"]')) {
                     initializeImageResizers();
                 }
@@ -4191,7 +4212,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
               📖 LaTeX Guide - Panduan Penulisan Formula Matematika
             </h3>
-            <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" id="closeLatexGuideBtnAdmin">
+            <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" id="closeLatexGuideBtn">
               <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
               </svg>

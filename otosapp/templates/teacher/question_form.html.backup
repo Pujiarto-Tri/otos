@@ -882,7 +882,15 @@
                                                 radios.forEach(function(radio) {
                                                     // Make the native radio visually hidden but accessible via label card
                                                     radio.classList.add('sr-only');
-                                                    radio.addEventListener('change', refreshCards);
+                                                    radio.addEventListener('change', function() {
+                                                        refreshCards();
+                                                        // Trigger the main toggle function
+                                                        setTimeout(function() {
+                                                            if (window.toggleQuestionTypeSections) {
+                                                                window.toggleQuestionTypeSections();
+                                                            }
+                                                        }, 50);
+                                                    });
                                                 });
                                                 refreshCards();
                                             })();
@@ -894,7 +902,7 @@
                                 </div>
 
                                 <!-- Multiple Choice Options -->
-                                <div id="choicesSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                                <div id="choicesSection" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
                                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                                         <div class="flex items-center justify-between">
                                             <div>
@@ -1831,7 +1839,7 @@ document.addEventListener('DOMContentLoaded', function() {
       handleCorrectAnswerChange(correctCheckbox, choiceNumber);
       
       // Show notification
-      showNotification(`Choice ${String.fromCharCode(64 + choiceNumber)} is no longer marked as correct since it has no content`, 'info');
+      showNotification('Choice ' + String.fromCharCode(64 + choiceNumber) + ' is no longer marked as correct since it has no content', 'info');
     }
     
     // Update visual feedback for required choices (A & B)
@@ -1875,7 +1883,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Find and update counter display (if exists)
     const counterDisplay = document.querySelector('#choice-counter');
     if (counterDisplay) {
-      counterDisplay.textContent = `${filledChoices}/5 choices filled`;
+      counterDisplay.textContent = filledChoices + '/5 choices filled';
       if (filledChoices >= 2) {
         counterDisplay.classList.remove('text-red-500');
         counterDisplay.classList.add('text-green-500');
@@ -2398,7 +2406,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.style.backgroundColor = '#fef2f2';
                     this.style.borderColor = '#ef4444';
                     this.style.color = '#dc2626';
-                    this.textContent = `Error: ${newLatex}`;
+                    this.textContent = 'Error: ' + newLatex;
                   });
                 }
               });
@@ -2406,7 +2414,7 @@ document.addEventListener('DOMContentLoaded', function() {
               mathSpan.style.backgroundColor = '#fef2f2';
               mathSpan.style.borderColor = '#ef4444';
               mathSpan.style.color = '#dc2626';
-              mathSpan.textContent = `Error: ${latex}`;
+              mathSpan.textContent = 'Error: ' + latex;
             });
           }
         }, 100);
@@ -2484,54 +2492,204 @@ document.addEventListener('DOMContentLoaded', function() {
             const choicesSection = document.getElementById('choicesSection');
             const essayAnswerSection = document.getElementById('essayAnswerSection');
             
-            function toggleSections() {
+            console.log('[DEBUG] Question type initialization:', {
+                radios: questionTypeRadios.length,
+                choicesSection: !!choicesSection,
+                essayAnswerSection: !!essayAnswerSection,
+                choicesSectionElement: choicesSection,
+                essaySectionElement: essayAnswerSection,
+                choicesSectionDisplay: choicesSection ? choicesSection.style.display : 'N/A',
+                essaySectionDisplay: essayAnswerSection ? essayAnswerSection.style.display : 'N/A'
+            });
+            
+            // Make toggle function globally accessible
+            window.toggleQuestionTypeSections = function() {
                 const selectedType = document.querySelector('input[name="question_type"]:checked');
+                console.log('[DEBUG] toggleQuestionTypeSections called, selectedType:', selectedType ? selectedType.value : 'NONE');
                 
                 if (selectedType) {
-                    document.body.style.cursor = 'wait';
+                    console.log('[DEBUG] Selected type:', selectedType.value);
                     
-                    setTimeout(() => {
-                        if (selectedType.value === 'multiple_choice') {
-                            if (choicesSection) choicesSection.style.display = 'block';
-                            if (essayAnswerSection) essayAnswerSection.style.display = 'none';
-                            if (choicesSection) choicesSection.classList.add('section-fade-in');
-                            
-                            console.log('[DEBUG] Showing multiple choice section');
-                            
-                            // Initialize choice checkboxes after section becomes visible
-                            setTimeout(() => {
-                                initializeChoiceCheckboxes();
-                            }, 100);
-                        } else if (selectedType.value === 'essay') {
-                            if (choicesSection) choicesSection.style.display = 'none';
-                            if (essayAnswerSection) essayAnswerSection.style.display = 'block';
-                            if (essayAnswerSection) essayAnswerSection.classList.add('section-fade-in');
-                            
-                            console.log('[DEBUG] Showing essay section');
+                    if (selectedType.value === 'multiple_choice') {
+                        if (choicesSection) {
+                            choicesSection.style.display = 'block';
+                            choicesSection.classList.add('section-fade-in');
+                            console.log('[DEBUG] choicesSection shown');
+                        } else {
+                            console.log('[DEBUG] choicesSection not found!');
+                        }
+                        if (essayAnswerSection) {
+                            essayAnswerSection.style.display = 'none';
+                            console.log('[DEBUG] essayAnswerSection hidden');
                         }
                         
-                        document.body.style.cursor = '';
-                    }, 100);
+                        console.log('[DEBUG] Showing multiple choice section');
+                        
+                        // Initialize choice checkboxes after section becomes visible
+                        setTimeout(() => {
+                            if (typeof initializeChoiceCheckboxes === 'function') {
+                                initializeChoiceCheckboxes();
+                            }
+                        }, 100);
+                    } else if (selectedType.value === 'essay') {
+                        if (choicesSection) {
+                            choicesSection.style.display = 'none';
+                            console.log('[DEBUG] choicesSection hidden');
+                        }
+                        if (essayAnswerSection) {
+                            essayAnswerSection.style.display = 'block';
+                            essayAnswerSection.classList.add('section-fade-in');
+                            console.log('[DEBUG] essayAnswerSection shown');
+                        } else {
+                            console.log('[DEBUG] essayAnswerSection not found!');
+                        }
+                        
+                        console.log('[DEBUG] Showing essay section');
+                    }
                 } else {
                     console.log('[DEBUG] No question type selected, ensuring multiple_choice is selected by default');
                     // If no type is selected, select multiple_choice by default
                     const multipleChoiceRadio = document.querySelector('input[name="question_type"][value="multiple_choice"]');
                     if (multipleChoiceRadio) {
                         multipleChoiceRadio.checked = true;
-                        setTimeout(toggleSections, 50);
+                        // Trigger the card refresh
+                        const event = new Event('change', { bubbles: true });
+                        multipleChoiceRadio.dispatchEvent(event);
+                        setTimeout(() => window.toggleQuestionTypeSections(), 50);
                     }
                 }
+            };
+            
+            // Initialize sections and question type selection
+            function initializeQuestionType() {
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                
+                if (!selectedType) {
+                    // No type selected, default to multiple choice
+                    const multipleChoiceRadio = document.querySelector('input[name="question_type"][value="multiple_choice"]');
+                    if (multipleChoiceRadio) {
+                        console.log('[DEBUG] No type selected initially, defaulting to multiple_choice');
+                        multipleChoiceRadio.checked = true;
+                        
+                        // Trigger the card refresh if available
+                        setTimeout(() => {
+                            const event = new Event('change', { bubbles: true });
+                            multipleChoiceRadio.dispatchEvent(event);
+                        }, 10);
+                    }
+                }
+                
+                // Always call toggle function to ensure proper display
+                window.toggleQuestionTypeSections();
             }
+            
+            // Define the radio change handler function
+            function radioChangeHandler() {
+                console.log('[DEBUG] Radio change handler called, value:', this.value, 'checked:', this.checked);
+                setTimeout(() => {
+                    window.toggleQuestionTypeSections();
+                }, 50);
+            }
+            
+            // Initialize immediately
+            initializeQuestionType();
+            
+            // Add test function for debugging (can be called from browser console)
+            window.testToggle = function(type) {
+                console.log('[DEBUG] Manual test toggle to:', type);
+                const radio = document.querySelector('input[name="question_type"][value="' + type + '"]');
+                if (radio) {
+                    radio.checked = true;
+                    window.toggleQuestionTypeSections();
+                } else {
+                    console.log('[DEBUG] Radio not found for type:', type);
+                }
+            };
+            
+            // Add debug function to show current state
+            window.showState = function() {
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                const choicesSection = document.getElementById('choicesSection');
+                const essayAnswerSection = document.getElementById('essayAnswerSection');
+                
+                console.log('[DEBUG] Current state:', {
+                    selectedType: selectedType ? selectedType.value : 'NONE',
+                    choicesSection: {
+                        exists: !!choicesSection,
+                        display: choicesSection ? choicesSection.style.display : 'N/A',
+                        visible: choicesSection ? (choicesSection.style.display !== 'none') : false
+                    },
+                    essayAnswerSection: {
+                        exists: !!essayAnswerSection,
+                        display: essayAnswerSection ? essayAnswerSection.style.display : 'N/A',
+                        visible: essayAnswerSection ? (essayAnswerSection.style.display !== 'none' && essayAnswerSection.style.display !== '') : false
+                    }
+                });
+            };
             
             // Initial toggle based on selected value
             setTimeout(() => {
-                toggleSections();
+                // Ensure multiple choice is selected by default if nothing is selected
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                if (!selectedType) {
+                    const multipleChoiceRadio = document.querySelector('input[name="question_type"][value="multiple_choice"]');
+                    if (multipleChoiceRadio) {
+                        console.log('[DEBUG] No type selected initially, defaulting to multiple_choice');
+                        multipleChoiceRadio.checked = true;
+                        
+                        // Trigger the card refresh if the inline script exists
+                        const event = new Event('change', { bubbles: true });
+                        multipleChoiceRadio.dispatchEvent(event);
+                    }
+                }
+                
+                window.toggleQuestionTypeSections();
             }, 100);
             
-            // Add event listeners to radio buttons
+            // Add event listeners to radio buttons (backup, since inline script handles main logic)
             questionTypeRadios.forEach(function(radio) {
-                radio.addEventListener('change', toggleSections);
+                radio.addEventListener('change', radioChangeHandler);
+                
+                // Also add click listener to labels for better UX
+                const label = document.querySelector('label[for="' + radio.id + '"]');
+                if (label) {
+                    label.addEventListener('click', function(e) {
+                        console.log('[DEBUG] Label clicked for:', radio.value);
+                        // Let the default behavior handle the radio selection
+                        setTimeout(() => {
+                            console.log('[DEBUG] After label click, radio checked:', radio.checked);
+                            window.toggleQuestionTypeSections();
+                        }, 10);
+                    });
+                }
             });
+            
+            // Additional safety check - run toggle after everything is loaded
+            setTimeout(() => {
+                window.toggleQuestionTypeSections();
+                
+                // Force re-attach event listeners to ensure they work
+                questionTypeRadios.forEach(function(radio) {
+                    // Remove existing listeners
+                    radio.removeEventListener('change', radioChangeHandler);
+                    
+                    // Add new listener
+                    radio.addEventListener('change', radioChangeHandler);
+                });
+            }, 1000);
+            
+            // Final fallback - force show multiple choice if still hidden after 2 seconds
+            setTimeout(() => {
+                const choicesSection = document.getElementById('choicesSection');
+                const selectedType = document.querySelector('input[name="question_type"]:checked');
+                
+                if (choicesSection && selectedType && selectedType.value === 'multiple_choice') {
+                    if (choicesSection.style.display === 'none' || choicesSection.style.display === '') {
+                        console.log('[DEBUG] Final fallback - forcing multiple choice section visible');
+                        choicesSection.style.display = 'block';
+                    }
+                }
+            }, 2000);
             
             // Form validation with enhanced UX
             const form = document.querySelector('form');
@@ -2577,7 +2735,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const formData = new FormData(form);
                     for (let [key, value] of formData.entries()) {
                         if (key.includes('is_correct') || key.includes('choice_text')) {
-                            console.log(`FormData: ${key} = ${value}`);
+                            console.log('FormData: ' + key + ' = ' + value);
                         }
                     }
                     
@@ -2698,13 +2856,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         const isUpdate = submitBtn.textContent.includes('Update');
-                        submitBtn.innerHTML = `
-                            <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            ${isUpdate ? 'Updating' : 'Creating'} Question...
-                        `;
+                        submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">' +
+                            '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                            '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                            '</svg>' +
+                            (isUpdate ? 'Updating' : 'Creating') + ' Question...';
                     }
                 });
             }
@@ -2716,14 +2872,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 let checkbox = document.querySelector(`input[name="${checkboxName}"]`);
                 
                 if (!checkbox) {
-                    console.warn(`No checkbox found for choice ${choiceNumber} with name ${checkboxName}`);
+                    console.warn('No checkbox found for choice ' + choiceNumber + ' with name ' + checkboxName);
                     // Try alternative selector
                     const choiceItem = button.closest('.choice-item');
                     checkbox = choiceItem.querySelector('input[name$="-is_correct"][type="checkbox"]');
                     console.log(`[DEBUG] Fallback checkbox search:`, checkbox);
                     
                     if (!checkbox) {
-                        console.error(`Still no checkbox found for choice ${choiceNumber}`);
+                        console.error('Still no checkbox found for choice ' + choiceNumber);
                         return;
                     }
                 }
@@ -2737,7 +2893,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (!textContent.trim() && !checkbox.checked) {
                         // Prevent marking empty choice as correct
-                        showNotification(`Please add content to Choice ${String.fromCharCode(64 + choiceNumber)} before marking it as correct`, 'warning');
+                        showNotification('Please add content to Choice ' + String.fromCharCode(64 + choiceNumber) + ' before marking it as correct', 'warning');
                         return;
                     }
                 }
@@ -2935,7 +3091,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         // Prevent checking if no content
                                         e.preventDefault();
                                         this.checked = false;
-                                        showNotification(`Please add content to Choice ${String.fromCharCode(64 + choiceNumber)} before marking it as correct`, 'warning');
+                                        showNotification('Please add content to Choice ' + String.fromCharCode(64 + choiceNumber) + ' before marking it as correct', 'warning');
                                         return;
                                     }
                                 }
@@ -3113,24 +3269,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // Notification system
             function showNotification(message, type = 'info') {
                 const notification = document.createElement('div');
-                notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg max-w-sm ${getNotificationClasses(type)}`;
-                notification.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            ${getNotificationIcon(type)}
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium">${message}</p>
-                        </div>
-                        <div class="ml-auto pl-3">
-                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-gray-400 hover:text-gray-600">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                notification.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg max-w-sm ' + getNotificationClasses(type);
+                notification.innerHTML = 
+                    '<div class="flex items-start">' +
+                        '<div class="flex-shrink-0">' +
+                            getNotificationIcon(type) +
+                        '</div>' +
+                        '<div class="ml-3">' +
+                            '<p class="text-sm font-medium">' + message + '</p>' +
+                        '</div>' +
+                        '<div class="ml-auto pl-3">' +
+                            '<button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-gray-400 hover:text-gray-600">' +
+                                '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">' +
+                                    '<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>' +
+                                '</svg>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
                 
                 document.body.appendChild(notification);
                 
