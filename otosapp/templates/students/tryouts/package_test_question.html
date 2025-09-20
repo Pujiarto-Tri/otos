@@ -413,6 +413,37 @@ button, .btn {
   text-decoration-thickness: 1px !important;
 }
 
+/* Khusus untuk choice text - pastikan konsistensi formatting */
+.choice-text strong,
+.choice-text b {
+  font-weight: 700 !important;
+  color: inherit !important;
+  background: none !important;
+  border: none !important;
+  text-shadow: none !important;
+}
+
+.choice-text em,
+.choice-text i {
+  font-style: italic !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+}
+
+.choice-text u {
+  text-decoration: underline !important;
+  text-decoration-thickness: 1px !important;
+  color: inherit !important;
+}
+
+/* Reset any unwanted styling pada choice content */
+.choice-text * {
+  font-family: inherit !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Reset font weights untuk text elements - menggunakan ukuran standar */
 .text-xl.font-semibold,
 .text-2xl.font-bold,
@@ -460,6 +491,28 @@ input[type="radio"] {
   font-weight: 400; /* Normal weight untuk pilihan */
 }
 
+/* Pastikan semua choice text memiliki styling yang konsisten */
+.choice-text,
+.choice-text p,
+.choice-text span,
+.choice-text div {
+  font-size: inherit !important;
+  font-weight: 400 !important;
+  line-height: inherit !important;
+  font-family: inherit !important;
+}
+
+/* Override untuk bold dalam choice text agar konsisten */
+.choice-text strong,
+.choice-text b,
+.choice-text .bold {
+  font-weight: 700 !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+
 /* iPad dan tablet specific improvements */
 @media screen and (min-width: 768px) and (max-width: 1024px) {
   .question-text {
@@ -470,6 +523,11 @@ input[type="radio"] {
   .choice-text {
     font-size: 1.125rem; /* 18px untuk tablet */
     line-height: 1.5;
+  }
+  
+  .choice-text * {
+    font-size: inherit !important;
+    line-height: inherit !important;
   }
   
   .ckeditor-content {
@@ -487,6 +545,11 @@ input[type="radio"] {
   .choice-text {
     font-size: 0.975rem; /* 15.6px untuk mobile */
     line-height: 1.4;
+  }
+  
+  .choice-text * {
+    font-size: inherit !important;
+    line-height: inherit !important;
   }
 }
 
@@ -547,6 +610,30 @@ input[type="radio"] {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* Force consistent styling untuk semua choice elements */
+.choice-text span,
+.choice-text p,
+.choice-text div {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+/* Normalize CKEditor generated content dalam choices */
+.choice-text .ckeditor-content * {
+  font-weight: 400 !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.choice-text .ckeditor-content strong,
+.choice-text .ckeditor-content b {
+  font-weight: 700 !important;
 }
 
 .ckeditor-content img {
@@ -715,6 +802,21 @@ input[type="radio"] {
         font-size: 0.975rem; /* 15.6px untuk mobile */
         line-height: 1.4;
         font-weight: 400;
+    }
+    
+    /* Pastikan consistency pada mobile juga */
+    .choice-text *,
+    .choice-text span,
+    .choice-text p {
+        font-size: inherit !important;
+        font-weight: 400 !important;
+        line-height: inherit !important;
+    }
+    
+    .choice-text strong,
+    .choice-text b {
+        font-weight: 700 !important;
+        font-size: inherit !important;
     }
 
     /* Ensure hidden elements stay hidden */
