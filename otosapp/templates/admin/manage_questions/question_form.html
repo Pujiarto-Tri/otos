@@ -1652,6 +1652,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // Helper function to find the correct editor for toolbar buttons
+  function findAssociatedEditor(toolbarButton) {
+    let editor = null;
+    
+    // Strategy 1: Look for the toolbar container and its associated editor
+    const toolbar = toolbarButton.closest('[class*="border"]');
+    if (toolbar) {
+      const editorContainer = toolbar.parentElement;
+      if (editorContainer) {
+        // For choice editors, look for the editor div that comes after the toolbar
+        const nextSibling = toolbar.nextElementSibling;
+        if (nextSibling) {
+          editor = nextSibling.querySelector('[data-wysiwyg="true"]');
+        }
+        
+        // If not found, look within the same container
+        if (!editor) {
+          editor = editorContainer.querySelector('[data-wysiwyg="true"]');
+        }
+      }
+    }
+    
+    // Strategy 2: Fallback - look in closest parent container
+    if (!editor) {
+      const parentContainer = toolbarButton.closest('.bg-white, .dark\\:bg-gray-800');
+      if (parentContainer) {
+        editor = parentContainer.querySelector('[data-wysiwyg="true"]');
+      }
+    }
+    
+    return editor;
+  }
+  
             // Global function to sync all WYSIWYG content to textareas
             window.syncAllWysiwygContent = function() {
                 // Sync question content
@@ -1883,17 +1916,15 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const format = this.getAttribute('data-wysiwyg-toggle-format');
         
-        // Find the associated editor - look for the parent container with border class
-        const toolbar = this.closest('[class*="border"]');
-        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
-        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
-        
+        // Use helper function to find the correct editor
+        const editor = findAssociatedEditor(this);
         
         if (!editor) {
+          console.warn('Could not find associated editor for toolbar button:', this);
           return;
         }
 
-        // Focus the editor
+        // Focus the correct editor
         editor.focus();
         
         // Apply formatting based on Flowbite WYSIWYG commands
@@ -1997,12 +2028,11 @@ document.addEventListener('DOMContentLoaded', function() {
       button.addEventListener('click', function(e) {
         e.preventDefault();
         
-        // Find the associated editor - look for the parent container
-        const toolbar = this.closest('[class*="border"]');
-        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
-        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        // Use helper function to find the correct editor
+        const editor = findAssociatedEditor(this);
         
         if (!editor) {
+          console.warn('Could not find associated editor for image upload button:', this);
           return;
         }
         
@@ -2154,12 +2184,11 @@ document.addEventListener('DOMContentLoaded', function() {
       button.addEventListener('click', function(e) {
         e.preventDefault();
         
-        // Find the associated editor
-        const toolbar = this.closest('[class*="border"]');
-        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
-        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        // Use helper function to find the correct editor
+        const editor = findAssociatedEditor(this);
         
         if (!editor) {
+          console.warn('Could not find associated editor for math symbols button:', this);
           return;
         }
         
@@ -2235,12 +2264,11 @@ document.addEventListener('DOMContentLoaded', function() {
       button.addEventListener('click', function(e) {
         e.preventDefault();
         
-        // Find the associated editor
-        const toolbar = this.closest('[class*="border"]');
-        const editorContainer = toolbar ? toolbar.closest('.bg-white, .dark\\:bg-gray-800') : null;
-        const editor = editorContainer ? editorContainer.querySelector('[data-wysiwyg="true"]') : null;
+        // Use helper function to find the correct editor
+        const editor = findAssociatedEditor(this);
         
         if (!editor) {
+          console.warn('Could not find associated editor for LaTeX button:', this);
           return;
         }
 
