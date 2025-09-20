@@ -49,7 +49,7 @@
                         <span class="text-indigo-600 dark:text-indigo-400 font-bold text-sm">{{ current_question_number }}</span>
                     </div>
                     <div class="flex-1">
-                        <div class="text-xl font-semibold text-gray-800 dark:text-white leading-relaxed ckeditor-content">{{ question.question_text|safe }}</div>
+                        <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-relaxed ckeditor-content question-text">{{ question.question_text|safe }}</div>
                         {% if question.question_image %}
                         <div class="mt-4">
                             <img src="{{ question.question_image|safe_image_url }}" alt="Question Image" class="max-w-full w-full h-auto rounded-lg shadow-sm object-contain max-h-40 sm:max-h-60 md:max-h-80 lg:max-h-96">
@@ -69,7 +69,7 @@
                                {% if previous_answer and previous_answer.selected_choice and previous_answer.selected_choice.id == choice.id %}checked{% endif %}
                                class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600 mt-1 flex-shrink-0"
                                onchange="saveAnswer()">
-                        <div class="ml-4 text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 leading-relaxed ckeditor-content">
+                        <div class="ml-4 text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 group-hover:text-indigo-800 dark:group-hover:text-indigo-200 leading-relaxed ckeditor-content choice-text">
                             {{ choice.choice_text|safe }}
                             {% if choice.choice_image %}
                             <div class="mt-3">
@@ -365,13 +365,168 @@
   animation: fade-in 0.5s ease;
 }
 
-/* Styling untuk konten CKEditor */
+/* Universal font family untuk kompatibilitas lintas platform */
+* {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced button typography */
+button, .btn {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Styling khusus untuk konten CKEditor dengan typography yang lebih jelas */
 .ckeditor-content {
-  line-height: 1.6;
+  line-height: 1.7 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
 }
 
 .ckeditor-content p {
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem !important;
+  line-height: 1.7 !important;
+}
+
+/* Typography improvements untuk question text */
+.ckeditor-content strong,
+.ckeditor-content b {
+  font-weight: 800 !important;
+  color: inherit !important;
+  letter-spacing: 0.015em !important;
+  text-shadow: 0 0 1px rgba(0,0,0,0.15) !important;
+}
+
+.ckeditor-content em,
+.ckeditor-content i {
+  font-style: italic !important;
+  font-weight: 600 !important;
+  color: inherit !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Enhanced font weights untuk semua text elements */
+.text-xl.font-semibold,
+.text-2xl.font-bold,
+.text-3xl.font-bold {
+  font-weight: 800 !important;
+  letter-spacing: 0.015em !important;
+}
+
+.text-base.font-medium,
+.text-lg.font-medium,
+.text-lg.font-semibold,
+.text-xl.font-semibold {
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Dark mode text shadow adjustments */
+.dark .ckeditor-content strong,
+.dark .ckeditor-content b {
+  text-shadow: 0 0 1px rgba(255,255,255,0.2) !important;
+}
+
+/* Enhanced visibility untuk choice radio buttons */
+input[type="radio"] {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  margin-right: 0.75rem !important;
+}
+
+/* Improved container untuk mencegah overflow */
+.ckeditor-content {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+  max-width: 100% !important;
+}
+
+.ckeditor-content * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Styling khusus untuk question text */
+.question-text {
+  font-size: 1.5rem !important;
+  line-height: 1.6 !important;
+  word-spacing: 0.05em !important;
+}
+
+.choice-text {
+  font-size: 1.125rem !important;
+  line-height: 1.6 !important;
+  word-spacing: 0.03em !important;
+}
+
+/* iPad dan tablet specific improvements */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .question-text {
+    font-size: 1.75rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  .choice-text {
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  .ckeditor-content {
+    font-size: 1.125rem !important;
+  }
+}
+
+/* Mobile improvements */
+@media screen and (max-width: 767px) {
+  .question-text {
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  .choice-text {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* Container overflow prevention */
+.max-w-6xl {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  overflow-x: hidden !important;
+}
+
+.bg-white.dark\\:bg-gray-800.rounded-2xl {
+  padding: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure proper text wrapping in all contexts */
+.ckeditor-content p,
+.ckeditor-content div,
+.ckeditor-content span {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+}
+
+/* High contrast untuk better visibility pada semua device */
+.ckeditor-content strong,
+.ckeditor-content b {
+  font-weight: 800 !important;
+  text-shadow: 0 0 1px rgba(0,0,0,0.1) !important;
+}
+
+.dark .ckeditor-content strong,
+.dark .ckeditor-content b {
+  text-shadow: 0 0 1px rgba(255,255,255,0.1) !important;
 }
 
 /* Remove any blue styling from math formulas in question content */
@@ -537,10 +692,6 @@
         font-size: 0.7rem !important;
     }
 
-    .ckeditor-content {
-        font-size: 0.95rem !important;
-    }
-
     /* reduce container horizontal padding for better fit */
     .max-w-6xl.mx-auto.p-6 {
         padding-left: 0.75rem !important;
@@ -552,6 +703,16 @@
         right: 0.5rem !important;
         top: auto !important;
         bottom: 1rem !important;
+    }
+    
+    .question-text {
+        font-size: 1.125rem !important;
+        line-height: 1.4 !important;
+    }
+    
+    .choice-text {
+        font-size: 0.975rem !important;
+        line-height: 1.4 !important;
     }
 
     /* Ensure hidden elements stay hidden */
