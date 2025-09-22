@@ -135,6 +135,27 @@
                     <p class="text-sm text-gray-500">Pilih subtest materi yang sesuai untuk memudahkan pengarahan</p>
                 </div>
 
+                <!-- Teacher Field (conditional, appears for academic threads) -->
+                <div id="teacher_field" class="space-y-2 hidden">
+                    <label for="teacher" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4 inline mr-2 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v1h14v-1a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zM6 14a4 4 0 018 0v1H6v-1z"></path>
+                        </svg>
+                        Pilih Guru (Opsional)
+                    </label>
+                    <select id="teacher" name="teacher" class="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-200">
+                        <option value="">Pilih guru (opsional) — jika kosong, pertanyaan akan ditangani oleh operator/admin</option>
+                        {% if teachers %}
+                            {% for t in teachers %}
+                                <option value="{{ t.id }}">{{ t.get_full_name|default:t.email }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" disabled>Belum ada akun guru terdaftar</option>
+                        {% endif %}
+                    </select>
+                    <p class="text-sm text-gray-500">Pilih guru untuk mengarahkan pertanyaan Anda (opsional).</p>
+                </div>
+
                 <!-- Priority -->
                 <div class="space-y-2">
                     <label for="priority" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -315,14 +336,24 @@
 function toggleCategoryField() {
     const threadType = document.getElementById('thread_type').value;
     const categoryField = document.getElementById('category_field');
+    const teacherField = document.getElementById('teacher_field');
     
     if (threadType === 'academic') {
         categoryField.classList.remove('hidden');
         categoryField.style.display = 'block';
+        if (teacherField) {
+            teacherField.classList.remove('hidden');
+            teacherField.style.display = 'block';
+        }
     } else {
         categoryField.classList.add('hidden');
         categoryField.style.display = 'none';
         document.getElementById('category').value = '';
+        if (teacherField) {
+            teacherField.classList.add('hidden');
+            teacherField.style.display = 'none';
+            document.getElementById('teacher').value = '';
+        }
     }
 }
 
@@ -330,6 +361,8 @@ function toggleCategoryField() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize category field visibility
     toggleCategoryField();
+        // Load saved draft if any
+        try { loadDraft(); } catch (e) { console.warn('loadDraft error', e); }
     
     // Character counters
     const titleInput = document.getElementById('title');
@@ -494,6 +527,7 @@ function saveDraft() {
         title: document.getElementById('title').value,
         thread_type: document.getElementById('thread_type').value,
         category: document.getElementById('category').value,
+        teacher: document.getElementById('teacher') ? document.getElementById('teacher').value : '',
         priority: document.querySelector('input[name="priority"]:checked')?.value,
         content: document.getElementById('content').value
     };
@@ -510,6 +544,7 @@ function loadDraft() {
         if (formData.title) document.getElementById('title').value = formData.title;
         if (formData.thread_type) document.getElementById('thread_type').value = formData.thread_type;
         if (formData.category) document.getElementById('category').value = formData.category;
+        if (formData.teacher && document.getElementById('teacher')) document.getElementById('teacher').value = formData.teacher;
         if (formData.priority) {
             const priorityRadio = document.querySelector(`input[name="priority"][value="${formData.priority}"]`);
             if (priorityRadio) priorityRadio.checked = true;

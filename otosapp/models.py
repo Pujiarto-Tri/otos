@@ -1016,6 +1016,36 @@ class MessageThread(models.Model):
         ('high', 'Tinggi'),
         ('urgent', 'Mendesak')
     ], default='normal')
+    # Close request metadata
+    close_requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='close_requests',
+        help_text='Guru yang meminta penutupan thread'
+    )
+    close_requested_at = models.DateTimeField(null=True, blank=True, help_text='Waktu ketika guru meminta penutupan')
+    # Closed metadata
+    closed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='closed_threads',
+        help_text='User yang menutup thread'
+    )
+    closed_at = models.DateTimeField(null=True, blank=True, help_text='Waktu ketika thread ditutup')
+    # Reopen metadata
+    reopened_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reopened_threads',
+        help_text='User yang membuka kembali thread'
+    )
+    reopened_at = models.DateTimeField(null=True, blank=True, help_text='Waktu ketika thread dibuka kembali')
     
     class Meta:
         ordering = ['-last_activity']
@@ -1043,6 +1073,22 @@ class MessageThread(models.Model):
         if self.teacher_or_admin:
             participants.append(self.teacher_or_admin)
         return participants
+
+
+class ThreadStatusLog(models.Model):
+    """Audit log for MessageThread status changes and requests."""
+    thread = models.ForeignKey(MessageThread, on_delete=models.CASCADE, related_name='status_logs')
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    old_status = models.CharField(max_length=20, blank=True, null=True)
+    new_status = models.CharField(max_length=20, blank=True, null=True)
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.created_at}] {self.thread.title} : {self.old_status} -> {self.new_status}"
 
 
 class Message(models.Model):

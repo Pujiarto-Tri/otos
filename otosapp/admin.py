@@ -67,10 +67,10 @@ class MessageInline(admin.TabularInline):
 
 
 class MessageThreadAdmin(admin.ModelAdmin):
-    list_display = ('title', 'student', 'teacher_or_admin', 'thread_type', 'status', 'priority', 'last_activity')
+    list_display = ('title', 'student', 'teacher_or_admin', 'thread_type', 'status', 'priority', 'closed_by', 'closed_at', 'reopened_by', 'reopened_at', 'last_activity')
     list_filter = ('thread_type', 'status', 'priority', 'created_at')
     search_fields = ('title', 'student__username', 'student__email', 'teacher_or_admin__username')
-    readonly_fields = ('created_at', 'updated_at', 'last_activity')
+    readonly_fields = ('created_at', 'updated_at', 'last_activity', 'closed_by', 'closed_at', 'reopened_by', 'reopened_at')
     date_hierarchy = 'created_at'
     inlines = [MessageInline]
     
@@ -78,8 +78,8 @@ class MessageThreadAdmin(admin.ModelAdmin):
         ('Informasi Utama', {
             'fields': ('title', 'thread_type', 'status', 'priority')
         }),
-        ('Peserta', {
-            'fields': ('student', 'teacher_or_admin', 'category')
+            ('Peserta', {
+            'fields': ('student', 'teacher_or_admin', 'category', 'closed_by', 'closed_at', 'reopened_by', 'reopened_at')
         }),
         ('Timestamp', {
             'fields': ('created_at', 'updated_at', 'last_activity'),
@@ -112,6 +112,14 @@ class MessageAdmin(admin.ModelAdmin):
 
 admin.site.register(MessageThread, MessageThreadAdmin)
 admin.site.register(Message, MessageAdmin)
+from .models import ThreadStatusLog
+
+class ThreadStatusLogAdmin(admin.ModelAdmin):
+    list_display = ('thread', 'changed_by', 'old_status', 'new_status', 'created_at')
+    list_filter = ('old_status', 'new_status', 'created_at')
+    search_fields = ('thread__title', 'changed_by__username', 'note')
+
+admin.site.register(ThreadStatusLog, ThreadStatusLogAdmin)
 
 
 # ======================= UNIVERSITY ADMIN =======================

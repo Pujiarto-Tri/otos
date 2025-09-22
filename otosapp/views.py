@@ -3346,6 +3346,7 @@ def create_message_thread(request):
         title = request.POST.get('title', '').strip()
         thread_type = request.POST.get('thread_type', 'general')
         category_id = request.POST.get('category', None)
+        teacher_id = request.POST.get('teacher', None)
         priority = request.POST.get('priority', 'normal')
         content = request.POST.get('content', '').strip()
         attachment = request.FILES.get('attachment', None)
@@ -3364,6 +3365,16 @@ def create_message_thread(request):
                         priority=priority,
                         category_id=category_id if category_id else None
                     )
+                    # Assign teacher/admin if provided (optional)
+                    if teacher_id:
+                        try:
+                            teacher_user = User.objects.get(pk=teacher_id)
+                            # only assign if user has teacher role (case-insensitive)
+                            if teacher_user.role and teacher_user.role.role_name.lower() == 'teacher':
+                                thread.teacher_or_admin = teacher_user
+                                thread.save()
+                        except User.DoesNotExist:
+                            pass
                     
                     # Buat pesan pertama
                     Message.objects.create(
@@ -3381,8 +3392,11 @@ def create_message_thread(request):
     
     # Data untuk form
     categories = Category.objects.all().order_by('category_name')
+    # Teachers list for optional assignment (case-insensitive match on role name)
+    teachers = User.objects.filter(role__role_name__iexact='teacher', is_active=True).order_by('first_name', 'last_name')
     context = {
         'categories': categories,
+        'teachers': teachers,
         'thread_type_choices': MessageThread.THREAD_TYPES,
         'priority_choices': [
             ('low', 'Rendah'),
@@ -3437,8 +3451,26 @@ def message_thread(request, thread_id):
                 
                 # Update status thread jika perlu
                 if thread.status == 'closed':
+                    old = thread.status
                     thread.status = 'open'
+                    # set reopened metadata
+                    thread.reopened_by = user
+                    thread.reopened_at = timezone.now()
+                    # clear closed metadata
+                    thread.closed_by = None
+                    thread.closed_at = None
                     thread.save()
+                    try:
+                        from otosapp.models import ThreadStatusLog
+                        ThreadStatusLog.objects.create(
+                            thread=thread,
+                            changed_by=user,
+                            old_status=old,
+                            new_status='open',
+                            note='Thread dibuka kembali oleh balasan'
+                        )
+                    except Exception:
+                        pass
                 
                 messages.success(request, 'Balasan berhasil dikirim!')
                 return redirect('message_thread', thread_id=thread.id)
@@ -3449,10 +3481,101 @@ def message_thread(request, thread_id):
         elif action == 'update_status':
             new_status = request.POST.get('status')
             if new_status in dict(MessageThread.STATUS_CHOICES):
+                old = thread.status
                 thread.status = new_status
                 thread.save()
+                # create audit log
+                try:
+                    from otosapp.models import ThreadStatusLog
+                    ThreadStatusLog.objects.create(
+                        thread=thread,
+                        changed_by=user,
+                        old_status=old,
+                        new_status=new_status,
+                        note=f'Status diubah melalui form oleh {user.get_full_name() or user.username}'
+                    )
+                except Exception:
+                    pass
                 messages.success(request, f'Status thread diubah menjadi {dict(MessageThread.STATUS_CHOICES)[new_status]}')
                 return redirect('message_thread', thread_id=thread.id)
+        
+        elif action == 'close_thread':
+            # Close thread: allowed for the student who created it, or Admin/Operator
+            allowed = False
+            if user.role and user.role.role_name == 'Student' and thread.student == user:
+                allowed = True
+            if user.role and user.role.role_name in ['Admin', 'Operator']:
+                allowed = True
+
+            if allowed:
+                # Prevent closing an already closed thread
+                if thread.status == 'closed':
+                    messages.info(request, 'Thread ini sudah ditutup.')
+                    return redirect('message_thread', thread_id=thread.id)
+
+                old = thread.status
+                thread.status = 'closed'
+                thread.closed_by = user
+                thread.closed_at = timezone.now()
+                # clear reopened metadata
+                thread.reopened_by = None
+                thread.reopened_at = None
+                thread.save()
+                try:
+                    from otosapp.models import ThreadStatusLog
+                    ThreadStatusLog.objects.create(
+                        thread=thread,
+                        changed_by=user,
+                        old_status=old,
+                        new_status='closed',
+                        note='Thread ditutup'
+                    )
+                except Exception:
+                    pass
+                # add a system message noting closure
+                Message.objects.create(
+                    thread=thread,
+                    sender=user,
+                    content=f'Thread ditutup oleh {user.get_full_name() or user.username} ({user.role.role_name}).'
+                )
+                messages.success(request, 'Thread berhasil ditutup.')
+            else:
+                messages.error(request, 'Anda tidak memiliki izin untuk menutup thread ini.')
+            return redirect('message_thread', thread_id=thread.id)
+
+        elif action == 'request_close':
+            # Teacher requests closing: set status to 'pending' and add a message
+            if user.role and user.role.role_name == 'Teacher' and thread.teacher_or_admin == user:
+                # Skip if already requested or thread is pending/closed
+                if thread.close_requested_by or thread.status in ['pending', 'closed']:
+                    messages.info(request, 'Permintaan penutupan sudah ada atau thread tidak dapat diminta ditutup.')
+                    return redirect('message_thread', thread_id=thread.id)
+
+                old = thread.status
+                thread.status = 'pending'
+                thread.close_requested_by = user
+                thread.close_requested_at = timezone.now()
+                thread.save()
+                Message.objects.create(
+                    thread=thread,
+                    sender=user,
+                    content='Guru meminta agar thread ini ditutup. Mohon siswa atau admin memverifikasi dan menutup thread jika sesuai.'
+                )
+                try:
+                    from otosapp.models import ThreadStatusLog
+                    ThreadStatusLog.objects.create(
+                        thread=thread,
+                        changed_by=user,
+                        old_status=old,
+                        new_status='pending',
+                        note='Guru meminta penutupan thread'
+                    )
+                except Exception:
+                    pass
+                messages.success(request, 'Permintaan penutupan dikirim. Siswa atau admin akan menerima notifikasi.')
+            else:
+                messages.error(request, 'Hanya guru yang menangani thread ini dapat meminta penutupan.')
+            return redirect('message_thread', thread_id=thread.id)
     
     # Tandai pesan sebagai sudah dibaca
     thread.mark_as_read_for_user(user)
