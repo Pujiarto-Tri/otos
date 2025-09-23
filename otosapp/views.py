@@ -4665,6 +4665,73 @@ def student_rankings(request):
         except Category.DoesNotExist:
             pass
     
+    # Enrich rankings with avatars and chosen university targets
+    if rankings:
+        try:
+            student_ids = [r.get('student_id') for r in rankings if r.get('student_id')]
+            # Batch fetch users for avatars
+            users_qs = User.objects.filter(id__in=student_ids).only('id', 'profile_picture', 'first_name', 'last_name', 'email')
+            user_map = {u.id: u for u in users_qs}
+            # Batch fetch university targets
+            from otosapp.models import UniversityTarget
+            targets_qs = UniversityTarget.objects.select_related(
+                'primary_university', 'secondary_university', 'backup_university'
+            ).filter(user_id__in=student_ids)
+            targets_map = {t.user_id: t for t in targets_qs}
+            for row in rankings:
+                sid = row.get('student_id')
+                user_obj = user_map.get(sid)
+                row['profile_picture'] = getattr(user_obj, 'profile_picture', None) if user_obj else None
+                # Compute display name (full name; fallback to email)
+                full_name = ''
+                if user_obj:
+                    first = getattr(user_obj, 'first_name', '') or ''
+                    last = getattr(user_obj, 'last_name', '') or ''
+                    full_name = f"{first} {last}".strip()
+                email_fb = (getattr(user_obj, 'email', None) if user_obj else None) or row.get('email') or row.get('username')
+                row['display_name'] = full_name if full_name else email_fb
+                ut = targets_map.get(sid)
+                targets = []
+                if ut:
+                    if ut.primary_university_id:
+                        targets.append({'label': 'Target Utama', 'university': ut.primary_university})
+                    if ut.backup_university_id:
+                        targets.append({'label': 'Target Aman', 'university': ut.backup_university})
+                    if ut.secondary_university_id:
+                        targets.append({'label': 'Target Cadangan', 'university': ut.secondary_university})
+                row['user_targets'] = targets
+        except Exception as e:
+            # Fail-safe: don't break page if enrichment fails
+            try:
+                from django.conf import settings as dj_settings
+                if dj_settings.DEBUG:
+                    print(f"[DEBUG] Rankings enrichment error: {e}")
+            except Exception:
+                pass
+
+        # Compute normalized score percentage and color for progress bars
+        try:
+            max_score_value = max((r.get('score') or 0) for r in rankings) or 1
+        except ValueError:
+            max_score_value = 1
+        for r in rankings:
+            raw = r.get('score') or 0
+            pct = int(round((raw / max_score_value) * 100))
+            if pct < 0:
+                pct = 0
+            if pct > 100:
+                pct = 100
+            r['score_pct'] = pct
+            r['score_left_pct'] = 100 - pct
+            if pct >= 85:
+                r['bar_color'] = 'bg-green-500'
+            elif pct >= 70:
+                r['bar_color'] = 'bg-blue-500'
+            elif pct >= 50:
+                r['bar_color'] = 'bg-yellow-500'
+            else:
+                r['bar_color'] = 'bg-red-500'
+
     # Get some general statistics
     total_students = User.objects.filter(
         role__role_name='Student',
