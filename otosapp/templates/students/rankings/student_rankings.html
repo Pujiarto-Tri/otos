@@ -201,46 +201,88 @@
         {% if rankings %}
         <!-- Podium Top 3 -->
         <div class="px-6 pt-6">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {% for item in rankings|slice:":3" %}
-                    <div class="relative rounded-2xl p-5 shadow-xl transform hover:scale-105 transition-all duration-300
-                        {% if item.rank == 1 %}bg-gradient-to-br from-yellow-400 via-amber-300 to-yellow-200 border-2 border-yellow-500 shadow-yellow-400/50 dark:shadow-yellow-400/30 dark:from-yellow-600 dark:via-amber-600 dark:to-yellow-500 dark:border-yellow-400
-                        {% elif item.rank == 2 %}bg-gradient-to-br from-slate-400 via-gray-300 to-slate-200 border-2 border-slate-500 shadow-slate-400/50 dark:shadow-slate-400/30 dark:from-slate-600 dark:via-gray-600 dark:to-slate-500 dark:border-slate-400
-                        {% else %}bg-gradient-to-br from-orange-400 via-amber-300 to-orange-200 border-2 border-orange-500 shadow-orange-400/50 dark:shadow-orange-400/30 dark:from-orange-600 dark:via-amber-600 dark:to-orange-500 dark:border-orange-400{% endif %}">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl mr-3 shadow-lg
-                                    {% if item.rank == 1 %}bg-gradient-to-br from-yellow-500 to-amber-600 text-white shadow-yellow-500/60
-                                    {% elif item.rank == 2 %}bg-gradient-to-br from-slate-500 to-gray-600 text-white shadow-slate-500/60
-                                    {% else %}bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/60{% endif %}">
-                                    {% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% else %}🥉{% endif %}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium
-                                        {% if item.rank == 1 %}text-yellow-800 dark:text-yellow-200
-                                        {% elif item.rank == 2 %}text-slate-700 dark:text-slate-200
-                                        {% else %}text-orange-800 dark:text-orange-200{% endif %}">#{{ item.rank }}</div>
-                                    <div class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        {{ item.display_name|default:item.username|default:item.email }}
-                                        {% if item.is_current_user %}
-                                        <span class="px-2 py-0.5 text-[11px] rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm">Anda</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-2xl font-extrabold
-                                    {% if item.rank == 1 %}text-yellow-900 dark:text-yellow-100
-                                    {% elif item.rank == 2 %}text-slate-800 dark:text-slate-100  
-                                    {% else %}text-orange-900 dark:text-orange-100{% endif %}">{{ item.score|floatformat:"0" }}</div>
-                                <div class="mt-2 w-28 bg-white/70 dark:bg-gray-800/70 rounded-full h-2 overflow-hidden shadow-inner">
-                                    <div class="{{ item.bar_color|default:'bg-gray-400' }} h-2 rounded-full transition-all duration-500 shadow-sm" style="width: {{ item.score_pct|default:0 }}%"></div>
-                                </div>
-                            </div>
+            <!-- Create arrays for reordering: rank 2, rank 1, rank 3 -->
+            {% with rank_1=rankings.0 rank_2=rankings.1 rank_3=rankings.2 %}
+            <div class="flex items-end justify-center gap-4 sm:gap-6">
+                <!-- Rank 2 (Left) -->
+                {% if rank_2 %}
+                <div class="relative rounded-2xl p-4 shadow-xl transform hover:scale-105 transition-all duration-300 w-full max-w-xs
+                    bg-gradient-to-br from-slate-400 via-gray-300 to-slate-200 border-2 border-slate-500 shadow-slate-400/50 dark:shadow-slate-400/30 dark:from-slate-600 dark:via-gray-600 dark:to-slate-500 dark:border-slate-400">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl mb-3 shadow-lg
+                            bg-gradient-to-br from-slate-500 to-gray-600 text-white shadow-slate-500/60">
+                            🥈
+                        </div>
+                        <div class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">#2</div>
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2 min-w-0 w-full">
+                            <span class="truncate block" title="{{ rank_2.display_name|default:rank_2.username|default:rank_2.email }}">
+                                {{ rank_2.display_name|default:rank_2.username|default:rank_2.email }}
+                            </span>
+                            {% if rank_2.is_current_user %}
+                            <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm mt-1 inline-block">Anda</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">{{ rank_2.score|floatformat:"0" }}</div>
+                        <div class="w-full bg-white/70 dark:bg-gray-800/70 rounded-full h-1.5 overflow-hidden shadow-inner">
+                            <div class="{{ rank_2.bar_color|default:'bg-gray-400' }} h-1.5 rounded-full transition-all duration-500 shadow-sm" style="width: {{ rank_2.score_pct|default:0 }}%"></div>
                         </div>
                     </div>
-                {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Rank 1 (Middle - Elevated) -->
+                {% if rank_1 %}
+                <div class="relative rounded-2xl p-5 shadow-2xl transform hover:scale-105 transition-all duration-300 w-full max-w-sm -mt-4
+                    bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 border-2 border-purple-400 shadow-purple-400/50 dark:shadow-purple-400/30 dark:from-purple-600 dark:via-pink-600 dark:to-blue-600 dark:border-purple-300">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl mb-3 shadow-xl
+                            bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-purple-500/60">
+                            🥇
+                        </div>
+                        <div class="text-2xl font-extrabold text-white drop-shadow-sm mb-1">#1</div>
+                        <div class="text-base font-bold text-white mb-3 min-w-0 w-full drop-shadow-sm">
+                            <span class="truncate block" title="{{ rank_1.display_name|default:rank_1.username|default:rank_1.email }}">
+                                {{ rank_1.display_name|default:rank_1.username|default:rank_1.email }}
+                            </span>
+                            {% if rank_1.is_current_user %}
+                            <span class="px-2 py-0.5 text-[11px] rounded-full bg-white/20 text-white shadow-sm mt-1 inline-block backdrop-blur-sm">Anda</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-2xl font-extrabold text-white drop-shadow-sm mb-3">{{ rank_1.score|floatformat:"0" }}</div>
+                        <div class="w-full bg-white/30 dark:bg-white/20 rounded-full h-2 overflow-hidden shadow-inner backdrop-blur-sm">
+                            <div class="bg-white h-2 rounded-full transition-all duration-500 shadow-sm" style="width: {{ rank_1.score_pct|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Rank 3 (Right) -->
+                {% if rank_3 %}
+                <div class="relative rounded-2xl p-4 shadow-xl transform hover:scale-105 transition-all duration-300 w-full max-w-xs
+                    bg-gradient-to-br from-orange-400 via-amber-300 to-orange-200 border-2 border-orange-500 shadow-orange-400/50 dark:shadow-orange-400/30 dark:from-orange-600 dark:via-amber-600 dark:to-orange-500 dark:border-orange-400">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl mb-3 shadow-lg
+                            bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/60">
+                            🥉
+                        </div>
+                        <div class="text-lg font-bold text-orange-800 dark:text-orange-200 mb-1">#3</div>
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2 min-w-0 w-full">
+                            <span class="truncate block" title="{{ rank_3.display_name|default:rank_3.username|default:rank_3.email }}">
+                                {{ rank_3.display_name|default:rank_3.username|default:rank_3.email }}
+                            </span>
+                            {% if rank_3.is_current_user %}
+                            <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm mt-1 inline-block">Anda</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xl font-extrabold text-orange-900 dark:text-orange-100 mb-2">{{ rank_3.score|floatformat:"0" }}</div>
+                        <div class="w-full bg-white/70 dark:bg-gray-800/70 rounded-full h-1.5 overflow-hidden shadow-inner">
+                            <div class="{{ rank_3.bar_color|default:'bg-gray-400' }} h-1.5 rounded-full transition-all duration-500 shadow-sm" style="width: {{ rank_3.score_pct|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
+            {% endwith %}
         </div>
         <div class="overflow-x-auto pt-8">
             <table class="w-full" aria-label="Tabel papan peringkat">
@@ -300,8 +342,8 @@
                                         <span class="text-white font-bold text-sm">{{ ranking.display_name|default:ranking.username|default:ranking.email|first|upper }}</span>
                                     </div>
                                 {% endif %}
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white truncate" title="{{ ranking.display_name|default:ranking.username|default:ranking.email }}">
                                         {{ ranking.display_name|default:ranking.username|default:ranking.email }}
                                     </div>
                                     {% if ranking.university_info %}
