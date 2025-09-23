@@ -12,6 +12,44 @@ class CustomUserCreationForm(UserCreationForm):
             'placeholder': 'Masukkan nomor HP (contoh: +62812...)'
         })
     )
+
+    class Meta:
+        model = User
+        fields = ('email', 'phone_number', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        # Remove current_user from kwargs since we no longer need it for role selection
+        kwargs.pop('current_user', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.username = self.cleaned_data['email']
+        # save phone number from form
+        user.phone_number = self.cleaned_data.get('phone_number')
+
+        # Set default role to Visitor for new registrations (security: users cannot choose their own role)
+        try:
+            visitor_role = Role.objects.get(role_name='Visitor')
+            user.role = visitor_role
+        except Role.DoesNotExist:
+            # Fallback: create Visitor role if it doesn't exist
+            visitor_role = Role.objects.create(role_name='Visitor')
+            user.role = visitor_role
+
+        if commit:
+            user.save()
+        return user
+
+class AdminUserCreationForm(UserCreationForm):
+    """Form for admins/operators to create users with role selection"""
+    phone_number = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5',
+            'placeholder': 'Masukkan nomor HP (contoh: +62812...)'
+        })
+    )
     
     role = forms.ModelChoiceField(
         queryset=Role.objects.all(),
@@ -42,12 +80,22 @@ class CustomUserCreationForm(UserCreationForm):
         # save phone number from form
         user.phone_number = self.cleaned_data.get('phone_number')
 
-        # Set role from form data instead of default
+        # Set role from form data
         user.role = self.cleaned_data.get('role')
 
         if commit:
             user.save()
         return user
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number', '')
+        # allow starting + and digits only
+        import re
+        if not phone:
+            raise forms.ValidationError('Nomor HP wajib diisi.')
+        if not re.match(r'^\+?\d{9,20}$', phone):
+            raise forms.ValidationError('Format nomor tidak valid. Contoh: +628123456789')
+        return phone
 
     def clean_phone_number(self):
         phone = self.cleaned_data.get('phone_number', '')

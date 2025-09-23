@@ -16,7 +16,7 @@ from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
-from .forms import CustomUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
+from .forms import CustomUserCreationForm, AdminUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 
 from django.db.models.functions import TruncDay, TruncMonth
@@ -1488,12 +1488,12 @@ def user_list(request):
 @admin_or_operator_required
 def user_create(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST, current_user=request.user)
+        form = AdminUserCreationForm(request.POST, current_user=request.user)
         if form.is_valid():
             form.save()
             return redirect('user_list')
     else:
-        form = CustomUserCreationForm(current_user=request.user)
+        form = AdminUserCreationForm(current_user=request.user)
     return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Add New User'})
 
 @login_required
