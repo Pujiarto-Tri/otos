@@ -68,11 +68,13 @@
         <nav class="flex mb-4" aria-label="Breadcrumb">
           <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
-              <a href="{% url 'teacher_student_list' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">Categories</a>
+              <a href="{% url 'teacher_category_list' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">Subtest</a>
             </li>
             <li>
               <div class="flex items-center">
-                <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20"><path d="M7 7l6 6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
                 <span class="text-sm text-gray-500">{{ category.category_name }}</span>
               </div>
             </li>
@@ -95,9 +97,6 @@
             </div>
           </div>
           <div class="flex flex-col sm:flex-row gap-3">
-            {% if category.scoring_method == 'utbk' %}
-            <a href="{% url 'update_utbk_coefficients' category.id %}" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800">Update UTBK</a>
-            {% endif %}
             <a href="{% url 'teacher_question_create' category.id %}" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">Add Question</a>
           </div>
         </div>

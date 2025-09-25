@@ -1406,11 +1406,47 @@ def teacher_student_list(request):
     """Show a card-style list of subtests (categories) that the teacher created."""
     # Admins see all categories, teachers only their own
     if request.user.is_admin():
-        categories = Category.objects.all().order_by('-id')
+        categories = Category.objects.all()
     else:
         categories = Category.objects.filter(
             Q(created_by=request.user) | Q(teachers=request.user)
-        ).distinct().order_by('-id')
+        ).distinct()
+
+    # --- Filtering & sorting from query params ---
+    q = request.GET.get('q', '').strip()
+    scoring = request.GET.get('scoring', '').strip()
+    has_submissions = request.GET.get('has_submissions', '').strip()
+    sort = request.GET.get('sort', 'recent')
+
+    # Apply name search
+    if q:
+        categories = categories.filter(category_name__icontains=q)
+
+    # Map template's 'standard' to model's 'default'
+    if scoring:
+        scoring_val = 'default' if scoring == 'standard' else scoring
+        categories = categories.filter(scoring_method=scoring_val)
+
+    # Annotate submitted_count and avg_score to support filtering/sorting
+    categories = categories.annotate(
+        submitted_count=Count('tests', filter=Q(tests__is_submitted=True)),
+        avg_score=Avg('tests__score', filter=Q(tests__is_submitted=True))
+    )
+
+    # Filter by has_submissions
+    if has_submissions in ['0', '1']:
+        if has_submissions == '1':
+            categories = categories.filter(submitted_count__gt=0)
+        else:
+            categories = categories.filter(submitted_count=0)
+
+    # Sorting
+    if sort == 'popular':
+        categories = categories.order_by('-submitted_count', '-id')
+    elif sort == 'avg_score':
+        categories = categories.order_by('-avg_score', '-id')
+    else:
+        categories = categories.order_by('-id')
 
     # Add quick stats
     for cat in categories:
@@ -3282,8 +3318,16 @@ def message_inbox(request):
     if user.role and user.role.role_name == 'Student':
         # Siswa: lihat thread yang mereka buat
         threads = MessageThread.objects.filter(student=user)
+    elif (user.role and user.role.role_name == 'Admin') or user.is_superuser:
+        # Admin (and superusers): see threads that require admin/operator attention
+        # - Threads where a teacher explicitly requested closure
+        # - Threads assigned to this admin
+        # - Non-academic threads (technical/report/general) so operator/admin can handle them
+        threads = MessageThread.objects.filter(
+            Q(close_requested_by__isnull=False) | Q(teacher_or_admin=user) | ~Q(thread_type='academic')
+        )
     else:
-        # Guru/Admin/Operator: lihat thread yang ditugaskan ke mereka atau belum ditugaskan
+        # Teachers/Operators: lihat thread yang ditugaskan ke mereka atau belum ditugaskan
         threads = MessageThread.objects.filter(
             Q(teacher_or_admin=user) | Q(teacher_or_admin=None)
         )
@@ -3375,6 +3419,16 @@ def create_message_thread(request):
                                 thread.save()
                         except User.DoesNotExist:
                             pass
+
+                    # If no teacher selected and the thread is non-academic, assign to an Operator/Admin
+                    if not teacher_id and thread_type != 'academic':
+                        # Prefer Operator, fallback to Admin
+                        handler = User.objects.filter(role__role_name='Operator').first()
+                        if not handler:
+                            handler = User.objects.filter(role__role_name='Admin').first()
+                        if handler:
+                            thread.teacher_or_admin = handler
+                            thread.save()
                     
                     # Buat pesan pertama
                     Message.objects.create(
@@ -3421,8 +3475,28 @@ def message_thread(request, thread_id):
     if user.role and user.role.role_name == 'Student':
         # Siswa hanya bisa akses thread mereka sendiri
         has_access = (thread.student == user)
+    elif user.is_superuser:
+        # Superuser: full access
+        has_access = True
+    elif user.role and user.role.role_name in ['Admin', 'Operator']:
+        # Admin/Operator: can access
+        # - any non-academic thread (technical/report/general)
+        # - threads assigned to any Admin/Operator
+        # - threads assigned specifically to them
+        # - threads with a teacher close request
+        assigned_handler = thread.teacher_or_admin
+        handler_is_admin_or_operator = False
+        if assigned_handler and assigned_handler.role:
+            handler_is_admin_or_operator = assigned_handler.role.role_name in ['Admin', 'Operator']
+
+        has_access = (
+            thread.thread_type != 'academic' or
+            handler_is_admin_or_operator or
+            (thread.teacher_or_admin == user) or
+            (thread.close_requested_by is not None)
+        )
     else:
-        # Guru/Admin/Operator bisa akses thread yang ditugaskan atau tidak ada yang menangani
+        # Guru/Operator: akses hanya untuk thread yang ditugaskan ke mereka atau belum ditugaskan
         has_access = (thread.teacher_or_admin == user or thread.teacher_or_admin is None)
     
     if not has_access:
@@ -3587,7 +3661,8 @@ def message_thread(request, thread_id):
         'thread': thread,
         'messages_list': messages_list,
         'status_choices': MessageThread.STATUS_CHOICES,
-        'can_manage': user.role and user.role.role_name in ['Admin', 'Teacher', 'Operator'],
+        # Only Admins, Operators, or superusers should see the status-change UI
+        'can_manage': (user.role and user.role.role_name in ['Admin', 'Operator']) or user.is_superuser,
     }
     
     return render(request, 'messages/thread_detail.html', context)
@@ -3633,8 +3708,15 @@ def message_api_unread_count(request):
             thread__student=user,
             is_read=False
         ).exclude(sender=user).count()
+    elif user.role and user.role.role_name == 'Admin' or user.is_superuser:
+        # Admin/superuser: count unread messages for threads that require admin/operator attention
+        unread_count = Message.objects.filter(
+            is_read=False
+        ).exclude(sender=user).filter(
+            Q(thread__close_requested_by__isnull=False) | Q(thread__teacher_or_admin=user) | ~Q(thread__thread_type='academic')
+        ).count()
     else:
-        # Guru/Admin/Operator: hitung pesan belum dibaca dari siswa
+        # Teachers/Operators: hitung pesan belum dibaca dari siswa for threads assigned to them or unassigned
         unread_count = Message.objects.filter(
             Q(thread__teacher_or_admin=user) | Q(thread__teacher_or_admin=None),
             is_read=False

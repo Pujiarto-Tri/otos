@@ -5,16 +5,105 @@
 {% block content %}
 <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
   <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-    <div class="bg-white dark:bg-gray-800 relative shadow-sm sm:rounded-lg overflow-hidden mb-6 border border-gray-100 dark:border-gray-700">
-      <div class="p-6 flex items-center justify-between">
+  <div class="bg-white dark:bg-gray-800 relative shadow-sm sm:rounded-lg overflow-visible mb-6 border border-gray-100 dark:border-gray-700">
+      <div class="px-5 py-4 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Student Performance</h1>
+          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Student Performance</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">See how students performed on your subtests.</p>
         </div>
         <div>
-          <a href="{% url 'teacher_category_create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-lg hover:bg-primary-800">Tambah Subtest</a>
+          <a href="{% url 'teacher_category_create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-700 rounded-md hover:bg-primary-800">Tambah Subtest</a>
         </div>
       </div>
+      <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700">
+        <form method="get" class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+          <!-- Make search input larger and allow it to grow on small screens -->
+          <input id="searchInput" type="search" name="q" placeholder="Search subtest" value="{{ request.GET.q|default_if_none:'' }}" class="w-full sm:flex-1 px-3 py-2 rounded-md border bg-white dark:bg-gray-700 text-base text-gray-700 dark:text-gray-200" />
+          <div class="flex items-center gap-2 mt-2 sm:mt-0">
+            <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Search</button>
+            <a href="{{ request.path }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50">Clear</a>
+          </div>
+
+          <!-- Collapsible filter panel: collapsed by default on all screen sizes; toggled by Filters button -->
+          <!-- Flowbite dropdown used for filters -->
+          <div class="relative inline-block text-left">
+            <button id="filterToggleBtn" data-dropdown-toggle="filterDropdown" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50" aria-expanded="false">Filters
+              <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06-.02L10 10.584l3.71-3.396a.75.75 0 011.04 1.08l-4.24 3.885a.75.75 0 01-1.04 0L5.25 8.29a.75.75 0 01-.02-1.08z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <div id="filterDropdown" class="hidden z-10 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 mt-2">
+              <div class="p-3 space-y-2">
+                <label class="block text-xs text-gray-500">Scoring</label>
+                <select name="scoring" class="w-full px-2 py-1 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                  <option value="">All scoring</option>
+                  <option value="standard" {% if request.GET.scoring == 'standard' %}selected{% endif %}>Standard</option>
+                  <option value="utbk" {% if request.GET.scoring == 'utbk' %}selected{% endif %}>UTBK</option>
+                </select>
+
+                <label class="block text-xs text-gray-500">Submission</label>
+                <select name="has_submissions" class="w-full px-2 py-1 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                  <option value="">All</option>
+                  <option value="1" {% if request.GET.has_submissions == '1' %}selected{% endif %}>Has submissions</option>
+                  <option value="0" {% if request.GET.has_submissions == '0' %}selected{% endif %}>No submissions</option>
+                </select>
+
+                <label class="block text-xs text-gray-500">Sort</label>
+                <select name="sort" class="w-full px-2 py-1 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                  <option value="recent" {% if request.GET.sort == 'recent' or not request.GET.sort %}selected{% endif %}>Recent</option>
+                  <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>Most submissions</option>
+                  <option value="avg_score" {% if request.GET.sort == 'avg_score' %}selected{% endif %}>Avg score</option>
+                </select>
+
+                <div class="flex justify-between pt-2">
+                  <a href="{{ request.path }}" class="text-sm text-gray-600 hover:underline">Clear</a>
+                  <button type="submit" class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md">Apply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const filterBtn = document.querySelector('[data-dropdown-toggle="filterDropdown"]');
+              const filterDropdown = document.getElementById('filterDropdown');
+
+              if (filterBtn && filterDropdown) {
+                filterBtn.addEventListener('click', function(e){
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const isHidden = filterDropdown.classList.contains('hidden');
+                  if (isHidden) {
+                    filterDropdown.classList.remove('hidden');
+                    filterBtn.setAttribute('aria-expanded', 'true');
+                  } else {
+                    filterDropdown.classList.add('hidden');
+                    filterBtn.setAttribute('aria-expanded', 'false');
+                  }
+                });
+
+                // Close when clicking outside
+                document.addEventListener('click', function(e){
+                  if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
+                    filterDropdown.classList.add('hidden');
+                    filterBtn.setAttribute('aria-expanded', 'false');
+                  }
+                });
+
+                // Close on Escape
+                document.addEventListener('keydown', function(e){
+                  if (e.key === 'Escape') {
+                    filterDropdown.classList.add('hidden');
+                    filterBtn.setAttribute('aria-expanded', 'false');
+                  }
+                });
+              }
+            });
+          </script>
+        </form>
+      </div>
+
+      
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load role_badges %}
 
 {% block title %}{{ thread.title }}{% endblock %}
 
@@ -145,7 +146,13 @@
                             {% csrf_token %}
                             <input type="hidden" name="action" value="request_close">
                             {% comment %} Disable if a request already exists or thread is pending/closed {% endcomment %}
-                            {% if thread.close_requested_by or thread.status == 'pending' or thread.status == 'closed' %}
+                            {# If the teacher already requested close and admin has closed it, show 'Thread Ditutup' #}
+                            {% if thread.close_requested_by and thread.status == 'closed' %}
+                                <button type="button" class="inline-flex items-center px-6 py-3 bg-gray-500 text-white rounded-xl transition-all duration-200 font-medium cursor-not-allowed" disabled>
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    Thread Ditutup
+                                </button>
+                            {% elif thread.close_requested_by or thread.status == 'pending' or thread.status == 'closed' %}
                                 <button type="button" class="inline-flex items-center px-6 py-3 bg-gray-400 text-white rounded-xl transition-all duration-200 font-medium cursor-not-allowed" disabled>
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m2 0a8 8 0 11-16 0 8 8 0 0116 0z"></path></svg>
                                     Permintaan Terkirim
@@ -198,7 +205,7 @@
                     <div class="pl-6 text-gray-600 dark:text-gray-400">
                         {% if thread.teacher_or_admin %}
                             <div class="font-medium">{{ thread.teacher_or_admin.username }}</div>
-                            <div class="text-sm">{{ thread.teacher_or_admin.role.role_name }}</div>
+                            <div class="text-sm">{% role_badge thread.teacher_or_admin.role.role_name small=True %}</div>
                         {% else %}
                             <span class="text-amber-600 dark:text-amber-400 font-medium">Belum ditugaskan</span>
                         {% endif %}
@@ -277,9 +284,7 @@
                                             {{ message.sender.username }}
                                         </span>
                                         {% if message.sender.role %}
-                                        <span class="{% if message.sender == user %}bg-white/20 text-blue-100{% else %}bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200{% endif %} text-xs font-medium px-2 py-1 rounded-full">
-                                            {{ message.sender.role.role_name }}
-                                        </span>
+                                            {% role_badge message.sender.role.role_name small=True %}
                                         {% endif %}
                                     </div>
                                 </div>

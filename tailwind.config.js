@@ -37,6 +37,18 @@ module.exports = {
     'rotate-180'
   ],
 
+  // Ensure dynamic role badge classes aren't purged by Tailwind's optimizer
+  // These classes are constructed in templates by a custom tag and may not
+  // be discoverable by static analysis.
+  safelist: [
+    'bg-pink-100', 'text-pink-800', 'dark:bg-pink-900', 'dark:text-pink-100', 'bg-pink-200/50',
+    'bg-purple-100', 'text-purple-800', 'dark:bg-purple-900', 'dark:text-purple-100', 'bg-purple-200/50',
+    'bg-teal-100', 'text-teal-800', 'dark:bg-teal-900', 'dark:text-teal-100', 'bg-teal-200/50',
+    'bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900', 'dark:text-yellow-100', 'bg-yellow-200/50',
+    // common utility classes used by the tag
+    'px-2', 'py-0.5', 'text-xs', 'px-3', 'py-1', 'text-sm', 'font-medium', 'rounded-full'
+  ],
+
   darkMode: 'class',
 
   theme: {

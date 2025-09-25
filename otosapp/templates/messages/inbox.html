@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load role_badges %}
 
 {% block title %}Pesan{% endblock %}
 
@@ -210,7 +211,10 @@
                                                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                                                 </svg>
                                                 {% if thread.teacher_or_admin %}
-                                                    <span class="font-medium">{{ thread.teacher_or_admin.username }}</span>
+                                                    <div>
+                                                        <div class="font-medium">{{ thread.teacher_or_admin.username }}</div>
+                                                        <div class="text-sm">{% role_badge thread.teacher_or_admin.role.role_name small=True %}</div>
+                                                    </div>
                                                 {% else %}
                                                     <span class="text-amber-600 dark:text-amber-400 font-medium">Belum ditangani</span>
                                                 {% endif %}

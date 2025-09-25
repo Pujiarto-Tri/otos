@@ -361,8 +361,6 @@ function toggleCategoryField() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize category field visibility
     toggleCategoryField();
-        // Load saved draft if any
-        try { loadDraft(); } catch (e) { console.warn('loadDraft error', e); }
     
     // Character counters
     const titleInput = document.getElementById('title');
@@ -521,49 +519,6 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Auto-save draft functionality (optional)
-function saveDraft() {
-    const formData = {
-        title: document.getElementById('title').value,
-        thread_type: document.getElementById('thread_type').value,
-        category: document.getElementById('category').value,
-        teacher: document.getElementById('teacher') ? document.getElementById('teacher').value : '',
-        priority: document.querySelector('input[name="priority"]:checked')?.value,
-        content: document.getElementById('content').value
-    };
-    
-    localStorage.setItem('message_draft', JSON.stringify(formData));
-}
-
-// Load draft on page load
-function loadDraft() {
-    const draft = localStorage.getItem('message_draft');
-    if (draft) {
-        const formData = JSON.parse(draft);
-        
-        if (formData.title) document.getElementById('title').value = formData.title;
-        if (formData.thread_type) document.getElementById('thread_type').value = formData.thread_type;
-        if (formData.category) document.getElementById('category').value = formData.category;
-        if (formData.teacher && document.getElementById('teacher')) document.getElementById('teacher').value = formData.teacher;
-        if (formData.priority) {
-            const priorityRadio = document.querySelector(`input[name="priority"][value="${formData.priority}"]`);
-            if (priorityRadio) priorityRadio.checked = true;
-        }
-        if (formData.content) document.getElementById('content').value = formData.content;
-        
-        toggleCategoryField();
-    }
-}
-
-// Auto-save every 10 seconds
-setInterval(saveDraft, 10000);
-
-// Clear draft on successful submission
-window.addEventListener('beforeunload', function() {
-    const form = document.getElementById('messageForm');
-    if (form && !form.dataset.submitted) {
-        saveDraft();
-    }
-});
+// Draft autosave and load removed to ensure a clean form when creating a new thread
 </script>
 {% endblock %}
