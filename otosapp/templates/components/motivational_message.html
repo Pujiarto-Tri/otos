@@ -1,26 +1,68 @@
-<!-- Motivational Message Component -->
-<div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white mb-8">
-    <div class="text-center">
+<!-- Modern Motivational Message Component -->
+<div class="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-8 mb-8 overflow-hidden hover:-translate-y-0.5">
+    <!-- Subtle Glow Background -->
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-indigo-50/20 to-purple-50/30 dark:from-blue-900/10 dark:via-indigo-900/5 dark:to-purple-900/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    
+    <!-- Enhanced Border Glow -->
+    <div class="absolute inset-0 rounded-2xl ring-1 ring-inset ring-transparent group-hover:ring-blue-300/30 dark:group-hover:ring-blue-500/40 transition-all duration-300"></div>
+    
+    <!-- Outer Glow Effect -->
+    <div class="absolute inset-0 rounded-2xl shadow-none group-hover:shadow-lg group-hover:shadow-blue-500/20 dark:group-hover:shadow-blue-400/15 transition-shadow duration-300"></div>
+    
+    <!-- Shimmer Effect -->
+    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+    
+    <div class="relative text-center">
         {% if total_tests == 0 %}
-            <div class="text-4xl mb-3">🚀</div>
-            <h3 class="text-xl font-bold mb-2">Selamat Datang!</h3>
-            <p class="text-purple-100">Mari mulai perjalanan belajar Anda dengan mengikuti ujian pertama!</p>
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <span class="text-2xl text-white filter group-hover:drop-shadow-sm">🚀</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 filter group-hover:drop-shadow-sm">
+                Selamat Datang!
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                Mari mulai perjalanan belajar Anda dengan mengikuti ujian pertama!
+            </p>
         {% elif completed_tests == 0 %}
-            <div class="text-4xl mb-3">💪</div>
-            <h3 class="text-xl font-bold mb-2">Ayo Mulai!</h3>
-            <p class="text-purple-100">Anda sudah terdaftar untuk {{ total_tests }} ujian. Saatnya menyelesaikan yang pertama!</p>
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <span class="text-2xl text-white filter group-hover:drop-shadow-sm">💪</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 filter group-hover:drop-shadow-sm">
+                Ayo Mulai!
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                Anda sudah terdaftar untuk {{ total_tests }} ujian. Saatnya menyelesaikan yang pertama!
+            </p>
         {% elif completed_tests < 5 %}
-            <div class="text-4xl mb-3">🌟</div>
-            <h3 class="text-xl font-bold mb-2">Tetap Semangat!</h3>
-            <p class="text-purple-100">Anda telah menyelesaikan {{ completed_tests }} ujian. Lanjutkan perjuangan untuk hasil yang lebih baik!</p>
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <span class="text-2xl text-white filter group-hover:drop-shadow-sm">🌟</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 filter group-hover:drop-shadow-sm">
+                Tetap Semangat!
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                Anda telah menyelesaikan {{ completed_tests }} ujian. Lanjutkan perjuangan untuk hasil yang lebih baik!
+            </p>
         {% elif completed_tests < 10 %}
-            <div class="text-4xl mb-3">🎯</div>
-            <h3 class="text-xl font-bold mb-2">Hebat Sekali!</h3>
-            <p class="text-purple-100">{{ completed_tests }} ujian telah diselesaikan! Anda semakin dekat dengan target kelulusan.</p>
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <span class="text-2xl text-white filter group-hover:drop-shadow-sm">🎯</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 filter group-hover:drop-shadow-sm">
+                Hebat Sekali!
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                {{ completed_tests }} ujian telah diselesaikan! Anda semakin dekat dengan target kelulusan.
+            </p>
         {% else %}
-            <div class="text-4xl mb-3">🏆</div>
-            <h3 class="text-xl font-bold mb-2">Luar Biasa!</h3>
-            <p class="text-purple-100">Dengan {{ completed_tests }} ujian yang telah diselesaikan, Anda adalah contoh kedisiplinan!</p>
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <span class="text-2xl text-white filter group-hover:drop-shadow-sm">🏆</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 filter group-hover:drop-shadow-sm">
+                Luar Biasa!
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                Dengan {{ completed_tests }} ujian yang telah diselesaikan, Anda adalah contoh kedisiplinan!
+            </p>
         {% endif %}
     </div>
 </div>

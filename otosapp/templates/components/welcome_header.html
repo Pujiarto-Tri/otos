@@ -1,37 +1,99 @@
 {% load media_helpers %}
-<!-- Welcome Header Component -->
-<div class="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
-    <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
-    <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+<!-- Modern Welcome Header Component -->
+<div class="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl shadow-2xl mb-8 overflow-hidden border border-white/10">
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-white/10"></div>
+    <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-white/10 to-transparent rounded-full transform translate-x-32 -translate-y-32 animate-pulse"></div>
+    <div class="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-white/5 to-transparent rounded-full transform -translate-x-32 translate-y-32"></div>
+    <div class="absolute top-1/2 left-1/3 w-4 h-4 bg-white/30 rounded-full animate-bounce delay-700"></div>
+    <div class="absolute top-1/4 right-1/4 w-2 h-2 bg-white/40 rounded-full animate-ping delay-1000"></div>
     
-    <div class="relative z-10">
-        <div class="flex items-center justify-between mb-6">
-            <div>
+    <div class="relative z-20 p-6 sm:p-8 lg:p-10">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <!-- Content Section -->
+            <div class="flex-1 min-w-0">
                 {% if page_title %}
-                    <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ page_title }}</h1>
+                    <!-- Custom Page Title -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">{{ page_title }}</h1>
+                    </div>
                     {% if page_subtitle %}
-                        <p class="text-sm text-white/90">{{ page_subtitle }}</p>
+                        <p class="text-white/90 text-base sm:text-lg font-medium leading-relaxed">{{ page_subtitle }}</p>
                     {% endif %}
                 {% else %}
-                    <h1 class="text-3xl md:text-4xl font-bold mb-2">👋 Selamat Datang!</h1>
-                    <p class="text-xl text-white/90">{{ user.get_full_name|default:user.email }}</p>
-                    <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm mt-2">
-                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                        {{ user.role.role_name }}
+                    <!-- Welcome Section -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl animate-wave">👋</span>
+                            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                                Selamat Datang!
+                            </h1>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <p class="text-white/95 text-lg sm:text-xl font-semibold">
+                                {{ user.get_full_name|default:user.email }}
+                            </p>
+                            
+                            <!-- Modern Role Badge -->
+                            <div class="inline-flex items-center">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full border border-white/30 shadow-lg">
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative">
+                                            <span class="w-2.5 h-2.5 bg-green-400 rounded-full block"></span>
+                                            <span class="absolute top-0 left-0 w-2.5 h-2.5 bg-green-400 rounded-full animate-ping"></span>
+                                        </div>
+                                        <span class="text-white font-semibold text-sm tracking-wide">{{ user.role.role_name }}</span>
+                                    </div>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 {% endif %}
             </div>
+
+            <!-- Profile Section -->
             {% if not hide_profile %}
-            <div class="hidden md:block">
-                {% if user.profile_picture %}
-                    <img class="w-20 h-20 rounded-full object-cover border-4 border-white/20 backdrop-blur-sm" src="{{ user.profile_picture|safe_image_url }}" alt="Profile photo">
-                {% else %}
-                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-4 border-white/20">
-                        <span class="text-white text-4xl">👤</span>
+            <div class="flex-shrink-0">
+                <div class="relative group">
+                    {% if user.profile_picture %}
+                        <div class="relative">
+                            <img class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-2xl border-2 border-white/30 backdrop-blur-sm group-hover:scale-105 transition-transform duration-300" 
+                                 src="{{ user.profile_picture|safe_image_url }}" 
+                                 alt="Profile photo">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
+                        </div>
+                    {% else %}
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border-2 border-white/30 shadow-2xl group-hover:scale-105 transition-all duration-300">
+                            <svg class="w-10 h-10 sm:w-12 sm:h-12 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Online Status Indicator -->
+                    <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-2 border-white shadow-lg">
+                        <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
                     </div>
-                {% endif %}
+                </div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+.animate-wave {
+    animation: wave 2s ease-in-out infinite;
+}
+</style>
