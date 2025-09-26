@@ -1,27 +1,28 @@
-{# Glowing Action Button Component #}
+{# Glowing Action Button Component (expects `icon` as safe SVG or HTML) #}
 <a href="{% url url_name %}" 
-   class="group relative p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 text-center h-fit hover:-translate-y-1">
+  class="group relative p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 text-center h-fit hover:-translate-y-1 flex flex-col items-center">
   
-  <!-- Subtle Glow Background -->
-  <div class="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-purple-50/10 to-indigo-50/20 dark:from-blue-900/10 dark:via-purple-900/5 dark:to-indigo-900/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+  <!-- Subtle Glow Background (blue accent) -->
+  <div class="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-blue-50/10 to-indigo-50/20 dark:from-blue-900/10 dark:via-blue-900/5 dark:to-indigo-900/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
   
-  <!-- Enhanced Glow Border -->
+  <!-- Enhanced Glow Border (blue) -->
   <div class="absolute inset-0 rounded-xl ring-1 ring-inset ring-transparent group-hover:ring-blue-300/30 dark:group-hover:ring-blue-500/40 transition-all duration-300"></div>
   
-  <!-- Outer Glow Effect -->
+  <!-- Outer Glow Effect (blue) -->
   <div class="absolute inset-0 rounded-xl shadow-none group-hover:shadow-lg group-hover:shadow-blue-500/25 dark:group-hover:shadow-blue-400/20 transition-shadow duration-300"></div>
   
-  <!-- Clean Icon Area -->
-  <div class="relative w-12 h-12 mx-auto bg-white dark:bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors duration-300">
-    <!-- Inner Glow Effect -->
-    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/40 dark:via-blue-400/15 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300"></div>
-    
-    <!-- Shimmer Effect -->
-    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 dark:via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
-    
-    <!-- Icon -->
-    <div class="relative z-10 text-2xl group-hover:scale-110 transition-transform duration-300 filter group-hover:drop-shadow-sm">
-      {{ icon }}
+  <!-- Clean Icon Area (match stat_card enhanced icon section) -->
+  <div class="flex-shrink-0 mx-auto mb-3">
+    <div class="relative w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-xl text-gray-600 dark:text-gray-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-300 group-hover:scale-110 shadow-sm group-hover:shadow-lg group-hover:shadow-blue-500/25">
+      <!-- Icon Glow Background -->
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-purple-100/30 dark:from-blue-900/20 dark:to-purple-900/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+      <!-- Icon Inner Glow -->
+      <div class="absolute inset-0 bg-blue-500/10 dark:bg-blue-400/10 rounded-xl opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300"></div>
+
+      <div class="relative filter group-hover:drop-shadow-sm">
+        {{ icon|safe }}
+      </div>
     </div>
   </div>
   

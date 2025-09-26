@@ -1,15 +1,37 @@
-{# Admin-styled stat card modeled after public_home cards #}
-<div class="rounded-xl bg-white/80 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-  <div class="flex items-center justify-between">
-    <div>
-      <div class="text-xs text-gray-500 dark:text-gray-400">{{ title }}</div>
-      <div class="text-3xl font-bold mt-1 text-gray-900 dark:text-white">{{ prefix|default:"" }}{{ value }}</div>
-      {% if subtext %}<div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ subtext }}</div>{% endif %}
-    </div>
-    {% if icon %}
-    <div class="w-12 h-12 bg-white/20 dark:bg-white/10 rounded-lg flex items-center justify-center text-2xl text-gray-700 dark:text-gray-200">
-      {{ icon|safe }}
-    </div>
-    {% endif %}
+{# Admin stat card: adopt richer 'stat_card' visual system with admin color accents #}
+<div class="group relative bg-white/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 hover:-translate-y-1 overflow-hidden">
+  <!-- Pronounced Glow & Border Rings (admin-accented) -->
+  <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div class="absolute inset-0 blur-2xl opacity-40 bg-yellow-300/20 rounded-xl"></div>
+    <div class="absolute inset-0 bg-gradient-to-br from-yellow-50/10 via-yellow-50/5 to-indigo-50/5 dark:from-yellow-900/5 dark:via-yellow-900/3 dark:to-indigo-900/5 rounded-xl opacity-30"></div>
   </div>
+  <div class="absolute inset-0 rounded-xl ring-1 ring-inset ring-yellow-200/20 dark:ring-yellow-700/20 group-hover:ring-yellow-400/40 transition-all duration-300"></div>
+
+  <div class="relative flex items-center justify-between">
+    <div class="flex-1">
+      <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+        {{ title }}
+      </h3>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors duration-300">
+        {{ prefix|default:"" }}{{ value }}
+      </p>
+      {% if subtext %}
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ subtext }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex-shrink-0 ml-4">
+      <div class="relative w-12 h-12 bg-white/20 dark:bg-white/10 rounded-xl flex items-center justify-center text-xl text-gray-700 dark:text-gray-200 group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/30 transition-all duration-300 group-hover:scale-110 shadow-sm group-hover:shadow-lg group-hover:shadow-yellow-400/25">
+        <!-- inner glow layer -->
+        <div class="absolute inset-0 bg-gradient-to-br from-yellow-100/40 to-yellow-200/10 dark:from-yellow-900/15 dark:to-yellow-900/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <!-- make passed SVG color follow text color on hover by removing hard-coded fills -->
+        <div class="relative filter group-hover:drop-shadow-sm text-yellow-600 dark:group-hover:text-yellow-400">
+          {{ icon|safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- bottom shimmer accent -->
+  <div class="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 group-hover:w-full transition-all duration-500 ease-out shadow-sm group-hover:shadow-lg group-hover:shadow-yellow-400/40"></div>
 </div>

@@ -1,5 +1,6 @@
 {% load humanize %}
 {% load custom_filters %}
+{% load heroicons %}
 
 <!-- Student Dashboard -->
 
@@ -24,8 +25,11 @@
 <!-- Quick Actions -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     {% if can_access_tryouts %}
-        {% include 'components/quick_action.html' with url_name='tryout_list' gradient='from-green-500 to-green-600' hover_from='green-600' hover_to='green-700' icon='▶️' label='Mulai Tryout Sekarang' %}
-        {% include 'components/quick_action.html' with url_name='test_history' gradient='from-blue-500 to-blue-600' hover_from='blue-600' hover_to='blue-700' icon='📜' label='Lihat Hasil Tryout' %}
+    {% heroicon 'play' as icon_play %}
+    {% include 'components/quick_action.html' with url_name='tryout_list' gradient='from-green-500 to-green-600' hover_from='green-600' hover_to='green-700' icon=icon_play label='Mulai Tryout Sekarang' %}
+
+    {% heroicon 'document' as icon_doc %}
+    {% include 'components/quick_action.html' with url_name='test_history' gradient='from-blue-500 to-blue-600' hover_from='blue-600' hover_to='blue-700' icon=icon_doc label='Lihat Hasil Tryout' %}
     {% else %}
         <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
         <button disabled class="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-xl font-semibold text-center cursor-not-allowed">Akses Dibatasi</button>
