@@ -5,41 +5,125 @@
 {% block title %}{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %} - Soal {{ current_question_number }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto p-6 space-y-6">
-    <!-- Header Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %}</h1>
-                    <p class="text-lg text-gray-600 dark:text-gray-300">Soal {{ current_question_number }} dari {{ total_questions }}</p>
-                </div>
-            </div>
-            
-            <!-- Progress Bar & Timer -->
-            <div class="flex items-center gap-6 min-w-0">
-                <!-- Timer Display -->
-                {% if time_remaining %}
-                <div class="flex items-center gap-3 px-4 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <div class="text-sm">
-                        <div class="font-semibold text-red-600 dark:text-red-400">Sisa Waktu</div>
-                        <div id="timer-display" class="font-mono text-lg font-bold text-red-700 dark:text-red-300">00:00:00</div>
+<!-- Immediate CSS to prevent flash of navbar/sidebar -->
+<style>
+/* Hide navigation elements immediately for exam mode */
+#logo-sidebar,
+nav.fixed,
+header,
+.topbar,
+.navbar,
+#topbar,
+.site-header,
+button[data-drawer-target="logo-sidebar"],
+button[data-drawer-toggle="logo-sidebar"],
+button[data-dropdown-toggle="dropdown-user"],
+#theme-toggle,
+#dropdown-user,
+.flex.items-center.ms-3,
+nav.fixed .flex.items-center.justify-between,
+nav.fixed .px-3.py-3 {
+    display: none !important;
+}
+
+/* Hide the entire top navigation bar */
+nav {
+    display: none !important;
+}
+
+/* Make main content full screen immediately */
+main {
+    padding-left: 0 !important;
+    padding-top: 0 !important;
+    margin: 0 !important;
+}
+
+/* Ensure body uses full viewport */
+body {
+    padding-top: 0 !important;
+}
+
+/* Make sure the main container uses full width */
+.container {
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Hide the div that contains the navbar padding */
+.flex.pt-16 {
+    padding-top: 0 !important;
+}
+
+/* Ensure main content is properly positioned */
+main, .w-full {
+    position: relative !important;
+    z-index: 10 !important;
+    background: inherit !important;
+}
+
+/* Protect button styling */
+#submit-test-btn-primary,
+#submit-test-btn-secondary,
+button[onclick*="showSubmitConfirmation"],
+button[name="action"][value="next"] {
+    position: relative !important;
+    z-index: 9999 !important;
+}
+
+/* Force button colors to override any conflicts */
+#submit-test-btn-primary[style*="background-color"],
+#submit-test-btn-secondary[style*="background-color"],
+button[onclick*="showSubmitConfirmation"][style*="background-color"] {
+    background-color: var(--bg-color, #dc2626) !important;
+    color: white !important;
+    border-color: var(--border-color, #b91c1c) !important;
+}
+
+/* Ensure Next button gradient is preserved */
+button[name="action"][value="next"] {
+    background: linear-gradient(to right, #2563eb, #1d4ed8) !important;
+    color: white !important;
+}
+</style>
+
+<!-- Desktop/Tablet: Two-column layout, Mobile: Stacked layout -->
+<div class="w-full">
+    <!-- Mobile: reduced padding, Desktop: normal spacing -->
+    <div class="p-2 sm:p-3 lg:p-6 md:grid md:grid-cols-12 md:gap-6 space-y-3 md:space-y-0">
+        
+        <!-- Left Column: Banner + Question (Desktop: col-span-8, Mobile: full width) -->
+        <div class="md:col-span-8 space-y-3 lg:space-y-6">
+            <!-- Header Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg lg:rounded-2xl shadow-lg p-3 sm:p-4 lg:p-6 border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-3 lg:mb-4">
+                    <div class="flex items-center gap-3 lg:gap-4">
+                        <div class="flex items-center justify-center w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full">
+                            <svg class="w-5 h-5 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <div>
+                            <h1 class="text-lg lg:text-2xl font-bold text-gray-800 dark:text-white">{% if is_package %}{{ package.package_name }}{% else %}{{ category.category_name }}{% endif %}</h1>
+                            <p class="text-sm lg:text-lg text-gray-600 dark:text-gray-300">Soal {{ current_question_number }} dari {{ total_questions }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Timer - visible on mobile, hidden on desktop (moved to right column) -->
+                    <div class="lg:hidden">
+                        {% if time_remaining %}
+                        <div class="flex items-center gap-2 px-2 py-1 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md">
+                            <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div id="timer-display-mobile" class="font-mono text-sm font-bold text-red-700 dark:text-red-300">00:00:00</div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                {% endif %}
             </div>
-        </div>
-    </div>
 
-    <!-- Question Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-    <form method="post" class="p-4 sm:p-8" id="answer-form">
+            <!-- Question Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg lg:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <form method="post" class="p-3 sm:p-4 lg:p-8" id="answer-form">
             {% csrf_token %}
             
             <!-- Question Content -->
@@ -138,7 +222,7 @@
                 <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                     {% if can_go_next %}
                         <!-- Submit Test Button (Secondary position when not last question) -->
-                        <button type="button" onclick="showSubmitConfirmation()" id="submit-test-btn" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 transition-all font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 {% if answered_questions == total_questions %}text-white bg-green-600 hover:bg-green-700 focus:ring-green-500{% else %}text-white bg-red-600 hover:bg-red-700 focus:ring-red-500{% endif %}">
+                        <button type="button" onclick="showSubmitConfirmation()" id="submit-test-btn-secondary" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 transition-all font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 text-white bg-red-600 hover:bg-red-700 focus:ring-red-500">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -173,7 +257,7 @@
                         </button>
                         
                         <!-- Submit Test Button (Primary position on last question) -->
-                        <button type="button" onclick="showSubmitConfirmation()" id="submit-test-btn" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 transition-all font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 text-lg shadow-lg {% if answered_questions == total_questions %}text-white bg-green-600 hover:bg-green-700 focus:ring-green-500{% else %}text-white bg-red-600 hover:bg-red-700 focus:ring-red-500{% endif %}">
+                        <button type="button" onclick="showSubmitConfirmation()" id="submit-test-btn-primary" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 transition-all font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 text-lg shadow-lg text-white bg-red-600 hover:bg-red-700 focus:ring-red-500">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -184,174 +268,212 @@
             </div>
         </form>
     </div>
-
-    <!-- Navigation Section -->
-    <!-- Progress Bar Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-4">
-        <div class="flex items-center gap-3 min-w-0 px-6 py-4">
-            <span class="text-sm font-semibold text-purple-600 dark:text-purple-400 w-16">Progress</span>
-            <div class="flex-1">
-                <div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
-                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-300" style="width: {{ progress }}%"></div>
-                </div>
-            </div>
-            <span id="progress-percentage" class="text-sm font-medium text-gray-600 dark:text-gray-300 ml-3">{{ progress }}%</span>
-        </div>
-    </div>
-
-    <!-- Navigation Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-        <!-- Subtest selector (for package tests) -->
-        {% if is_package and package_subtests %}
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div>
-                <label for="subtest-select" class="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-2">Pilih Subtest:</label>
-                <select id="subtest-select" class="inline-block px-3 py-2 border rounded bg-white dark:bg-gray-800 text-sm">
-                    <option value="all">Semua Subtest</option>
-                    {% for s in package_subtests %}
-                    <option value="{{ s.start }}-{{ s.start|add:s.count|add:'-1' }}" {% if current_question_number >= s.start and current_question_number < s.start|add:s.count %}selected{% endif %}>{{ s.category_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="text-sm text-gray-500">Navigasi menampilkan hanya soal subtest yang dipilih</div>
-        </div>
-        {% endif %}
-        <!-- Navigation Header -->
-        <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                </div>
-                Navigasi Soal
-            </h3>
-            <button onclick="toggleNavigation()" class="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all font-medium">
-                <svg id="nav-toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
-                <span id="nav-toggle-text">Sembunyikan</span>
-            </button>
         </div>
 
-        <!-- Navigation Panel -->
-        <div id="navigation-panel" class="p-6 transition-all duration-300">
-            <!-- Status Legend -->
-            <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Keterangan Status Soal
-                </h4>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                        <div class="w-4 h-4 bg-gray-300 border border-gray-400 rounded"></div>
-                        <div>
-                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Belum dikerjakan</div>
-                        </div>
+        <!-- Right Column: Progress Bar + Timer + Navigation (Desktop: col-span-4, Mobile: full width) -->
+        <div class="md:col-span-4 space-y-3 lg:space-y-6">
+            
+            <!-- Desktop Timer Display (hidden on mobile) -->
+            <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                {% if time_remaining %}
+                <div class="text-center">
+                    <div class="flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </div>
-                    
-                    <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                        <div class="w-4 h-4 bg-green-500 border border-green-600 rounded"></div>
-                        <div>
-                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Sudah dijawab</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                        <div class="w-4 h-4 bg-yellow-500 border border-yellow-600 rounded"></div>
-                        <div>
-                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Ditandai</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                        <div class="w-4 h-4 bg-blue-500 border border-blue-600 rounded"></div>
-                        <div>
-                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Sedang dikerjakan</div>
-                        </div>
-                    </div>
+                    <div class="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">Sisa Waktu</div>
+                    <div id="timer-display" class="font-mono text-2xl font-bold text-red-700 dark:text-red-300">00:00:00</div>
                 </div>
-            </div>
-
-            <!-- Question Grid -->
-            <div class="navigation-grid mb-6">
-                {% for i in total_questions|range_filter %}
-                {% with question_num=forloop.counter %}
-                {% if is_package %}
-                <a href="{% url 'take_package_test_question' package.id question_num %}" 
-                   class="nav-button"
-                   data-question-index="{{ question_num }}"
-                   title="Soal {{ question_num }}">
-                    {{ question_num }}
-                </a>
-                {% else %}
-                <a href="{% url 'take_test' category.id question_num %}" 
-                   class="nav-button"
-                   data-question-index="{{ question_num }}"
-                   title="Soal {{ question_num }}">
-                    {{ question_num }}
-                </a>
                 {% endif %}
-                {% endwith %}
-                {% endfor %}
+            </div>
+            
+            <!-- Progress Bar Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg lg:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2 lg:gap-3 px-3 py-2 lg:px-6 lg:py-4">
+                    <span class="text-xs lg:text-sm font-semibold text-purple-600 dark:text-purple-400 w-12 lg:w-16">Progress</span>
+                    <div class="flex-1">
+                        <div class="w-full bg-gray-200 rounded-full h-2 lg:h-3 dark:bg-gray-700">
+                            <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 lg:h-3 rounded-full transition-all duration-300" style="width: {{ progress }}%"></div>
+                        </div>
+                    </div>
+                    <span id="progress-percentage" class="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-300 ml-2 lg:ml-3">{{ progress }}%</span>
+                </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    Statistik Pengerjaan
-                </h4>
-                
-                <div class="grid grid-cols-3 gap-4">
-                    <!-- Soal Dijawab -->
-                    <div class="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-700">
-                        <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1" id="answered-count">{{ answered_questions }}</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">Dijawab</div>
+            <!-- Navigation Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg lg:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <!-- Subtest selector (for package tests) -->
+                {% if is_package and package_subtests %}
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                        <label for="subtest-select" class="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-2">Pilih Subtest:</label>
+                        <select id="subtest-select" class="inline-block px-3 py-2 border rounded bg-white dark:bg-gray-800 text-sm">
+                            <option value="all">Semua Subtest</option>
+                            {% for s in package_subtests %}
+                            <option value="{{ s.start }}-{{ s.start|add:s.count|add:'-1' }}" {% if current_question_number >= s.start and current_question_number < s.start|add:s.count %}selected{% endif %}>{{ s.category_name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    
-                    <!-- Soal Ditandai -->
-                    <div class="text-center p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-700">
-                        <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="doubtful-count">0</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">Ditandai</div>
+                    <div class="text-sm text-gray-500">Navigasi menampilkan hanya soal subtest yang dipilih</div>
+                </div>
+                {% endif %}
+                <!-- Navigation Header -->
+                <div class="flex justify-between items-center p-3 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg lg:text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 lg:gap-3">
+                        <div class="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        </div>
+                        <span class="hidden sm:inline">Navigasi Soal</span>
+                        <span class="sm:hidden">Navigasi</span>
+                    </h3>
+                    <button onclick="toggleNavigation()" class="flex items-center gap-1 lg:gap-2 px-2 py-1 lg:px-4 lg:py-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-md lg:rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all font-medium text-sm lg:text-base">
+                        <svg id="nav-toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        <span id="nav-toggle-text" class="hidden sm:inline">Sembunyikan</span>
+                    </button>
+                </div>
+
+                <!-- Navigation Panel -->
+                <div id="navigation-panel" class="p-3 lg:p-6 transition-all duration-300">
+                    <!-- Status Legend -->
+                    <div class="mb-3 lg:mb-6 p-2 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <h4 class="text-xs lg:text-sm font-semibold text-gray-800 dark:text-white mb-2 lg:mb-4 flex items-center gap-1 lg:gap-2">
+                            <svg class="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="hidden sm:inline">Keterangan Status Soal</span>
+                            <span class="sm:hidden">Status</span>
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                            <div class="flex items-center gap-1 lg:gap-2 p-1 lg:p-2 bg-white dark:bg-gray-800 rounded border">
+                                <div class="w-3 h-3 lg:w-4 lg:h-4 bg-gray-300 border border-gray-400 rounded flex-shrink-0"></div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                        <span class="hidden sm:inline">Belum dikerjakan</span>
+                                        <span class="sm:hidden">Belum</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1 lg:gap-2 p-1 lg:p-2 bg-white dark:bg-gray-800 rounded border">
+                                <div class="w-3 h-3 lg:w-4 lg:h-4 bg-green-500 border border-green-600 rounded flex-shrink-0"></div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                        <span class="hidden sm:inline">Sudah dijawab</span>
+                                        <span class="sm:hidden">Sudah</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1 lg:gap-2 p-1 lg:p-2 bg-white dark:bg-gray-800 rounded border">
+                                <div class="w-3 h-3 lg:w-4 lg:h-4 bg-yellow-500 border border-yellow-600 rounded flex-shrink-0"></div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Ditandai</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                                <div class="w-4 h-4 bg-blue-500 border border-blue-600 rounded"></div>
+                                <div>
+                                    <div class="text-xs font-medium text-gray-700 dark:text-gray-300">Sedang dikerjakan</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- Soal Tersisa -->
-                    <div class="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                        <div class="text-2xl font-bold text-gray-600 dark:text-gray-400 mb-1" id="remaining-count">{{ unanswered_questions }}</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">Tersisa</div>
+
+                    <!-- Question Grid -->
+                    <div class="navigation-grid mb-6">
+                        {% for i in total_questions|range_filter %}
+                        {% with question_num=forloop.counter %}
+                        {% if is_package %}
+                        <a href="{% url 'take_package_test_question' package.id question_num %}" 
+                           class="nav-button"
+                           data-question-index="{{ question_num }}"
+                           title="Soal {{ question_num }}">
+                            {{ question_num }}
+                        </a>
+                        {% else %}
+                        <a href="{% url 'take_test' category.id question_num %}" 
+                           class="nav-button"
+                           data-question-index="{{ question_num }}"
+                           title="Soal {{ question_num }}">
+                            {{ question_num }}
+                        </a>
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Statistik Pengerjaan
+                        </h4>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+                            <!-- Soal Dijawab -->
+                            <div class="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-700">
+                                <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1" id="answered-count">{{ answered_questions }}</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Dijawab</div>
+                            </div>
+                            
+                            <!-- Soal Ditandai -->
+                            <div class="text-center p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                                <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-1" id="doubtful-count">0</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Ditandai</div>
+                            </div>
+                            
+                            <!-- Soal Tersisa -->
+                            <div class="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <div class="text-2xl font-bold text-gray-600 dark:text-gray-400 mb-1" id="remaining-count">{{ unanswered_questions }}</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Tersisa</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Submit Confirmation Modal -->
-<div id="submit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-2xl transform transition-all">
-            <div class="text-center mb-6">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
-                    <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-2">
+<!-- Submit Confirmation Modal - Flowbite Style -->
+<div id="submit-modal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative w-full max-w-2xl max-h-full">
+        <!-- Modal content -->
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <!-- Modal header -->
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                     Selesai Ujian
                 </h3>
-                <div class="px-4 py-3">
-                    <p id="submit-modal-text" class="text-sm text-gray-500 dark:text-gray-300 mb-4">
-                        Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.
-                    </p>
-                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        <span id="answered-summary">0</span> soal telah dijawab dari <span>{{ total_questions }}</span> soal
+                <button type="button" id="close-modal-btn" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div class="p-6 space-y-6">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/50 mb-4">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
                     </div>
+                    <div id="submit-modal-text" class="text-base leading-relaxed text-gray-500 dark:text-gray-400 mb-4">
+                        Anda telah menjawab <span id="answered-summary" class="font-semibold text-gray-900 dark:text-white">0</span> dari {{ total_questions }} soal.
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                        Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.
+                    </p>
                 </div>
             </div>
-            
-            <div class="flex justify-center gap-4">
-                <button id="cancel-submit" type="button" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-base font-medium rounded-md w-24 hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300">
+            <!-- Modal footer -->
+            <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <button id="cancel-submit" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
                     Batal
                 </button>
-                <button onclick="submitTest()" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-32 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                <button onclick="submitTest()" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
                     Ya, Selesai
                 </button>
             </div>
@@ -809,46 +931,58 @@ input[type="radio"] {
     padding-bottom: 0 !important;
 }
 
-/* Mobile specific tweaks to improve readability */
+/* Mobile specific tweaks to improve readability and reduce padding */
 @media (max-width: 639px) {
+    /* Reduce overall container padding significantly */
+    .max-w-7xl {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    
+    /* Main grid container - reduce spacing */
+    .p-2 {
+        padding: 0.25rem !important;
+    }
+    
+    /* Card padding adjustments */
+    .p-3 {
+        padding: 0.5rem !important;
+    }
+    
     .navigation-grid {
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 0.5rem !important;
+        gap: 0.375rem !important;
     }
 
     .nav-button {
-        min-width: 2.25rem !important;
-        width: 2.25rem !important;
-        height: 2.25rem !important;
+        min-width: 2rem !important;
+        width: 2rem !important;
+        height: 2rem !important;
         font-size: 0.7rem !important;
     }
 
-    /* reduce container horizontal padding for better fit */
-    .max-w-6xl.mx-auto.p-6 {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-    }
-
-    /* make saving indicator smaller on mobile */
+    /* make saving indicator smaller and positioned better on mobile */
     #saving-indicator {
         right: 0.5rem !important;
         top: auto !important;
         bottom: 1rem !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.75rem !important;
     }
     
     .question-text {
-        font-size: 1rem; /* 16px untuk mobile */
+        font-size: 1rem; /* 16px for mobile */
         line-height: 1.4;
         font-weight: 600;
     }
     
     .choice-text {
-        font-size: 0.975rem; /* 15.6px untuk mobile */
+        font-size: 0.975rem; /* 15.6px for mobile */
         line-height: 1.4;
         font-weight: 400;
     }
     
-    /* Pastikan consistency pada mobile juga */
+    /* Ensure consistency on mobile */
     .choice-text *,
     .choice-text span,
     .choice-text p {
@@ -876,6 +1010,35 @@ input[type="radio"] {
         opacity: 0 !important;
         visibility: hidden !important;
     }
+    
+    /* Remove margins from cards on mobile for tighter layout */
+    .space-y-3 > * + * {
+        margin-top: 0.5rem !important;
+    }
+    
+    /* Compact form elements on mobile */
+    .rounded-xl {
+        border-radius: 0.5rem !important;
+    }
+    
+    /* Smaller buttons on mobile */
+    .px-8 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .py-4 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+    
+    /* Reduce choice letter size */
+    .choice-letter {
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        font-size: 0.7rem !important;
+    }
+}
     
     /* Ensure no blue boxes appear for math formulas or special elements */
     .MathJax {
@@ -924,6 +1087,7 @@ input[type="radio"] {
 </style>
 
 <script>
+// Global variable declarations first
 // Support both package and single-category tests
 const isPackage = {% if is_package %}true{% else %}false{% endif %};
 const PACKAGE_ID = {% if package %}{{ package.id }}{% else %}null{% endif %};
@@ -931,6 +1095,380 @@ const CATEGORY_ID = {% if category %}{{ category.id }}{% else %}null{% endif %};
 const storageKeyId = isPackage ? `package_${PACKAGE_ID}` : `category_${CATEGORY_ID}`;
 let markedQuestions = JSON.parse(localStorage.getItem('markedQuestions_' + storageKeyId) || '[]');
 let currentQuestionNumber = {{ current_question_number }}; // Menggunakan question number, bukan ID
+
+// Timer variables
+let remainingTime = {{ time_remaining.total_seconds|default:0|floatformat:0 }}; // seconds from backend
+let timerInterval;
+let timerStartTime = null;
+let initialTimeFromBackend = {{ time_remaining.total_seconds|default:0|floatformat:0 }};
+
+// Konversi answered_questions dari backend ke JavaScript array
+let answeredQuestions = [{% for q_num in answered_question_numbers %}{{ q_num }}{% if not forloop.last %},{% endif %}{% endfor %}];
+// Timer handle to avoid race between hide/show of the saving flyout
+let savingHideTimer = null;
+
+// Global function definitions first (needed for onclick handlers)
+// Show submit confirmation modal
+function showSubmitConfirmation() {
+    const selectedAnswer = document.querySelector('input[name="choice"]:checked');
+    
+    if (selectedAnswer) {
+        // Add current question to answered questions if not already there
+        if (!answeredQuestions.includes({{ current_question_number }})) {
+            answeredQuestions.push({{ current_question_number }});
+        }
+        
+        // Save the answer via AJAX before showing modal
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('choice', selectedAnswer.value);
+        
+        // Save answer via fetch API
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            // show confirmation modal regardless of response success
+            showModalGlobal();
+        }).catch(error => {
+            console.error('Error saving answer before showing modal:', error);
+            showModalGlobal();
+        });
+    } else {
+        // No answer selected, show modal directly
+        showModalGlobal();
+    }
+}
+
+// Top-level modal display function (global)
+function showModalGlobal() {
+    const modal = document.getElementById('submit-modal');
+    const answeredCount = answeredQuestions.length;
+    const totalQuestions = {{ total_questions }};
+
+    // Update the answered summary count
+    const summaryEl = document.getElementById('answered-summary');
+    if (summaryEl) {
+        summaryEl.textContent = answeredCount;
+    }
+
+    const modalText = document.querySelector('#submit-modal-text');
+    if (modalText) {
+        if (answeredCount === totalQuestions) {
+            // All questions answered - show success message
+            modalText.classList.remove('text-gray-500', 'dark:text-gray-400');
+            modalText.classList.add('text-green-600', 'dark:text-green-400');
+            // Update the span styling for success
+            if (summaryEl) {
+                summaryEl.classList.remove('text-gray-900', 'dark:text-white');
+                summaryEl.classList.add('text-green-600', 'dark:text-green-400');
+            }
+        } else {
+            // Some questions remaining - show normal message
+            modalText.classList.remove('text-green-600', 'dark:text-green-400');
+            modalText.classList.add('text-gray-500', 'dark:text-gray-400');
+            // Update the span styling for normal state
+            if (summaryEl) {
+                summaryEl.classList.remove('text-green-600', 'dark:text-green-400');
+                summaryEl.classList.add('text-gray-900', 'dark:text-white');
+            }
+        }
+    }
+
+    console.log('Attempting to show modal:', modal); // Debug log
+    console.log('Modal parent:', modal?.parentElement); // Debug log
+    console.log('Modal classes:', modal?.className); // Debug log
+
+    if (modal) {
+        // Ensure modal is appended to body, not trapped in exam container
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        
+        // Temporarily disable exam focus mode effects on the modal
+        modal.style.setProperty('position', 'fixed', 'important');
+        modal.style.setProperty('top', '0', 'important');
+        modal.style.setProperty('left', '0', 'important');
+        modal.style.setProperty('right', '0', 'important');
+        modal.style.setProperty('bottom', '0', 'important');
+        modal.style.setProperty('width', '100vw', 'important');
+        modal.style.setProperty('height', '100vh', 'important');
+        
+        // Use Flowbite modal classes - remove hidden and add flex to backdrop
+        modal.classList.remove('hidden');
+        
+        // Override any CSS that might be hiding the modal
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.setAttribute('aria-hidden', 'false');
+        // Add backdrop
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        // Ensure modal appears above exam mode content
+        modal.style.zIndex = '9999999';
+        document.documentElement.classList.add('overflow-hidden');
+        document.body.classList.add('overflow-hidden');
+        
+        // Debug modal content visibility
+        const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-700');
+        if (modalContent) {
+            modalContent.style.setProperty('display', 'block', 'important');
+            modalContent.style.setProperty('visibility', 'visible', 'important');
+            modalContent.style.setProperty('opacity', '1', 'important');
+        }
+    } else {
+        console.error('submit-modal element not found!'); // Debug log
+    }
+}
+
+// Hide submit confirmation modal
+function hideSubmitConfirmation() {
+    const modal = document.getElementById('submit-modal');
+    if (modal) {
+        // Use Flowbite modal hiding approach
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        // Clear backdrop
+        modal.style.backgroundColor = '';
+        // Reset z-index to default
+        modal.style.zIndex = '';
+        document.documentElement.classList.remove('overflow-hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+// Close modal when clicking on backdrop or pressing Escape
+// Consolidated DOMContentLoaded handler to prevent duplicates and improve performance
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // 1. Modal setup
+    const submitModal = document.getElementById('submit-modal');
+    if (submitModal) {
+        // Handle backdrop clicks
+        submitModal.addEventListener('click', function(e) {
+            // If click happens on the modal backdrop (the modal container) but not inside the modal content, close
+            if (e.target === submitModal) {
+                hideSubmitConfirmation();
+            }
+        });
+
+        // Handle close button clicks
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', hideSubmitConfirmation);
+        }
+
+        // Handle Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !submitModal.classList.contains('hidden')) {
+                hideSubmitConfirmation();
+            }
+        });
+    }
+    
+    // 2. Exam focus setup (simplified - no anti-screenshot)
+    try {
+        // Elements are already hidden by CSS for exam focus
+    } catch (err) {
+        console.error('Exam focus mode initialization failed', err);
+    }
+    
+    // 3. Timer initialization with cleanup
+    // Clear any existing timer first to prevent multiple timers
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    initTimer();
+    
+    // 4. Initial UI setup
+    const savingIndicator = document.getElementById('saving-indicator');
+    if (savingIndicator) {
+        savingIndicator.classList.add('hidden');
+    }
+    
+    // 5. Clean up blue elements after initial load
+    setTimeout(() => {
+        cleanupBlueElements();
+    }, 100);
+    
+    // 6. Set up page exit confirmation and cleanup
+    window.addEventListener('beforeunload', function(e) {
+        // Clean up intervals to prevent memory leaks
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        // Call the original confirmExit function
+        return confirmExit(e);
+    });
+    
+    // Additional cleanup for page visibility changes
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            // Page is hidden - timer continues running in localStorage-based calculation
+            // No need to stop interval as it continues to work in background
+        } else {
+            // Page is visible again - sync with localStorage time
+            // Force timer recalculation in case time drifted
+            if (timerInterval && remainingTime > 0) {
+                const timerKey = `timer_${storageKeyId}`;
+                const initialTimeKey = `initial_time_${storageKeyId}`;
+                const storedStartTime = localStorage.getItem(timerKey);
+                const storedInitialTime = localStorage.getItem(initialTimeKey);
+                
+                if (storedStartTime && storedInitialTime) {
+                    const startTime = parseInt(storedStartTime);
+                    const initialTime = parseInt(storedInitialTime);
+                    const now = Date.now();
+                    const elapsedSeconds = Math.floor((now - startTime) / 1000);
+                    const calculatedRemainingTime = Math.max(0, initialTime - elapsedSeconds);
+                    
+                    // Sync if there's a significant difference (more than 2 seconds)
+                    if (Math.abs(remainingTime - calculatedRemainingTime) > 2) {
+                        remainingTime = calculatedRemainingTime;
+                        updateTimerDisplay();
+                    }
+                }
+            }
+        }
+    });
+    
+    // 7. Initialize navigation and stats
+    updateNavigationColors();
+    updateStats();
+    
+    // 8. Initialize submit button color
+    const totalQuestions = {{ total_questions }};
+    const initialAnsweredCount = answeredQuestions.length;
+    updateSubmitButtonColor(initialAnsweredCount, totalQuestions);
+    
+    // 9. Force button color update after a delay to override any conflicts
+    setTimeout(() => {
+        updateSubmitButtonColor(answeredQuestions.length, totalQuestions);
+    }, 1000);
+    
+    // Add additional button color updates to ensure consistency
+    setTimeout(() => {
+        updateSubmitButtonColor(answeredQuestions.length, totalQuestions);
+    }, 2000);
+    
+    // Set up periodic button color maintenance - more frequent for button color consistency
+    // Removed excessive interval - button colors are updated when needed (on answer change)
+    
+    // 10. Initialize progress bar based on answered questions
+    updateProgressBar(initialAnsweredCount, totalQuestions);
+    
+    // 11. Set up event listeners for radio buttons - auto-save and update navigation
+    document.querySelectorAll('input[name="choice"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            saveAnswer();
+        });
+    });
+    
+    // 12. Set up event listeners for modal confirmation button
+    document.getElementById('cancel-submit')?.addEventListener('click', hideSubmitConfirmation);
+    
+    // 13. Set up event listeners for submit buttons that use modal
+    document.querySelectorAll('button[onclick*="showSubmitConfirmation"]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showSubmitConfirmation();
+        });
+    });
+
+    // Also attach listeners to any element(s) with submit button IDs to guard against inline onclick not firing
+    try {
+        const submitButtonsById = document.querySelectorAll('#submit-test-btn-primary, #submit-test-btn-secondary');
+        submitButtonsById.forEach(btn => {
+            // Avoid double-binding by checking a data attribute
+            if (btn.dataset.boundForSubmit) return;
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Submit button clicked via event listener'); // Debug log
+                if (typeof showSubmitConfirmation === 'function') {
+                    showSubmitConfirmation();
+                }
+            });
+            btn.dataset.boundForSubmit = '1';
+        });
+        console.log('Submit button event listeners attached to', submitButtonsById.length, 'buttons');
+    } catch (err) {
+        console.error('Error attaching listeners to submit buttons', err);
+    }
+});
+const EXAM_HIDERS = [
+    '#logo-sidebar', 
+    'nav.fixed', 
+    'nav',
+    'header', 
+    '.topbar', 
+    '.navbar', 
+    '#topbar', 
+    '.site-header', 
+    'button[data-drawer-target="logo-sidebar"]', 
+    'button[data-drawer-toggle="logo-sidebar"]',
+    'button[data-dropdown-toggle="dropdown-user"]',
+    '#theme-toggle',
+    '#dropdown-user',
+    '.flex.items-center.ms-3'
+];
+
+function enableExamFocusMode() {
+    // Hide global chrome elements if present
+    EXAM_HIDERS.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            // store previous inline style so we can restore
+            if (!el.dataset._prevDisplay) el.dataset._prevDisplay = el.style.display || '';
+            el.style.display = 'none';
+        });
+    });
+
+    // Make the main content take full viewport
+    const main = document.querySelector('.max-w-6xl') || document.querySelector('main') || document.body;
+    if (main) {
+        main.dataset._prevPosition = main.style.position || '';
+        main.dataset._prevTop = main.style.top || '';
+        main.style.position = 'fixed';
+        main.style.inset = '0';
+        main.style.width = '100%';
+        main.style.height = '100%';
+        main.style.overflow = 'auto';
+        main.style.zIndex = '99999';
+        main.style.background = getComputedStyle(main).backgroundColor || '#ffffff';
+    }
+}
+
+function disableExamFocusMode() {
+    EXAM_HIDERS.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            if (el.dataset._prevDisplay !== undefined) {
+                el.style.display = el.dataset._prevDisplay;
+                delete el.dataset._prevDisplay;
+            }
+        });
+    });
+
+    const main = document.querySelector('.max-w-6xl') || document.querySelector('main') || document.body;
+    if (main) {
+        if (main.dataset._prevPosition !== undefined) {
+            main.style.position = main.dataset._prevPosition;
+            main.style.top = main.dataset._prevTop;
+            delete main.dataset._prevPosition;
+            delete main.dataset._prevTop;
+        }
+        main.style.zIndex = '';
+    }
+}
+
+// Anti-screenshot functions removed - no longer needed
 
 // Update tampilan tombol mark berdasarkan status
 function updateMarkButtonState() {
@@ -956,18 +1494,44 @@ function updateMarkButtonState() {
     }
 }
 
-// Timer variables
-let remainingTime = {{ time_remaining.total_seconds|default:0|floatformat:0 }}; // seconds from backend
-let timerInterval;
-
-// Konversi answered_questions dari backend ke JavaScript array
-let answeredQuestions = [{% for q_num in answered_question_numbers %}{{ q_num }}{% if not forloop.last %},{% endif %}{% endfor %}];
-// Timer handle to avoid race between hide/show of the saving flyout
-let savingHideTimer = null;
-
 // Initialize timer
+// Initialize timer with localStorage persistence for consistency across navigation
 function initTimer() {
+    // Use storage key based on package or category to avoid conflicts
+    const timerKey = `timer_${storageKeyId}`;
+    const initialTimeKey = `initial_time_${storageKeyId}`;
+    
+    // Check if we have a stored start time and initial time
+    const storedStartTime = localStorage.getItem(timerKey);
+    const storedInitialTime = localStorage.getItem(initialTimeKey);
+    
+    // Get the initial time - use stored value if available, otherwise use backend value
+    let initialTime = storedInitialTime ? parseInt(storedInitialTime) : initialTimeFromBackend;
+    
+    if (storedStartTime && initialTime > 0) {
+        // We have a stored start time - calculate elapsed time
+        const startTime = parseInt(storedStartTime);
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        
+        // Calculate remaining time based on elapsed time
+        remainingTime = Math.max(0, initialTime - elapsedSeconds);
+    } else if (initialTimeFromBackend > 0) {
+        // First time visit - store both the start time and initial time
+        timerStartTime = Date.now();
+        localStorage.setItem(timerKey, timerStartTime.toString());
+        localStorage.setItem(initialTimeKey, initialTimeFromBackend.toString());
+        remainingTime = initialTimeFromBackend;
+    }
+    
     if (remainingTime > 0) {
+        // Clear any existing timer first to prevent multiple intervals
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        // Start new timer interval
         timerInterval = setInterval(function() {
             remainingTime--;
             updateTimerDisplay();
@@ -975,6 +1539,10 @@ function initTimer() {
             // Auto-submit when time is up
             if (remainingTime <= 0) {
                 clearInterval(timerInterval);
+                timerInterval = null;
+                // Clear the timer storage when time is up
+                localStorage.removeItem(timerKey);
+                localStorage.removeItem(initialTimeKey);
                 autoSubmitTest();
             }
             
@@ -988,6 +1556,7 @@ function initTimer() {
     updateTimerDisplay();
 }
 
+
 function updateTimerDisplay() {
     const hours = Math.floor(remainingTime / 3600);
     const minutes = Math.floor((remainingTime % 3600) / 60);
@@ -999,12 +1568,24 @@ function updateTimerDisplay() {
         String(seconds).padStart(2, '0');
     
     const timerElement = document.getElementById('timer-display');
+    const mobileTimerElement = document.getElementById('timer-display-mobile');
+    
     if (timerElement) {
         timerElement.textContent = display;
         
         // Change color when time is running low
         if (remainingTime <= 300) { // 5 minutes
             timerElement.classList.add('text-red-200');
+        }
+    }
+    
+    if (mobileTimerElement) {
+        mobileTimerElement.textContent = display;
+        
+        // Change color when time is running low
+        if (remainingTime <= 300) { // 5 minutes
+            mobileTimerElement.classList.add('text-red-600', 'dark:text-red-400');
+            mobileTimerElement.classList.remove('text-red-700', 'dark:text-red-300');
         }
     }
 }
@@ -1018,8 +1599,10 @@ function showTimeWarning() {
 function autoSubmitTest() {
     alert('Waktu ujian telah habis! Ujian akan diselesaikan secara otomatis.');
     
-    // Clear localStorage for this test
+    // Clear localStorage for this test including timer
     localStorage.removeItem('markedQuestions_' + storageKeyId);
+    localStorage.removeItem('timer_' + storageKeyId);
+    localStorage.removeItem('initial_time_' + storageKeyId);
     
     // Create and submit form (choose package or category submit url)
     const form = document.createElement('form');
@@ -1041,78 +1624,12 @@ function autoSubmitTest() {
     form.submit();
 }
 
-// Show submit confirmation modal
-function showSubmitConfirmation() {
-    const selectedAnswer = document.querySelector('input[name="choice"]:checked');
-    
-    if (selectedAnswer) {
-        // Add current question to answered questions if not already there
-        if (!answeredQuestions.includes({{ current_question_number }})) {
-            answeredQuestions.push({{ current_question_number }});
-        }
-        
-        // Save the answer via AJAX before showing modal
-        const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        formData.append('choice', selectedAnswer.value);
-        
-        // Save answer via fetch API
-        fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(response => {
-            if (response.ok) {
-                showModal();
-            } else {
-                console.error('Failed to save answer');
-                showModal();
-            }
-        }).catch(error => {
-            console.error('Error saving answer:', error);
-            // Show modal anyway but warn user
-            showModal();
-        });
-    } else {
-        // No answer selected, show modal directly
-        showModal();
-    }
-    
-    function showModal() {
-        const modal = document.getElementById('submit-modal');
-        const answeredCount = answeredQuestions.length;
-        const totalQuestions = {{ total_questions }};
-        
-        document.getElementById('answered-summary').textContent = answeredCount;
-        
-        // Update modal message based on completion status
-        const modalText = document.querySelector('#submit-modal-text');
-        if (answeredCount === totalQuestions) {
-            modalText.innerHTML = 'Selamat! Anda telah menjawab semua soal. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.';
-            modalText.classList.remove('text-gray-500', 'dark:text-gray-300');
-            modalText.classList.add('text-green-600', 'dark:text-green-400');
-        } else {
-            modalText.innerHTML = `Anda masih memiliki <strong>${totalQuestions - answeredCount}</strong> soal yang belum dijawab. Apakah Anda yakin ingin menyelesaikan ujian? Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.`;
-            modalText.classList.remove('text-green-600', 'dark:text-green-400');
-            modalText.classList.add('text-gray-500', 'dark:text-gray-300');
-        }
-        
-        modal.style.display = 'block';
-    }
-}
-
-// Hide submit confirmation modal
-function hideSubmitConfirmation() {
-    const modal = document.getElementById('submit-modal');
-    modal.style.display = 'none';
-}
-
 // Submit test function
 function submitTest() {
-    // Clear localStorage when test is submitted manually
+    // Clear localStorage when test is submitted manually including timer
     localStorage.removeItem('markedQuestions_' + storageKeyId);
+    localStorage.removeItem('timer_' + storageKeyId);
+    localStorage.removeItem('initial_time_' + storageKeyId);
     
     // Create and submit form (choose package or single test submission)
     const form = document.createElement('form');
@@ -1216,6 +1733,10 @@ function saveAnswer() {
     // Update progress bar & stats immediately for real-time feedback
     updateNavigationColors();
     updateStats();
+    
+    // Force button color update with current counts
+    invalidateButtonCache(); // Clear cache to ensure fresh DOM queries
+    updateSubmitButtonColor(answeredQuestions.length, {{ total_questions }});
 
     // Show saving indicator flyout (no layout shift)
     showSavingIndicator();
@@ -1246,8 +1767,8 @@ function saveAnswer() {
     })
     .catch(error => {
         console.error('Error:', error);
-    // Hide saving indicator flyout
-    hideSavingIndicator();
+        // Hide saving indicator flyout
+        hideSavingIndicator();
         showSaveError();
     });
 }
@@ -1369,40 +1890,74 @@ function updateStats() {
     updateSubmitButtonColor(answeredCount, totalQuestions);
 }
 
-// Fungsi update warna tombol selesai ujian
+// Fungsi update warna tombol selesai ujian - optimized with caching
+let cachedSubmitBtns = null;
+let cachedNextBtns = null;
+let lastButtonUpdate = 0;
+
 function updateSubmitButtonColor(answeredCount, totalQuestions) {
-    const submitBtns = document.querySelectorAll('#submit-test-btn, button[name="action"][value="submit"]');
+    // Always refresh the button cache to ensure we have current elements
+    cachedSubmitBtns = document.querySelectorAll('#submit-test-btn-primary, #submit-test-btn-secondary, button[onclick*="showSubmitConfirmation"]');
     
-    submitBtns.forEach(submitBtn => {
-        if (!submitBtn) return;
+    cachedSubmitBtns.forEach(submitBtn => {
+        if (!submitBtn || !submitBtn.parentNode) return; // Check if element is still in DOM
         
-        // Remove all existing color classes
+        // Remove all existing color classes that might conflict
         submitBtn.classList.remove(
             'bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500',
             'bg-green-600', 'hover:bg-green-700', 'focus:ring-green-500',
-            'text-white'
+            'text-white', 'bg-white', 'text-gray-500', 'bg-gray-200'
         );
+        
+        // Clear any existing inline styles first
+        submitBtn.style.removeProperty('background-color');
+        submitBtn.style.removeProperty('color');
+        submitBtn.style.removeProperty('border-color');
         
         if (answeredCount === totalQuestions) {
             // All questions answered - Green button
-            submitBtn.classList.add(
-                'text-white', 
-                'bg-green-600', 
-                'hover:bg-green-700', 
-                'focus:ring-green-500'
-            );
+            submitBtn.classList.add('text-white', 'hover:bg-green-700', 'focus:ring-green-500');
+            // Force green background with !important
+            submitBtn.style.setProperty('background-color', '#16a34a', 'important');
+            submitBtn.style.setProperty('color', 'white', 'important');
+            submitBtn.style.setProperty('border-color', '#15803d', 'important');
             submitBtn.title = 'Semua soal telah dijawab. Klik untuk menyelesaikan ujian.';
         } else {
-            // Not all questions answered - Red button
-            submitBtn.classList.add(
-                'text-white', 
-                'bg-red-600', 
-                'hover:bg-red-700', 
-                'focus:ring-red-500'
-            );
+            // Not all questions answered - Red button  
+            submitBtn.classList.add('text-white', 'hover:bg-red-700', 'focus:ring-red-500');
+            // Force red background with !important
+            submitBtn.style.setProperty('background-color', '#dc2626', 'important');
+            submitBtn.style.setProperty('color', 'white', 'important');
+            submitBtn.style.setProperty('border-color', '#b91c1c', 'important');
             submitBtn.title = `${totalQuestions - answeredCount} soal belum dijawab. Pastikan semua soal telah dijawab sebelum menyelesaikan ujian.`;
         }
     });
+    
+    // Also ensure the Next button maintains its blue gradient
+    if (!cachedNextBtns) {
+        cachedNextBtns = document.querySelectorAll('button[name="action"][value="next"]');
+    }
+    
+    cachedNextBtns.forEach(nextBtn => {
+        if (!nextBtn || !nextBtn.parentNode) return; // Check if element is still in DOM
+        
+        // Remove any conflicting classes
+        nextBtn.classList.remove('bg-white', 'text-gray-500', 'bg-gray-200');
+        
+        // Force blue gradient with !important
+        nextBtn.style.setProperty('background', 'linear-gradient(to right, #2563eb, #1d4ed8)', 'important');
+        nextBtn.style.setProperty('color', 'white', 'important');
+        
+        // Ensure the blue gradient classes are present
+        nextBtn.classList.add('text-white');
+    });
+}
+
+// Function to invalidate cached elements when DOM changes
+function invalidateButtonCache() {
+    cachedSubmitBtns = null;
+    cachedNextBtns = null;
+    lastButtonUpdate = 0; // Reset throttle timer to force immediate update
 }
 
 // Fungsi untuk menampilkan feedback visual bahwa jawaban tersimpan
@@ -1512,33 +2067,33 @@ function updateProgressBar(answeredCount, totalQuestions) {
     }
 }
 
-    // Show/hide saving indicator (flyout) without causing layout shifts
-    function showSavingIndicator() {
-        const el = document.getElementById('saving-indicator');
-        if (!el) return;
-        el.classList.remove('hidden');
-        // trigger transition to slide in
-        requestAnimationFrame(() => {
-            el.classList.remove('translate-x-full', 'opacity-0');
-            el.classList.add('translate-x-0', 'opacity-100');
-        });
-    }
+// Show/hide saving indicator (flyout) without causing layout shifts
+function showSavingIndicator() {
+    const el = document.getElementById('saving-indicator');
+    if (!el) return;
+    el.classList.remove('hidden');
+    // trigger transition to slide in
+    requestAnimationFrame(() => {
+        el.classList.remove('translate-x-full', 'opacity-0');
+        el.classList.add('translate-x-0', 'opacity-100');
+    });
+}
 
-    function hideSavingIndicator() {
-        const el = document.getElementById('saving-indicator');
-        if (!el) return;
-        // slide out, then hide after transition
-        el.classList.remove('translate-x-0', 'opacity-100');
-        el.classList.add('translate-x-full', 'opacity-0');
-        if (savingHideTimer) {
-            clearTimeout(savingHideTimer);
-            savingHideTimer = null;
-        }
-        savingHideTimer = setTimeout(() => {
-            el.classList.add('hidden');
-            savingHideTimer = null;
-        }, 220);
+function hideSavingIndicator() {
+    const el = document.getElementById('saving-indicator');
+    if (!el) return;
+    // slide out, then hide after transition
+    el.classList.remove('translate-x-0', 'opacity-100');
+    el.classList.add('translate-x-full', 'opacity-0');
+    if (savingHideTimer) {
+        clearTimeout(savingHideTimer);
+        savingHideTimer = null;
     }
+    savingHideTimer = setTimeout(() => {
+        el.classList.add('hidden');
+        savingHideTimer = null;
+    }, 220);
+}
 
 // Comprehensive cleanup function for blue elements
 function cleanupBlueElements() {
@@ -1589,13 +2144,10 @@ function cleanupBlueElements() {
         });
     });
     
-    console.log('✅ Blue element cleanup completed');
+    // Blue element cleanup completed
 }
 
-// Inisialisasi saat halaman dimuat
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize timer
-    initTimer();
+// Main initialization moved to consolidated DOMContentLoaded above
     
     // Ensure saving indicator is properly hidden on page load
     const savingIndicator = document.getElementById('saving-indicator');
@@ -1610,15 +2162,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitModal = document.getElementById('submit-modal');
     if (submitModal) {
         submitModal.classList.add('hidden');
-        submitModal.style.display = 'none';
+        // Avoid forcing style.display here; class toggles handle visibility
     }
     
     // Remove any stray blue boxes or unwanted elements
     setTimeout(() => {
-        // Check for any elements that might be causing blue box appearance
+        // Check for any elements that might be causing blue box appearance (but exclude buttons)
         const unwantedElements = document.querySelectorAll('[style*="background-color: blue"], [style*="background: blue"], .bg-blue-400, .bg-blue-300');
         unwantedElements.forEach(el => {
-            if (!el.classList.contains('nav-button') && !el.classList.contains('bg-blue-500')) {
+            if (!el.classList.contains('nav-button') && 
+                !el.classList.contains('bg-blue-500') && 
+                !el.id?.includes('submit') && 
+                !el.getAttribute('onclick')?.includes('showSubmitConfirmation') &&
+                el.getAttribute('name') !== 'action') {
                 el.style.background = 'transparent';
                 el.style.border = 'none';
                 el.style.boxShadow = 'none';
@@ -1649,37 +2205,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 100);
     
-    // Set up page exit confirmation
-    window.addEventListener('beforeunload', confirmExit);
-    
-    updateNavigationColors();
-    updateStats();
-    
-    // Initialize submit button color
-    const totalQuestions = {{ total_questions }};
-    const initialAnsweredCount = answeredQuestions.length;
-    updateSubmitButtonColor(initialAnsweredCount, totalQuestions);
+    // Set up page exit confirmation and cleanup
+    window.addEventListener('beforeunload', function(e) {
+        // Clean up intervals to prevent memory leaks
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        // Call the original confirmExit function
+        return confirmExit(e);
+    });
     
     // Inisialisasi progress bar berdasarkan soal yang sudah dijawab
-    updateProgressBar(initialAnsweredCount, totalQuestions);
-    
-    // Event listener untuk radio buttons - auto-save dan update navigasi
-    document.querySelectorAll('input[name="choice"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            saveAnswer();
-        });
-    });
-    
-    // Modal event listeners
-    document.getElementById('cancel-submit').addEventListener('click', hideSubmitConfirmation);
-    
-    // Add event listener untuk tombol submit yang menggunakan modal
-    document.querySelectorAll('button[onclick*="showSubmitConfirmation"]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            showSubmitConfirmation();
-        });
-    });
+    const currentAnsweredQuestions = document.querySelectorAll('input[name="choice"]:checked');
+    updateProgressBar(currentAnsweredQuestions.length, {{ total_questions }});
     
     // Handle image loading in CKEditor content
     function handleImageLoading() {
@@ -1713,37 +2253,45 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         cleanupBlueElements();
         
-        // Set up mutation observer to catch any dynamically added blue elements
+        // Set up lightweight mutation observer - only for critical changes
+        let observerTimeout;
         const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // Element node
-                        // Check if the added node or its children have blue styling
-                        const blueElements = node.querySelectorAll ? 
-                            node.querySelectorAll('.math-formula, .latex-formula, span[data-latex], span[style*="blue"]') : [];
-                        
-                        [node, ...blueElements].forEach(el => {
-                            if (el && el.style && !el.classList.contains('nav-button')) {
-                                if (el.style.backgroundColor && el.style.backgroundColor.includes('blue')) {
-                                    el.style.backgroundColor = 'transparent';
-                                }
-                                if (el.style.borderColor && el.style.borderColor.includes('blue')) {
-                                    el.style.borderColor = 'transparent';
-                                    el.style.border = 'none';
-                                }
+            // Debounce the observer to prevent excessive calls
+            if (observerTimeout) {
+                clearTimeout(observerTimeout);
+            }
+            
+            observerTimeout = setTimeout(() => {
+                let needsUpdate = false;
+                
+                mutations.forEach((mutation) => {
+                    // Only check for specific types of changes that actually matter
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === 1 && 
+                                (node.classList?.contains('math-formula') || 
+                                 node.classList?.contains('latex-formula') ||
+                                 node.getAttribute?.('data-latex') ||
+                                 node.style?.backgroundColor?.includes('blue'))) {
+                                needsUpdate = true;
                             }
                         });
                     }
                 });
-            });
+                
+                // Only update if we actually found problematic elements
+                if (needsUpdate) {
+                    cleanupBlueElements();
+                    updateSubmitButtonColor(answeredQuestions.length, {{ total_questions }});
+                }
+            }, 250); // Debounce for 250ms to prevent spam
         });
         
-        // Start observing
+        // Start observing - but only specific attributes to reduce load
         observer.observe(document.body, {
             childList: true,
             subtree: true,
-            attributes: true,
-            attributeFilter: ['style', 'class']
+            attributes: false // Disable attribute watching to reduce load
         });
     }, 500);
 
@@ -1854,7 +2402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.querySelector('#modal-cancel').onclick = function(){ modal.classList.add('hidden'); };
         modal.querySelector('#modal-confirm').onclick = function(){ modal.classList.add('hidden'); if (onConfirm) onConfirm(); };
     }
-});
+ // End of DOMContentLoaded listener
 </script>
 
 {% endblock %}
