@@ -1,4 +1,5 @@
 {# Admin stat card: adopt richer 'stat_card' visual system with admin color accents #}
+{% load custom_filters %}
 <div class="group relative bg-white/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 hover:-translate-y-1 overflow-hidden">
   <!-- Pronounced Glow & Border Rings (admin-accented) -->
   <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -12,8 +13,12 @@
       <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
         {{ title }}
       </h3>
-      <p class="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors duration-300">
-        {{ prefix|default:"" }}{{ value }}
+      <p class="text-sm md:text-base lg:text-xl font-bold text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors duration-300">
+        {% if prefix %}
+          <span class="whitespace-nowrap">{{ prefix|default:"" }}{{ value|abbrev_currency }}</span>
+        {% else %}
+          <span class="whitespace-nowrap">{{ prefix|default:"" }}{{ value }}</span>
+        {% endif %}
       </p>
       {% if subtext %}
       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ subtext }}</p>
@@ -21,7 +26,7 @@
     </div>
 
     <div class="flex-shrink-0 ml-4">
-      <div class="relative w-12 h-12 bg-white/20 dark:bg-white/10 rounded-xl flex items-center justify-center text-xl text-gray-700 dark:text-gray-200 group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/30 transition-all duration-300 group-hover:scale-110 shadow-sm group-hover:shadow-lg group-hover:shadow-yellow-400/25">
+  <div class="relative w-9 h-9 md:w-10 md:h-10 bg-white/20 dark:bg-white/10 rounded-xl flex items-center justify-center text-sm md:text-base text-gray-700 dark:text-gray-200 group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/30 transition-all duration-300 group-hover:scale-110 shadow-sm group-hover:shadow-lg group-hover:shadow-yellow-400/25">
         <!-- inner glow layer -->
         <div class="absolute inset-0 bg-gradient-to-br from-yellow-100/40 to-yellow-200/10 dark:from-yellow-900/15 dark:to-yellow-900/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <!-- make passed SVG color follow text color on hover by removing hard-coded fills -->

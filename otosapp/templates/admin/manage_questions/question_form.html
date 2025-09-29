@@ -2514,13 +2514,37 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeImageResizer(resizer, editor);
   }
   
-  // Render existing LaTeX formulas on page load
-  setTimeout(() => {
-    const existingMath = document.querySelectorAll('.latex-formula, .math-display, .math-formula');
-    if (existingMath.length > 0 && window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise(Array.from(existingMath)).catch((err) => {});
+    // Normalize multi-character superscripts/subscripts then render LaTeX on page load
+    // This ensures inputs like `x^21` become `x^{21}` so MathJax treats the whole "21" as the exponent
+    function normalizeLaTeXSupersubs(text) {
+        // Wrap sequences of 2+ alphanumerics following ^ or _ with braces
+        // - (?!\{) : don't touch if already braced
+        // - (?!\\) : don't touch if next token is a LaTeX command (e.g. ^\alpha)
+        return text.replace(/(\^|_)(?!\{)(?!\\)([A-Za-z0-9]{2,})/g, function(_, p, group) {
+            return p + '{' + group + '}';
+        });
     }
-  }, 1000);
+
+    function normalizeElementMath(el) {
+        // Walk text nodes and normalize their contents. This avoids mangling HTML structure.
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while (node = walker.nextNode()) {
+            // Only adjust if node actually contains ^ or _ to keep this cheap
+            if (node.nodeValue && /[\^_]/.test(node.nodeValue)) {
+                node.nodeValue = normalizeLaTeXSupersubs(node.nodeValue);
+            }
+        }
+    }
+
+    setTimeout(() => {
+        const existingMath = document.querySelectorAll('.latex-formula, .math-display, .math-formula');
+        if (existingMath.length > 0 && window.MathJax && window.MathJax.typesetPromise) {
+            // Normalize each element's text nodes before typesetting so MathJax receives braced exponents/subscripts
+            existingMath.forEach(el => normalizeElementMath(el));
+            window.MathJax.typesetPromise(Array.from(existingMath)).catch((err) => {});
+        }
+    }, 1000);
             
   // Question type functionality
             const questionTypeRadios = document.querySelectorAll('input[name="question_type"]');

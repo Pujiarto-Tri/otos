@@ -105,8 +105,8 @@
     {% endif %} 
 
 
-    <div class="flex pt-16" >
-        <main class="{% if user.is_authenticated and request.path != '/otosapp/login/' and request.path != '/otosapp/register/' %}sm:pl-64{% endif %} flex-grow container mx-auto px-4 py-8">
+  <div class="flex pt-16" >
+  <main class="{% if user.is_authenticated and request.path != '/otosapp/login/' and request.path != '/otosapp/register/' %}sm:ml-64 lg:ml-64{% endif %} flex-grow max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8">
            <script>
                 var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
                 var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');

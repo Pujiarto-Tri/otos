@@ -127,3 +127,54 @@ def smart_question_text(text):
         # Plain text, convert to HTML with proper escaping and line breaks
         escaped_text = escape(text)
         return mark_safe(linebreaks(escaped_text))
+
+
+@register.filter
+def abbrev_currency(value):
+    """Abbreviate large currency values to Indonesian shorthand.
+
+    Examples:
+    - 3650000 -> '3,65 JT'
+    - 1000000 -> '1 JT'
+    - 1500000 -> '1,5 JT'
+    Falls back to thousand-separated integer for values < 1_000_000.
+    Accepts numeric input or strings containing digits/commas/dots.
+    """
+    from django.utils.safestring import mark_safe
+    try:
+        import re
+        if isinstance(value, str):
+            # Strip everything except digits and minus sign. This handles numbers formatted
+            # with commas or dots as thousand separators: '3,650,000' or '3.650.000' -> '3650000'
+            digits = re.sub(r"[^0-9-]", '', value)
+            if digits == '':
+                return value
+            num = float(digits)
+        else:
+            num = float(value)
+    except Exception:
+        return value
+
+    try:
+        from django.contrib.humanize.templatetags.humanize import intcomma
+    except Exception:
+        # fallback simple thousands separator
+        def intcomma(v):
+            return f"{int(v):,}"
+
+    if num >= 1_000_000:
+        mln = num / 1_000_000.0
+        s = f"{mln:.2f}"
+        # Trim unnecessary trailing zeros: '1.00' -> '1', '1.50' -> '1.5'
+        if s.endswith('00'):
+            s = s.split('.')[0]
+        elif s.endswith('0'):
+            s = s[:-1]
+        # replace dot with comma for Indonesian format
+        s = s.replace('.', ',')
+        return mark_safe(f"{s} JT")
+    elif num >= 1000:
+        # Show thousands with separator (e.g., 12.500)
+        return mark_safe(intcomma(int(round(num))))
+    else:
+        return mark_safe(str(int(round(num))))
