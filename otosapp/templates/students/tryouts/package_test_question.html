@@ -842,25 +842,50 @@ input[type="radio"] {
 /* CSS khusus untuk grid navigasi */
 .navigation-grid {
   display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  gap: 0.75rem !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0.375rem !important;
+  padding: 0.5rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  margin: 0 auto !important;
+}
+
+/* Ensure container doesn't cause overflow */
+.navigation-grid > * {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+@media (min-width: 480px) {
+  .navigation-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 0.5rem !important;
+    padding: 0.625rem !important;
+  }
 }
 
 @media (min-width: 640px) {
   .navigation-grid {
-    grid-template-columns: repeat(8, 1fr) !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 0.625rem !important;
+    padding: 0.75rem !important;
   }
 }
 
 @media (min-width: 768px) {
   .navigation-grid {
-    grid-template-columns: repeat(10, 1fr) !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem !important;
   }
 }
 
 @media (min-width: 1024px) {
   .navigation-grid {
-    grid-template-columns: repeat(12, 1fr) !important;
+    grid-template-columns: repeat(8, 1fr) !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
   }
 }
 
@@ -870,7 +895,7 @@ input[type="radio"] {
   align-items: center !important;
   justify-content: center !important;
   min-width: 3rem !important;
-  width: 3rem !important;
+  width: 100% !important;
   height: 3rem !important;
   font-size: 0.875rem !important;
   font-weight: 700 !important;
@@ -879,6 +904,13 @@ input[type="radio"] {
   transition: all 0.2s ease !important;
   text-decoration: none !important;
   flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0.25rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1 !important;
+  margin: 0 !important;
 }
 
 .nav-button:hover {
@@ -950,15 +982,25 @@ input[type="radio"] {
     }
     
     .navigation-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
+        grid-template-columns: repeat(3, 1fr) !important;
         gap: 0.375rem !important;
+        padding: 0.5rem !important;
+        margin: 0 0.25rem !important;
     }
 
     .nav-button {
-        min-width: 2rem !important;
-        width: 2rem !important;
-        height: 2rem !important;
-        font-size: 0.7rem !important;
+        min-width: 3rem !important;
+        width: 100% !important;
+        height: 3rem !important;
+        font-size: 0.875rem !important;
+        padding: 0.5rem !important;
+        border-radius: 0.375rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     /* make saving indicator smaller and positioned better on mobile */
