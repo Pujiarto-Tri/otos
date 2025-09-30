@@ -11,6 +11,18 @@ def sidebar_context(request):
     """Context processor untuk data yang diperlukan di sidebar"""
     context = {}
     
+    resolver_match = getattr(request, 'resolver_match', None)
+    hide_chrome_names = {
+        'take_test',
+        'take_package_test',
+        'take_package_test_question',
+        'submit_package_test',
+        'submit_test',
+    }
+    hide_chrome = False
+    if resolver_match is not None:
+        hide_chrome = resolver_match.url_name in hide_chrome_names
+
     if request.user.is_authenticated and (request.user.is_superuser or request.user.is_admin()):
         # Hitung pending payments untuk admin
         pending_payments_count = PaymentProof.objects.filter(status='pending').count()
@@ -30,5 +42,12 @@ def sidebar_context(request):
             context['message_unread_count'] = unread_count
     except Exception:
         context['message_unread_count'] = 0
+
+    context['hide_chrome'] = hide_chrome
+    context['show_sidebar'] = (
+        request.user.is_authenticated
+        and not hide_chrome
+        and request.path not in ('/otosapp/login/', '/otosapp/register/')
+    )
     
     return context

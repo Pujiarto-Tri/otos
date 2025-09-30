@@ -19,7 +19,9 @@
     {% endif %}
 </head>
 
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<body class="antialiased min-h-screen bg-gray-50 dark:bg-gray-900">
+  {% with chrome_hidden=hide_chrome|default:False %}
+  {% if not chrome_hidden %}
     <nav class="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div class="px-3 py-3 lg:px-5 lg:pl-3">
           <div class="flex items-center justify-between">
@@ -97,60 +99,69 @@
           </div>
         </div>
       </nav>
-    
-    {% if user.is_authenticated and request.path != '/otosapp/login/' and request.path != '/otosapp/register/' %}
-
+  {% endif %}
+  <div class="flex {% if chrome_hidden %}flex-col min-h-screen{% else %}pt-16 overflow-hidden{% endif %} bg-gray-50 dark:bg-gray-900">
+  {% if show_sidebar and not chrome_hidden %}
     {% include 'sidebar.html' %}
+  {% endif %}
 
-    {% endif %} 
-
-
-  <div class="flex pt-16" >
-  <main class="{% if user.is_authenticated and request.path != '/otosapp/login/' and request.path != '/otosapp/register/' %}sm:ml-64 lg:ml-64{% endif %} flex-grow max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8">
+  <div class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900 {% if show_sidebar and not chrome_hidden %}sm:ml-64 lg:ml-64{% endif %}">
+    <main class="flex-1 w-full {% if chrome_hidden %}px-0 py-6 sm:px-0 lg:px-0{% else %}px-2.5 py-8 sm:px-3 lg:px-6 xl:px-8{% endif %}">
            <script>
-                var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-                var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
-                // Change the icons inside the button based on previous settings
-                if (localStorage.getItem('color-theme') === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    themeToggleLightIcon.classList.remove('hidden');
+        if (themeToggleDarkIcon && themeToggleLightIcon) {
+          // Change the icons inside the button based on previous settings
+          if (localStorage.getItem('color-theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+            themeToggleLightIcon.classList.remove('hidden');
+          } else {
+            document.documentElement.classList.remove('dark');
+            themeToggleDarkIcon.classList.remove('hidden');
+            localStorage.setItem('color-theme', 'light');
+          }
+
+          var themeToggleBtn = document.getElementById('theme-toggle');
+
+          if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function() {
+
+              // toggle icons inside button
+              themeToggleDarkIcon.classList.toggle('hidden');
+              themeToggleLightIcon.classList.toggle('hidden');
+
+              // if set via local storage previously
+              if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                  document.documentElement.classList.add('dark');
+                  localStorage.setItem('color-theme', 'dark');
                 } else {
-                    document.documentElement.classList.remove('dark');
-                    themeToggleDarkIcon.classList.remove('hidden');
-                    localStorage.setItem('color-theme', 'light');
+                  document.documentElement.classList.remove('dark');
+                  localStorage.setItem('color-theme', 'light');
                 }
 
-                var themeToggleBtn = document.getElementById('theme-toggle');
-
-                themeToggleBtn.addEventListener('click', function() {
-
-                    // toggle icons inside button
-                    themeToggleDarkIcon.classList.toggle('hidden');
-                    themeToggleLightIcon.classList.toggle('hidden');
-
-                    // if set via local storage previously
-                    if (localStorage.getItem('color-theme')) {
-                        if (localStorage.getItem('color-theme') === 'light') {
-                            document.documentElement.classList.add('dark');
-                            localStorage.setItem('color-theme', 'dark');
-                        } else {
-                            document.documentElement.classList.remove('dark');
-                            localStorage.setItem('color-theme', 'light');
-                        }
-
-                    // if NOT set via local storage previously
-                    } else {
-                        if (document.documentElement.classList.contains('dark')) {
-                            document.documentElement.classList.remove('dark');
-                            localStorage.setItem('color-theme', 'light');
-                        } else {
-                            document.documentElement.classList.add('dark');
-                            localStorage.setItem('color-theme', 'dark');
-                        }
-                    }
-                    
-                });
+              // if NOT set via local storage previously
+              } else {
+                if (document.documentElement.classList.contains('dark')) {
+                  document.documentElement.classList.remove('dark');
+                  localStorage.setItem('color-theme', 'light');
+                } else {
+                  document.documentElement.classList.add('dark');
+                  localStorage.setItem('color-theme', 'dark');
+                }
+              }
+                            
+            });
+          }
+        } else {
+          if (localStorage.getItem('color-theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('color-theme', 'light');
+          }
+        }
            </script>
             {% if messages %}
                 {% for message in messages %}
@@ -162,6 +173,8 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+  </div>
+  {% endwith %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/datepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
     <!-- ApexCharts CDN -->

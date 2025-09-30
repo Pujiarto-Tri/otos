@@ -44,8 +44,8 @@
 <!-- Student Statistics Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     {% include 'components/stat_card.html' with title='Total Ujian' value=total_tests|default:0 gradient='from-blue-400 to-blue-600' icon='📝' %}
-    {% include 'components/stat_card.html' with title='Rata-rata' value=avg_score|smart_float|default:"0"|stringformat:"s"|add:" Point" gradient='from-green-400 to-green-600' icon='📈' %}
-    {% include 'components/stat_card.html' with title='Tertinggi' value=highest_score|smart_float|default:"0"|stringformat:"s"|add:" Point" gradient='from-purple-400 to-purple-600' icon='🏆' %}
+    {% include 'components/stat_card.html' with title='Rata-rata' value=avg_score|smart_float|default:"0"|stringformat:"s"|add:" Pts" gradient='from-green-400 to-green-600' icon='📈' %}
+    {% include 'components/stat_card.html' with title='Tertinggi' value=highest_score|smart_float|default:"0"|stringformat:"s"|add:" Pts" gradient='from-purple-400 to-purple-600' icon='🏆' %}
     {% include 'components/stat_card.html' with title='Selesai' value=completed_tests|default:0 gradient='from-orange-400 to-orange-600' icon='✅' %}
 </div>
 

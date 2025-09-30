@@ -15,7 +15,7 @@
     {% include 'components/admin/admin_stat_card.html' with title='Pengguna' value=admin_stats.total_users icon=icon_users subtext=admin_stats.new_users_today %}
 
     {% heroicon 'clipboard' as icon_clipboard %}
-    {% include 'components/admin/admin_stat_card.html' with title='Langganan Aktif' value=admin_stats.active_subscriptions icon=icon_clipboard subtext=admin_stats.subscriptions_change %}
+    {% include 'components/admin/admin_stat_card.html' with title='Subcribers' value=admin_stats.active_subscriptions icon=icon_clipboard subtext=admin_stats.subscriptions_change %}
 </div>
 
 <!-- Payment & Subscription Analytics -->
