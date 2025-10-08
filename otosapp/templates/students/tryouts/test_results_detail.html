@@ -7,6 +7,19 @@
 /* Ensure CKEditor block tags inside choice text don't force line breaks */
 .choice-text p, .choice-text div { display: inline; margin: 0; }
 .choice-text p + p { margin-left: 0; }
+/* Hide CKEditor editor toolbars/resizers in read-only explanation output */
+details .cke_image_resizer,
+details .cke_widget_drag_handler_container,
+details .cke_widget_drag_handler,
+details .ck-widget__drag-handler,
+details .ck-widget__resizer,
+details .ck-widget__toolbar {
+	display: none !important;
+}
+/* Hide custom question-form image toolbar in read-only explanations */
+details .image-edit-toolbar {
+	display: none !important;
+}
 </style>
 <div class="max-w-6xl mx-auto p-4 sm:p-6">
 	{# Provide page_title and page_subtitle to welcome_header via explicit branches (avoid inline expressions) #}
