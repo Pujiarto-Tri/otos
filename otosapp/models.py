@@ -1125,6 +1125,7 @@ class MessageThread(models.Model):
         ('technical', 'Masalah Teknis/Aplikasi'),
         ('report', 'Pelaporan Masalah'),
         ('general', 'Umum'),
+        ('info', 'Informasi Admin'),
     ]
     
     STATUS_CHOICES = [

@@ -66,6 +66,7 @@ urlpatterns = [
     # Messaging System URLs
     path('messages/', views.message_inbox, name='message_inbox'),
     path('messages/create/', views.create_message_thread, name='create_message_thread'),
+    path('messages/admin/broadcast/', views.admin_broadcast_message_thread, name='admin_broadcast_message_thread'),
     path('messages/thread/<int:thread_id>/', views.message_thread, name='message_thread'),
     path('messages/thread/<int:thread_id>/assign/', views.assign_thread, name='assign_thread'),
     path('api/messages/unread-count/', views.message_api_unread_count, name='message_api_unread_count'),

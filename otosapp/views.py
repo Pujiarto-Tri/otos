@@ -36,7 +36,7 @@ from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
-from .forms import CustomUserCreationForm, AdminUserCreationForm, BroadcastMessageForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
+from .forms import CustomUserCreationForm, AdminUserCreationForm, BroadcastMessageForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, AdminBroadcastThreadForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from .services.student_momentum import get_momentum_snapshot
 
@@ -3623,10 +3623,12 @@ def create_message_thread(request):
     categories = Category.objects.all().order_by('category_name')
     # Teachers list for optional assignment (case-insensitive match on role name)
     teachers = User.objects.filter(role__role_name__iexact='teacher', is_active=True).order_by('first_name', 'last_name')
+    thread_type_choices = [choice for choice in MessageThread.THREAD_TYPES if choice[0] != 'info']
+
     context = {
         'categories': categories,
         'teachers': teachers,
-        'thread_type_choices': MessageThread.THREAD_TYPES,
+        'thread_type_choices': thread_type_choices,
         'priority_choices': [
             ('low', 'Rendah'),
             ('normal', 'Normal'),
@@ -3636,6 +3638,73 @@ def create_message_thread(request):
     }
     
     return render(request, 'messages/create_thread.html', context)
+
+
+@login_required
+def admin_broadcast_message_thread(request):
+    """Form khusus admin/operator untuk membuat thread ke banyak siswa."""
+    user = request.user
+    role_name = getattr(getattr(user, 'role', None), 'role_name', None)
+
+    if role_name not in ['Admin', 'Operator'] and not user.is_superuser:
+        messages.error(request, 'Hanya admin atau operator yang dapat menggunakan fitur ini.')
+        return redirect('message_inbox')
+
+    student_queryset = User.objects.filter(role__role_name='Student', is_active=True).order_by('first_name', 'last_name', 'email')
+
+    if request.method == 'POST':
+        form = AdminBroadcastThreadForm(request.POST, students_queryset=student_queryset)
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            thread_type = form.cleaned_data['thread_type']
+            priority = form.cleaned_data['priority']
+            category = form.cleaned_data.get('category')
+            content = form.cleaned_data['content']
+            selected_students = list(form.cleaned_data['students'])
+
+            if not selected_students:
+                form.add_error('students', 'Pilih minimal satu siswa.')
+            else:
+                try:
+                    with transaction.atomic():
+                        for student in selected_students:
+                            thread = MessageThread.objects.create(
+                                title=title,
+                                thread_type=thread_type,
+                                student=student,
+                                teacher_or_admin=user,
+                                priority=priority,
+                                category=category if thread_type == 'academic' else None
+                            )
+
+                            Message.objects.create(
+                                thread=thread,
+                                sender=user,
+                                content=content
+                            )
+
+                    messages.success(request, f'Thread berhasil dikirim ke {len(selected_students)} siswa.')
+                    return redirect('message_inbox')
+                except Exception as exc:
+                    messages.error(request, f'Terjadi kesalahan saat membuat thread: {exc}')
+    else:
+        form = AdminBroadcastThreadForm(students_queryset=student_queryset)
+
+    if form.is_bound:
+        selected_student_ids = form.data.getlist('students')
+    else:
+        initial_students = form.initial.get('students', []) if isinstance(form.initial, dict) else []
+        selected_student_ids = [str(pk) for pk in initial_students]
+
+    context = {
+        'form': form,
+        'students': form.students_queryset,
+        'thread_type_choices': MessageThread.THREAD_TYPES,
+        'priority_choices': form.PRIORITY_CHOICES,
+        'selected_student_ids': selected_student_ids,
+    }
+
+    return render(request, 'messages/admin_broadcast_thread.html', context)
 
 
 @login_required

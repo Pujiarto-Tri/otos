@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
 
 from .forms import StudentGoalForm
 from .models import (
@@ -14,6 +15,8 @@ from .models import (
 	Test,
 	User,
 	UserSubscription,
+	MessageThread,
+	Message,
 )
 from .services.student_momentum import get_momentum_snapshot
 
@@ -343,3 +346,49 @@ class BroadcastMessageVisibilityTests(TestCase):
 		broadcast.publish_at = timezone.now() - timedelta(minutes=1)
 		broadcast.save()
 		self.assertIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_active))
+
+
+class AdminBroadcastThreadTests(TestCase):
+	def setUp(self):
+		self.admin_role = Role.objects.create(role_name='Admin')
+		self.student_role = Role.objects.create(role_name='Student')
+		self.admin = User.objects.create_user(
+			email='admin@example.com',
+			username='admin@example.com',
+			password='testpass123',
+			role=self.admin_role,
+		)
+		self.student_one = User.objects.create_user(
+			email='student1@example.com',
+			username='student1@example.com',
+			password='testpass123',
+			role=self.student_role,
+		)
+		self.student_two = User.objects.create_user(
+			email='student2@example.com',
+			username='student2@example.com',
+			password='testpass123',
+			role=self.student_role,
+		)
+
+	def test_admin_can_create_threads_for_multiple_students(self):
+		self.client.login(username='admin@example.com', password='testpass123')
+		url = reverse('admin_broadcast_message_thread')
+		payload = {
+			'title': 'Pengumuman Penting',
+			'thread_type': 'general',
+			'priority': 'high',
+			'content': 'Mohon diperhatikan jadwal tryout terbaru.',
+			'students': [str(self.student_one.pk), str(self.student_two.pk)],
+		}
+
+		response = self.client.post(url, payload, follow=True)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(MessageThread.objects.filter(title='Pengumuman Penting').count(), 2)
+		self.assertEqual(Message.objects.filter(content__icontains='jadwal tryout terbaru').count(), 2)
+
+	def test_non_admin_cannot_access_broadcast_form(self):
+		self.client.login(username='student1@example.com', password='testpass123')
+		url = reverse('admin_broadcast_message_thread')
+		response = self.client.get(url)
+		self.assertRedirects(response, reverse('message_inbox'))

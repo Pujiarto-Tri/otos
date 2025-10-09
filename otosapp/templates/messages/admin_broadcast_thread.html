@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Broadcast Pesan Siswa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Navigation -->
+    <div class="mb-6">
+        <a href="{% url 'message_inbox' %}" class="inline-flex items-center text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors duration-200">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Kembali ke Kotak Pesan
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="bg-gradient-to-br from-indigo-500 via-violet-500 to-blue-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full transform -translate-x-16 translate-y-16"></div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 4h6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">🗂️ Broadcast Pesan ke Siswa</h1>
+                        <p class="text-white/90">Kirim pemberitahuan atau pengumuman penting ke banyak siswa secara sekaligus.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <form method="post" class="p-8 space-y-10" id="broadcastForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Thread information -->
+            <section class="space-y-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                    <span class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 4h6"></path>
+                        </svg>
+                    </span>
+                    Detail Thread
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Judul Thread<span class="text-red-500"> *</span></label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.title.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="id_thread_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipe Thread<span class="text-red-500"> *</span></label>
+                        {{ form.thread_type }}
+                        {% if form.thread_type.errors %}
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.thread_type.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <p id="info-hint" class="hidden text-sm text-blue-600 dark:text-blue-400 md:col-span-2">Tipe informasi digunakan untuk pengumuman admin. Prioritas otomatis Normal dan subtest materi tidak diperlukan.</p>
+                    <div id="category-wrapper" class="hidden">
+                        <label for="id_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subtest Materi<span class="text-red-500"> *</span></label>
+                        {{ form.category }}
+                        <p class="mt-2 text-sm text-gray-500">Pilih subtest terkait jika broadcast ini berkaitan dengan materi akademik.</p>
+                        {% if form.category.errors %}
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div id="priority-wrapper">
+                        <label for="id_priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prioritas<span class="text-red-500"> *</span></label>
+                        {{ form.priority }}
+                        <p id="priority-info" class="hidden mt-2 text-sm text-gray-500 dark:text-gray-400">Untuk thread informasi, prioritas otomatis disetel ke Normal.</p>
+                        {% if form.priority.errors %}
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.priority.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- Message content -->
+            <section class="space-y-4 pt-4">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                    <span class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center mr-3">
+                        
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+
+                    </span>
+                    Isi Pesan
+                </h2>
+                <div>
+                    <label for="id_content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pesan<span class="text-red-500"> *</span></label>
+                    {{ form.content }}
+                    <p class="mt-2 text-sm text-gray-500">Pesan pertama ini akan otomatis dikirim sebagai isi awal setiap thread yang dibuat.</p>
+                    {% if form.content.errors %}
+                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.content.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Student selection -->
+            <section class="space-y-4 pt-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                        <span class="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300 flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </span>
+                        Pilih Penerima
+                    </h2>
+                    <div class="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-400">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                            Dipilih: <span id="selected-count" class="ml-1 font-semibold">0</span>
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                            Tampil: <span id="visible-count" class="ml-1 font-semibold">0</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0">
+                        <div class="relative flex-1 ml-2">
+                            <input type="text" id="student-search" placeholder="Cari siswa berdasarkan nama, email, atau nomor HP" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-all duration-200">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 pb-4 ml-4">
+                            <button type="button" id="select-visible" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Pilih Semua Terlihat</button>
+                            <button type="button" id="clear-selection" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">Kosongkan</button>
+                        </div>
+                    </div>
+
+                    {% if form.students.errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                        {{ form.students.errors.0 }}
+                    </div>
+                    {% endif %}
+
+                    <div class="max-h-96 overflow-y-auto pr-2" id="student-list">
+                        {% if students %}
+                            <ul class="space-y-3">
+                                {% for student in students %}
+                                    {% with full_name=student.get_full_name|default:student.username %}
+                                    <li data-student-item data-student-search="{{ full_name|default_if_none:''|lower }} {{ student.email|lower }} {{ student.phone_number|default_if_none:''|lower }}">
+                                        <label class="flex items-start space-x-3 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-400 transition-all duration-200 cursor-pointer">
+                                            <input type="checkbox" name="students" value="{{ student.pk }}" class="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" {% if selected_student_ids and student.pk|stringformat:"s" in selected_student_ids %}checked{% endif %}>
+                                            <span class="flex-1">
+                                                <span class="block font-semibold text-gray-900 dark:text-white">{{ full_name|default:"Siswa Tanpa Nama" }}</span>
+                                                <span class="block text-sm text-gray-600 dark:text-gray-400">{{ student.email }}</span>
+                                                {% if student.phone_number %}
+                                                    <span class="block text-xs text-gray-500 dark:text-gray-500">{{ student.phone_number }}</span>
+                                                {% endif %}
+                                            </span>
+                                        </label>
+                                    </li>
+                                    {% endwith %}
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-gray-500 text-sm">Belum ada siswa yang terdaftar.</p>
+                        {% endif %}
+                        <div id="student-empty" class="hidden text-center py-6 text-gray-500 dark:text-gray-400 text-sm">Tidak ditemukan siswa yang cocok dengan kata kunci Anda.</div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transform hover:translate-y-[-2px] transition-all duration-200 font-semibold">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Kirim Thread ke Siswa Terpilih
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    const threadTypeSelect = document.getElementById('id_thread_type');
+    const categoryWrapper = document.getElementById('category-wrapper');
+    const categoryField = document.getElementById('id_category');
+    const priorityWrapper = document.getElementById('priority-wrapper');
+    const priorityField = document.getElementById('id_priority');
+    const priorityInfo = document.getElementById('priority-info');
+    const infoHint = document.getElementById('info-hint');
+
+    function toggleThreadFields() {
+        if (!threadTypeSelect) {
+            return;
+        }
+        const threadType = threadTypeSelect.value;
+        const requiresCategory = threadType === 'academic';
+        const isInformation = threadType === 'info';
+
+        if (categoryWrapper) {
+            categoryWrapper.classList.toggle('hidden', !requiresCategory);
+        }
+        if (categoryField) {
+            if (requiresCategory) {
+                categoryField.setAttribute('required', 'required');
+            } else {
+                categoryField.removeAttribute('required');
+                categoryField.value = '';
+            }
+        }
+
+        if (priorityField) {
+            if (isInformation) {
+                priorityField.value = 'normal';
+                priorityField.setAttribute('disabled', 'disabled');
+                priorityWrapper?.classList.add('opacity-60', 'pointer-events-none');
+            } else {
+                priorityField.removeAttribute('disabled');
+                priorityWrapper?.classList.remove('opacity-60', 'pointer-events-none');
+            }
+        }
+
+        if (priorityInfo) {
+            priorityInfo.classList.toggle('hidden', !isInformation);
+        }
+
+        if (infoHint) {
+            infoHint.classList.toggle('hidden', !isInformation);
+        }
+    }
+
+    if (threadTypeSelect) {
+        threadTypeSelect.addEventListener('change', toggleThreadFields);
+        toggleThreadFields();
+    }
+
+    const searchInput = document.getElementById('student-search');
+    const studentItems = Array.from(document.querySelectorAll('[data-student-item]'));
+    const studentEmptyState = document.getElementById('student-empty');
+    const selectedCountBadge = document.getElementById('selected-count');
+    const visibleCountBadge = document.getElementById('visible-count');
+    const selectVisibleBtn = document.getElementById('select-visible');
+    const clearSelectionBtn = document.getElementById('clear-selection');
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('input[name="students"]:checked').length;
+        if (selectedCountBadge) {
+            selectedCountBadge.textContent = selected;
+        }
+    }
+
+    function updateVisibleCount(count) {
+        if (visibleCountBadge) {
+            visibleCountBadge.textContent = count;
+        }
+    }
+
+    function filterStudents() {
+        if (!searchInput) {
+            updateVisibleCount(studentItems.length);
+            return;
+        }
+        const keyword = searchInput.value.trim().toLowerCase();
+        let visibleTotal = 0;
+        studentItems.forEach(item => {
+            const data = item.dataset.studentSearch || '';
+            const isMatch = data.includes(keyword);
+            item.style.display = isMatch ? '' : 'none';
+            if (isMatch) {
+                visibleTotal += 1;
+            }
+        });
+        if (studentEmptyState) {
+            studentEmptyState.classList.toggle('hidden', visibleTotal !== 0);
+        }
+        updateVisibleCount(visibleTotal);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterStudents);
+    }
+
+    if (selectVisibleBtn) {
+        selectVisibleBtn.addEventListener('click', function() {
+            studentItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                }
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', function() {
+            document.querySelectorAll('input[name="students"]').forEach(cb => {
+                cb.checked = false;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    document.querySelectorAll('input[name="students"]').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    filterStudents();
+    updateSelectedCount();
+})();
+</script>
+{% endblock %}

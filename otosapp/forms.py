@@ -21,6 +21,7 @@ from .models import (
     TryoutPackageCategory,
     StudentGoal,
     BroadcastMessage,
+    MessageThread,
     AccessLevel,
     ACCESS_LEVEL_DESCRIPTIONS,
 )
@@ -1239,6 +1240,110 @@ class PaymentVerificationForm(forms.ModelForm):
 
         integer_part = int(amount)
         return f"{integer_part:,}".replace(',', '.')
+
+
+class AdminBroadcastThreadForm(forms.Form):
+    """Form untuk admin/operator membuat thread pesan ke banyak siswa."""
+
+    PRIORITY_CHOICES = [
+        ('low', 'Rendah'),
+        ('normal', 'Normal'),
+        ('high', 'Tinggi'),
+        ('urgent', 'Mendesak'),
+    ]
+
+    title = forms.CharField(
+        label="Judul Thread",
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'placeholder': 'Contoh: Informasi Tryout Mingguan'
+        })
+    )
+
+    thread_type = forms.ChoiceField(
+        label="Tipe Thread",
+        choices=MessageThread.THREAD_TYPES,
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500'
+        })
+    )
+
+    priority = forms.ChoiceField(
+        label="Prioritas",
+        choices=PRIORITY_CHOICES,
+        initial='normal',
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500'
+        })
+    )
+
+    category = forms.ModelChoiceField(
+        label="Subtest Materi",
+        queryset=Category.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500'
+        })
+    )
+
+    content = forms.CharField(
+        label="Isi Pesan",
+        widget=forms.Textarea(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-4 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'rows': 6,
+            'placeholder': 'Tuliskan pesan yang akan dikirim ke siswa pilihan Anda...'
+        })
+    )
+
+    students = forms.ModelMultipleChoiceField(
+        label="Pilih Siswa",
+        queryset=User.objects.none(),
+        required=True,
+        widget=forms.CheckboxSelectMultiple
+    )
+
+    def __init__(self, *args, students_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if students_queryset is None:
+            students_queryset = User.objects.filter(role__role_name='Student', is_active=True)
+
+        self.students_queryset = students_queryset.order_by('first_name', 'last_name', 'email')
+        self.fields['students'].queryset = self.students_queryset
+        self.fields['students'].widget.attrs.update({
+            'class': 'space-y-2'
+        })
+
+        self.fields['category'].queryset = Category.objects.all().order_by('category_name')
+
+        info_label = dict(MessageThread.THREAD_TYPES).get('info')
+        if info_label:
+            info_choice = ('info', info_label)
+            thread_type_field = self.fields['thread_type']
+            if info_choice not in thread_type_field.choices:
+                thread_type_field.choices = list(thread_type_field.choices) + [info_choice]
+
+        selected_students = self.data.getlist('students') if self.is_bound else self.initial.get('students', [])
+        self.initial['students'] = selected_students
+
+    def clean(self):
+        cleaned_data = super().clean()
+        thread_type = cleaned_data.get('thread_type')
+        category = cleaned_data.get('category')
+        priority = cleaned_data.get('priority')
+
+        if thread_type == 'academic' and not category:
+            self.add_error('category', 'Pilih subtest materi untuk thread akademik.')
+
+        if thread_type == 'info':
+            cleaned_data['category'] = None
+            cleaned_data['priority'] = 'normal'
+
+        if thread_type != 'info' and not priority:
+            self.add_error('priority', 'Pilih prioritas thread.')
+
+        return cleaned_data
 
 
 class UserRoleChangeForm(forms.ModelForm):
