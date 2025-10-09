@@ -18,6 +18,7 @@ from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
 from .forms import CustomUserCreationForm, AdminUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
+from .services.student_momentum import get_momentum_snapshot
 
 from django.db.models.functions import TruncDay, TruncMonth
 from django.core.exceptions import PermissionDenied
@@ -150,6 +151,8 @@ def home(request):
             except UniversityTarget.DoesNotExist:
                 student_university_target = None
 
+            momentum_snapshot = get_momentum_snapshot(request.user)
+
             context.update({
                 'is_student': True,
                 'user_tests': recent_tests,
@@ -161,9 +164,9 @@ def home(request):
                 'ongoing_test': ongoing_test,
                 'pending_payment': pending_payment,
                 'subscription_status': request.user.get_subscription_status(),
-                'can_access_tryouts': request.user.can_access_tryouts()
-                ,
-                'student_university_target': student_university_target
+                'can_access_tryouts': request.user.can_access_tryouts(),
+                'student_university_target': student_university_target,
+                'momentum': momentum_snapshot,
             })
         
         # Data untuk teacher dashboard (statistik siswa & tren skor)
@@ -3222,9 +3225,12 @@ def force_end_test(request, test_id):
 
 @login_required
 def settings_view(request):
-    from .forms import UserProfileForm, ProfilePictureForm, CustomPasswordChangeForm
+    from .forms import UserProfileForm, ProfilePictureForm, CustomPasswordChangeForm, StudentGoalForm
     from django.contrib.auth import update_session_auth_hash
     
+    active_goal = request.user.get_active_goal() if request.user.is_student() else None
+    goal_form = StudentGoalForm(instance=active_goal) if request.user.is_student() else None
+
     if request.method == 'POST':
         action = request.POST.get('action')
         
@@ -3299,9 +3305,51 @@ def settings_view(request):
             update_session_auth_hash(request, request.user)  # Keep user logged in
             messages.success(request, 'Password berhasil diubah!')
             return redirect('settings')
+
+        elif action == 'set_goal' and request.user.is_student():
+            goal_form = StudentGoalForm(request.POST, instance=active_goal)
+            if goal_form.is_valid():
+                goal = goal_form.save(commit=False)
+                goal.user = request.user
+                if not goal.timeframe_start:
+                    goal.timeframe_start = timezone.localdate()
+                goal.archived_at = None
+                if goal.completed_at:
+                    goal.completed_at = None
+                goal.save()
+                messages.success(request, 'Target belajar berhasil disimpan!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Periksa kembali input target belajar Anda.')
+
+        elif action == 'clear_goal' and request.user.is_student():
+            if active_goal:
+                active_goal.archive()
+                messages.success(request, 'Target belajar diarsipkan. Anda dapat membuat target baru kapan saja.')
+            else:
+                messages.info(request, 'Tidak ada target aktif untuk dihapus.')
+            return redirect('settings')
     
+    student_subscription = None
+    student_subscription_state = None
+    if request.user.is_student():
+        try:
+            student_subscription = request.user.subscription
+        except UserSubscription.DoesNotExist:
+            student_subscription = None
+        else:
+            from django.utils import timezone
+            student_subscription_state = {
+                'is_active': student_subscription.is_active,
+                'is_expired': timezone.now() > student_subscription.end_date,
+            }
+
     context = {
         'user': request.user,
+        'student_subscription': student_subscription,
+        'student_subscription_state': student_subscription_state,
+        'goal_form': goal_form,
+        'active_goal': active_goal,
     }
     
     return render(request, 'settings.html', context)

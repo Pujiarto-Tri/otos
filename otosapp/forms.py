@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory, StudentGoal
 
 class CustomUserCreationForm(UserCreationForm):
     phone_number = forms.CharField(
@@ -1150,6 +1150,56 @@ class UniversityTargetForm(forms.ModelForm):
             raise forms.ValidationError('Pilih universitas yang berbeda untuk setiap target.')
         
         return cleaned_data
+
+
+class StudentGoalForm(forms.ModelForm):
+    """Form untuk siswa mengatur target belajar"""
+
+    class Meta:
+        model = StudentGoal
+        fields = ['goal_type', 'title', 'target_value', 'timeframe_start', 'timeframe_end']
+        widgets = {
+            'goal_type': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'Contoh: Selesaikan 5 Tryout Oktober'
+            }),
+            'target_value': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'min': '0',
+                'step': '0.1',
+                'placeholder': 'Nilai target'
+            }),
+            'timeframe_start': forms.DateInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'type': 'date'
+            }),
+            'timeframe_end': forms.DateInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'type': 'date'
+            }),
+        }
+
+    def clean_target_value(self):
+        value = self.cleaned_data.get('target_value')
+        if value is None or value <= 0:
+            raise forms.ValidationError('Target harus lebih besar dari 0.')
+        return value
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get('timeframe_start')
+        end = cleaned_data.get('timeframe_end')
+
+        if not start:
+            self.add_error('timeframe_start', 'Tanggal mulai wajib diisi untuk menghitung progres target.')
+
+        if start and end and end < start:
+            self.add_error('timeframe_end', 'Tanggal selesai harus setelah tanggal mulai.')
+        return cleaned_data
+
 
 class TryoutPackageForm(forms.ModelForm):
     """Form for creating and editing tryout packages"""

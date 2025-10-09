@@ -49,6 +49,338 @@
     {% include 'components/stat_card.html' with title='Selesai' value=completed_tests|default:0 gradient='from-orange-400 to-orange-600' icon='✅' %}
 </div>
 
+{% if momentum %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Streak Aktif</p>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {% if momentum.streak %}
+                        {{ momentum.streak.current }}<span class="text-base font-semibold text-gray-500 dark:text-gray-400"> hari</span>
+                    {% else %}
+                        0<span class="text-base font-semibold text-gray-500 dark:text-gray-400"> hari</span>
+                    {% endif %}
+                </h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center dark:bg-orange-900/30 dark:text-orange-300">🔥</div>
+        </div>
+        {% if momentum.streak %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">Rekor terbaik: {{ momentum.streak.longest }} hari • Terakhir latihan: {{ momentum.streak.last_activity|date:"d M" }}</p>
+        {% else %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">Mulai tryout hari ini untuk mengaktifkan streak belajar.</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Aktivitas Mingguan</p>
+                {% if momentum.weekly_activity %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ momentum.weekly_activity.current_week }}<span class="text-base font-semibold text-gray-500 dark:text-gray-400"> tryout</span></h3>
+                {% else %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">0<span class="text-base font-semibold text-gray-500 dark:text-gray-400"> tryout</span></h3>
+                {% endif %}
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center dark:bg-blue-900/30 dark:text-blue-300">📊</div>
+        </div>
+        {% if momentum.weekly_activity %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+            {% if momentum.weekly_activity.delta > 0 %}
+                Naik {{ momentum.weekly_activity.delta }} dibanding minggu lalu.
+            {% elif momentum.weekly_activity.delta < 0 %}
+                Turun {{ momentum.weekly_activity.delta_abs }} dibanding minggu lalu.
+            {% else %}
+                Sama seperti minggu lalu.
+            {% endif %}
+        </p>
+        {% else %}
+        <p class="text-sm text-gray-600 dark:text-gray-400">Belum ada aktivitas minggu ini. Jadwalkan satu sesi tryout!</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Target Pribadi</p>
+                {% if momentum.goal %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ momentum.goal.percent_complete|floatformat:0 }}%</h3>
+                {% else %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Belum ada</h3>
+                {% endif %}
+            </div>
+            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center dark:bg-emerald-900/30 dark:text-emerald-300">🎯</div>
+        </div>
+        {% if momentum.goal %}
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                {% if momentum.goal.goal.title %}
+                    {{ momentum.goal.goal.title }}
+                {% else %}
+                    Target {{ momentum.goal.goal.get_goal_type_display }}
+                {% endif %}
+            </p>
+            <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-600" style="width: {{ momentum.goal.percent_complete }}%;"></div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {{ momentum.goal.current_value|floatformat:1 }} dari {{ momentum.goal.goal.target_value|floatformat:1 }} tercapai
+                {% if momentum.goal.days_remaining is not None %}
+                    • Sisa {{ momentum.goal.days_remaining }} hari
+                {% endif %}
+            </p>
+        {% else %}
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Atur target belajar untuk memantau progres kamu.</p>
+            <a href="{% url 'settings' %}#goal-settings" class="inline-flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700">Atur Target <span class="ml-1">→</span></a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if momentum.personal_best or momentum.growth %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Personal Best</p>
+                {% if momentum.personal_best %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ momentum.personal_best.display_score|smart_float }}
+                        <span class="text-base font-semibold text-gray-500 dark:text-gray-400">{{ momentum.personal_best.unit }}</span>
+                    </h3>
+                {% else %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">—</h3>
+                {% endif %}
+            </div>
+            <div class="w-10 h-10 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center dark:bg-violet-900/30 dark:text-violet-300">⭐</div>
+        </div>
+        {% if momentum.personal_best %}
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ momentum.personal_best.label }}</p>
+            {% if momentum.personal_best.occurred_on %}
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">Diraih {{ momentum.personal_best.occurred_on|date:"d M Y" }}</p>
+            {% endif %}
+        {% else %}
+            <p class="text-sm text-gray-600 dark:text-gray-400">Belum ada tryout yang tersimpan. Mulai sesi pertama untuk mencatat personal best kamu.</p>
+        {% endif %}
+    </div>
+
+    <div class="rounded-2xl p-5 shadow-sm border transition-colors duration-200
+        {% if momentum.growth %}
+            {% if momentum.growth.direction == 'up' %}
+                bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800
+            {% elif momentum.growth.direction == 'down' %}
+                bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800
+            {% else %}
+                bg-sky-50 border-sky-200 dark:bg-sky-900/20 dark:border-sky-800
+            {% endif %}
+        {% else %}
+            bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700
+        {% endif %}">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pertumbuhan Nilai</p>
+                {% if momentum.growth %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ momentum.growth.recent_average|smart_float }}
+                        <span class="text-base font-semibold text-gray-500 dark:text-gray-400">{{ momentum.growth.unit }}</span>
+                    </h3>
+                {% else %}
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">—</h3>
+                {% endif %}
+            </div>
+            {% if momentum.growth %}
+                {% if momentum.growth.direction == 'down' %}
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-200">📉</div>
+                {% elif momentum.growth.direction == 'up' %}
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">📈</div>
+                {% else %}
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300">➖</div>
+                {% endif %}
+            {% else %}
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 text-slate-500 dark:bg-slate-900/40 dark:text-slate-300">�</div>
+            {% endif %}
+        </div>
+        {% if momentum.growth %}
+            <p class="text-sm font-medium
+                {% if momentum.growth.direction == 'up' %}
+                    text-emerald-700 dark:text-emerald-300
+                {% elif momentum.growth.direction == 'down' %}
+                    text-rose-600 dark:text-rose-300
+                {% else %}
+                    text-sky-700 dark:text-sky-300
+                {% endif %}">
+                {% if momentum.growth.direction == 'up' %}
+                    Naik {{ momentum.growth.delta|smart_float }} {{ momentum.growth.unit }}
+                {% elif momentum.growth.direction == 'down' %}
+                    Turun {{ momentum.growth.delta_abs|smart_float }} {{ momentum.growth.unit }}
+                {% else %}
+                    Stabil dibanding sebelumnya
+                {% endif %}
+                {% if momentum.growth.percent_change is not None %}
+                    ({{ momentum.growth.percent_change|smart_float }}%)
+                {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                Rata-rata {{ momentum.growth.recent_count }} tryout terakhir dibanding {{ momentum.growth.previous_count }} sesi sebelumnya.
+            </p>
+        {% else %}
+            <p class="text-sm text-gray-600 dark:text-gray-400">Kerjakan minimal dua tryout untuk melihat perkembangan nilai kamu dari waktu ke waktu.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if momentum.trend %}
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-8 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Grafik Perkembangan Nilai</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Pantau rata-rata skor tryout kamu dari waktu ke waktu.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" data-range="7" class="trend-range-button px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:border-blue-800 dark:text-blue-300 dark:bg-blue-900/30" aria-pressed="true">7 Hari</button>
+            <button type="button" data-range="30" class="trend-range-button px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/40">30 Hari</button>
+            <button type="button" data-range="90" class="trend-range-button px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/40">3 Bulan</button>
+        </div>
+    </div>
+    <div class="w-full">
+        <div id="studentTrendChart" class="w-full h-72"></div>
+        <p id="studentTrendSample" class="mt-3 text-xs text-gray-500 dark:text-gray-400">Data berdasarkan rata-rata harian.</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+(function(){
+    const rangePayloads = {
+        '7': {{ momentum.trend.seven_day|default:"{}"|safe }},
+        '30': {{ momentum.trend.thirty_day|default:"{}"|safe }},
+        '90': {{ momentum.trend.ninety_day|default:"{}"|safe }}
+    };
+
+    const chartContainer = document.getElementById('studentTrendChart');
+    if (!chartContainer) { return; }
+
+    let chart = null;
+    const defaultUnit = '{{ momentum.trend.unit|default:"pts" }}';
+
+    function renderChart(rangeKey) {
+        const payload = rangePayloads[rangeKey] || { categories: [], series: [] };
+        const cats = payload.categories && payload.categories.length ? payload.categories : ['-'];
+        const dataSeries = payload.series && payload.series.length ? payload.series : [{ name: 'Tidak ada data', data: new Array(cats.length).fill(0) }];
+        const unit = payload.unit || defaultUnit;
+        const isDark = document.documentElement.classList.contains('dark');
+
+        const options = {
+            chart: {
+                type: 'area',
+                height: 280,
+                toolbar: { show: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 500 }
+            },
+            series: dataSeries,
+            xaxis: {
+                categories: cats,
+                labels: { style: { colors: isDark ? '#cbd5e1' : '#64748b', fontSize: '12px' } }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: isDark ? '#cbd5e1' : '#64748b', fontSize: '12px' },
+                    formatter: val => typeof val === 'number' ? Math.round(val * 10) / 10 : val
+                }
+            },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.6, opacityTo: 0.05, stops: [0, 80, 100] } },
+            stroke: { curve: 'smooth', width: 2 },
+            colors: ['#3b82f6'],
+            dataLabels: { enabled: false },
+            grid: { strokeDashArray: 3, borderColor: isDark ? '#334155' : '#e2e8f0' },
+            tooltip: {
+                y: {
+                    formatter: val => val !== null ? `${val} ${unit}` : 'Tidak ada data'
+                }
+            },
+            legend: { show: false }
+        };
+
+        if (chart) chart.destroy();
+        chart = new ApexCharts(chartContainer, options);
+        chart.render();
+
+        const sample = document.getElementById('studentTrendSample');
+        if (sample && payload.sample_sizes) {
+            const total = payload.sample_sizes.reduce((acc, cur) => acc + cur, 0);
+            sample.textContent = total > 0
+                ? `Data berdasarkan ${total} tryout pada rentang ${cats[0]} - ${cats[cats.length - 1]}.`
+                : 'Belum ada data tryout pada rentang ini.';
+        }
+    }
+
+    function handleRangeChange(evt) {
+        const selected = evt.currentTarget.getAttribute('data-range');
+        document.querySelectorAll('.trend-range-button').forEach(btn => {
+            const isActive = btn.getAttribute('data-range') === selected;
+            btn.setAttribute('aria-pressed', isActive);
+            if (isActive) {
+                btn.classList.add('border-blue-200', 'text-blue-600', 'bg-blue-50', 'dark:border-blue-800', 'dark:text-blue-300', 'dark:bg-blue-900/30');
+                btn.classList.remove('border-gray-200', 'text-gray-600', 'dark:border-gray-700', 'dark:text-gray-300');
+            } else {
+                btn.classList.remove('border-blue-200', 'text-blue-600', 'bg-blue-50', 'dark:border-blue-800', 'dark:text-blue-300', 'dark:bg-blue-900/30');
+                btn.classList.add('border-gray-200', 'text-gray-600', 'dark:border-gray-700', 'dark:text-gray-300');
+            }
+        });
+        renderChart(selected);
+    }
+
+    document.querySelectorAll('.trend-range-button').forEach(btn => {
+        btn.addEventListener('click', handleRangeChange);
+    });
+
+    renderChart('7');
+})();
+</script>
+{% endif %}
+
+{% if momentum.readiness %}
+<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-8 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Readiness Signals</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Tinjauan cepat seberapa siap kamu menghadapi ujian.</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for signal in momentum.readiness %}
+        <div class="rounded-xl border p-4 transition-colors duration-200
+            {% if signal.status == 'strong' %}
+                border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20
+            {% elif signal.status == 'steady' %}
+                border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-900/20
+            {% else %}
+                border-rose-200 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-900/20
+            {% endif %}">
+            <div class="flex items-start gap-3">
+                <div class="mt-1">
+                    {% if signal.status == 'strong' %}
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white">✔</span>
+                    {% elif signal.status == 'steady' %}
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white">≈</span>
+                    {% else %}
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-white">!</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ signal.title }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ signal.message }}</p>
+                    {% if signal.emphasis %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ signal.emphasis }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Motivational Messages -->
 {% include 'components/motivational_message.html' with total_tests=total_tests completed_tests=completed_tests %}
 

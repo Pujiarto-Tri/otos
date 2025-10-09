@@ -120,6 +120,15 @@ class User(AbstractUser):
                 'end_date': None,
                 'package': None
             }
+
+    def get_active_goal(self):
+        """Return active student goal if available"""
+        if not self.is_student():
+            return None
+        try:
+            return self.student_goals.active().first()
+        except Exception:
+            return None
     
     def has_university_target(self):
         """Check if user has set any university target (utama, aman, atau cadangan)"""
@@ -1288,6 +1297,74 @@ class UserSubscription(models.Model):
             self.end_date = self.end_date + timezone.timedelta(days=days)
         self.auto_downgrade_processed = False
         self.save()
+
+
+class StudentGoalQuerySet(models.QuerySet):
+    def active(self):
+        today = timezone.localdate()
+        return self.filter(archived_at__isnull=True).filter(
+            models.Q(timeframe_end__isnull=True) | models.Q(timeframe_end__gte=today)
+        )
+
+
+class StudentGoalManager(models.Manager):
+    def get_queryset(self):
+        return StudentGoalQuerySet(self.model, using=self._db)
+
+    def active(self):
+        return self.get_queryset().active()
+
+
+class StudentGoal(models.Model):
+    TEST_COUNT = 'test_count'
+    AVERAGE_SCORE = 'avg_score'
+    TOTAL_SCORE = 'total_score'
+
+    GOAL_TYPE_CHOICES = [
+        (TEST_COUNT, 'Jumlah Tryout'),
+        (AVERAGE_SCORE, 'Rata-rata Skor'),
+        (TOTAL_SCORE, 'Total Poin'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_goals')
+    goal_type = models.CharField(max_length=20, choices=GOAL_TYPE_CHOICES)
+    title = models.CharField(max_length=140, blank=True)
+    description = models.TextField(blank=True)
+    target_value = models.FloatField(help_text="Nilai target yang ingin dicapai")
+    timeframe_start = models.DateField(null=True, blank=True, help_text="Tanggal mulai perhitungan")
+    timeframe_end = models.DateField(null=True, blank=True, help_text="Tanggal akhir (deadline)")
+    archived_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = StudentGoalManager()
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Target Siswa'
+        verbose_name_plural = 'Target Siswa'
+
+    def __str__(self):
+        base = self.title or dict(self.GOAL_TYPE_CHOICES).get(self.goal_type, 'Target')
+        return f"{self.user.email} - {base}"
+
+    def is_active(self):
+        if self.archived_at:
+            return False
+        if self.timeframe_end and self.timeframe_end < timezone.localdate():
+            return False
+        return True
+
+    def mark_completed(self):
+        if not self.completed_at:
+            self.completed_at = timezone.now()
+            self.save(update_fields=['completed_at'])
+
+    def archive(self):
+        if not self.archived_at:
+            self.archived_at = timezone.now()
+            self.save(update_fields=['archived_at'])
 
 
 @receiver(pre_delete, sender=PaymentProof)
