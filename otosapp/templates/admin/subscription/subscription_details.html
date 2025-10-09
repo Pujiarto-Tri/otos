@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% load media_helpers %}
+{% load custom_filters %}
 
 {% block title %}Subscription Details - Admin{% endblock %}
 
@@ -217,7 +218,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Amount Paid:</span>
-                        <span class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ payment_proof.amount_paid|floatformat:0 }}</span>
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ payment_proof.amount_paid|format_idr }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Status:</span>

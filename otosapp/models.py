@@ -22,6 +22,40 @@ def get_storage():
         return default_storage
 
 
+ACCESS_LEVEL_RANKING = {
+    'visitor': 0,
+    'silver': 1,
+    'gold': 2,
+    'tuntas': 3,
+}
+
+
+class AccessLevel(models.TextChoices):
+    """Centralized access tier definitions for subscriptions and tryouts."""
+    VISITOR = 'visitor', 'Visitor / Gratis'
+    SILVER = 'silver', 'Silver'
+    GOLD = 'gold', 'Gold'
+    TUNTAS = 'tuntas', 'Tuntas'
+
+    @classmethod
+    def rank(cls, value):
+        if isinstance(value, cls):
+            value = value.value
+        return ACCESS_LEVEL_RANKING.get(value, -1)
+
+    @classmethod
+    def meets_requirement(cls, candidate, required):
+        return cls.rank(candidate) >= cls.rank(required)
+
+
+ACCESS_LEVEL_DESCRIPTIONS = {
+    AccessLevel.VISITOR: "Visitor / Gratis – akses dasar tanpa biaya untuk paket promo atau sampel.",
+    AccessLevel.SILVER: "Silver – akses berlangganan tingkat awal dengan paket inti untuk latihan rutin.",
+    AccessLevel.GOLD: "Gold – akses menengah dengan tryout premium dan fitur analisis lanjut.",
+    AccessLevel.TUNTAS: "Tuntas – akses paling tinggi mencakup seluruh paket, simulasi lengkap, dan materi eksklusif.",
+}
+
+
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True, verbose_name='Phone Number')
@@ -74,6 +108,36 @@ class User(AbstractUser):
         except UserSubscription.DoesNotExist:
             return False
     
+    def get_access_level(self):
+        """Return the user's current access tier for gated tryouts."""
+        if getattr(self, 'is_superuser', False):
+            return AccessLevel.TUNTAS
+
+        try:
+            if self.is_admin() or self.is_operator() or self.is_teacher():
+                return AccessLevel.TUNTAS
+        except AttributeError:
+            pass
+
+        try:
+            if self.is_student():
+                if self.has_active_subscription():
+                    try:
+                        return self.subscription.package.access_level
+                    except (UserSubscription.DoesNotExist, AttributeError):
+                        pass
+                return AccessLevel.VISITOR
+        except AttributeError:
+            pass
+
+        try:
+            if self.is_visitor():
+                return AccessLevel.VISITOR
+        except AttributeError:
+            pass
+
+        return AccessLevel.SILVER
+
     def can_access_tryouts(self):
         """Check if user can access tryout features"""
         return self.is_student() and self.has_active_subscription()
@@ -361,6 +425,12 @@ class TryoutPackage(models.Model):
         default=False,
         help_text="Centang jika paket ini dapat diakses gratis oleh pengguna role Visitor"
     )
+    required_access_level = models.CharField(
+        max_length=20,
+        choices=AccessLevel.choices,
+        default=AccessLevel.SILVER,
+        help_text="Tingkat akses minimum yang dibutuhkan untuk mengerjakan paket"
+    )
     
     # Categories in this package
     categories = models.ManyToManyField(Category, through='TryoutPackageCategory')
@@ -396,6 +466,15 @@ class TryoutPackage(models.Model):
             all(pc.category.get_question_count() >= pc.question_count for pc in self.tryoutpackagecategory_set.all())
         )
 
+    def save(self, *args, **kwargs):
+        """Keep legacy visitor toggle aligned with access tier."""
+        if self.required_access_level == AccessLevel.VISITOR:
+            self.is_free_for_visitors = True
+        elif self.is_free_for_visitors and self.required_access_level != AccessLevel.VISITOR:
+            # Prevent mismatched state where checkbox is True but tier isn't visitor
+            self.is_free_for_visitors = False
+        super().save(*args, **kwargs)
+
     def is_accessible_by(self, user):
         """Determine if a given user can access this tryout package"""
         if user is None or not getattr(user, 'is_authenticated', False):
@@ -412,19 +491,33 @@ class TryoutPackage(models.Model):
         except AttributeError:
             pass
 
-        # Students require active subscription
+        required_level = getattr(self, 'required_access_level', AccessLevel.SILVER)
+
+        # Determine the user's current tier
+        try:
+            user_level = user.get_access_level()
+        except AttributeError:
+            user_level = AccessLevel.VISITOR
+
+        # Students require sufficient subscription tier
         try:
             if user.is_student() and user.can_access_tryouts():
-                return True
+                if AccessLevel.meets_requirement(user_level, required_level):
+                    return True
         except AttributeError:
             pass
 
-        # Visitors only if package is marked free
+        # Visitors may access only if tier requirement aligns and package is free
         try:
-            if user.is_visitor() and self.is_free_for_visitors:
-                return True
+            if user.is_visitor():
+                if required_level == AccessLevel.VISITOR and self.is_free_for_visitors:
+                    return True
         except AttributeError:
             pass
+
+        # Fallback: allow higher-tier subscribers (e.g., Gold accessing Silver)
+        if AccessLevel.meets_requirement(user_level, required_level) and user_level != AccessLevel.VISITOR:
+            return True
 
         return False
 
@@ -1416,6 +1509,13 @@ class SubscriptionPackage(models.Model):
     is_active = models.BooleanField(default=True, verbose_name="Aktif")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    access_level = models.CharField(
+        max_length=20,
+        choices=AccessLevel.choices,
+        default=AccessLevel.SILVER,
+        help_text="Tentukan tier akses yang diberikan paket ini"
+    )
     
     # Featured package highlighting
     is_featured = models.BooleanField(default=False, verbose_name="Paket Unggulan")

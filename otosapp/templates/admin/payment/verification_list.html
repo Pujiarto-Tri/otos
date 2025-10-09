@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load media_helpers %}
+{% load custom_filters %}
 
 {% block title %}Verifikasi Pembayaran - Admin{% endblock %}
 
@@ -177,7 +178,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900 dark:text-white">
-                                    <div class="font-medium">Rp {{ payment.amount_paid|floatformat:0 }}</div>
+                                    <div class="font-medium">Rp {{ payment.amount_paid|format_idr }}</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">
                                         {{ payment.payment_method }}
                                     </div>

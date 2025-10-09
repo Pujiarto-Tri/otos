@@ -1,8 +1,29 @@
+import re
+from decimal import Decimal, InvalidOperation
+
 from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory, StudentGoal, BroadcastMessage
+from .models import (
+    User,
+    Role,
+    Category,
+    Question,
+    Choice,
+    SubscriptionPackage,
+    PaymentMethod,
+    PaymentProof,
+    UserSubscription,
+    University,
+    UniversityTarget,
+    TryoutPackage,
+    TryoutPackageCategory,
+    StudentGoal,
+    BroadcastMessage,
+    AccessLevel,
+    ACCESS_LEVEL_DESCRIPTIONS,
+)
 
 class CustomUserCreationForm(UserCreationForm):
     phone_number = forms.CharField(
@@ -917,7 +938,7 @@ class SubscriptionPackageForm(forms.ModelForm):
     class Meta:
         model = SubscriptionPackage
         # Remove 'package_type' from fields
-        fields = ['name', 'description', 'features', 'price', 'duration_days', 'is_active', 'is_featured']
+        fields = ['name', 'description', 'features', 'price', 'duration_days', 'access_level', 'is_active', 'is_featured']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
@@ -944,6 +965,9 @@ class SubscriptionPackageForm(forms.ModelForm):
                 'placeholder': 'Durasi dalam hari',
                 'min': '1'
             }),
+            'access_level': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'w-4 h-4 text-primary-600 bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded focus:ring-primary-500 dark:focus:ring-primary-600'
             }),
@@ -957,6 +981,21 @@ class SubscriptionPackageForm(forms.ModelForm):
         self.fields['features'].help_text = "Masukkan setiap fitur dalam baris terpisah"
         self.fields['duration_days'].help_text = "Durasi berlangganan dalam hari (contoh: 30 untuk 1 bulan)"
         self.fields['is_featured'].help_text = "Tandai jika ini adalah paket unggulan"
+        self.fields['access_level'].choices = [
+            (value, label) for value, label in AccessLevel.choices if value != AccessLevel.VISITOR
+        ]
+        if 'access_level' not in self.initial:
+            self.initial['access_level'] = self.instance.access_level or AccessLevel.SILVER
+        self.fields['access_level'].label = "Tier Akses"
+        tier_descriptions = " ".join([
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.SILVER],
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.GOLD],
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.TUNTAS],
+        ])
+        self.fields['access_level'].help_text = (
+            "Pilih tingkat akses yang diterima siswa setelah membeli paket ini. "
+            f"{tier_descriptions} Visitor / Gratis hanya untuk paket promo tanpa langganan."
+        )
 
 
 class PaymentProofForm(forms.ModelForm):
@@ -1039,10 +1078,14 @@ class PaymentProofForm(forms.ModelForm):
 
 class PaymentVerificationForm(forms.ModelForm):
     """Form untuk admin verifikasi pembayaran"""
+
     class Meta:
         model = PaymentProof
-        fields = ['status', 'admin_notes']
+        fields = ['package', 'amount_paid', 'status', 'admin_notes']
         widgets = {
+            'package': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            }),
             'status': forms.Select(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
             }),
@@ -1052,6 +1095,82 @@ class PaymentVerificationForm(forms.ModelForm):
                 'placeholder': 'Catatan untuk user mengenai status pembayaran'
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        instance = kwargs.get('instance')
+        package_field = self.fields.get('package')
+        if package_field is not None:
+            queryset = SubscriptionPackage.objects.filter(is_active=True)
+            if instance and instance.package_id:
+                queryset = queryset | SubscriptionPackage.objects.filter(id=instance.package_id)
+            package_field.queryset = queryset.distinct().order_by('price')
+            package_field.label = 'Paket Berlangganan'
+            package_field.help_text = 'Pilih paket yang akan diaktifkan untuk user saat verifikasi.'
+        self.fields['amount_paid'] = forms.CharField(
+            required=False,
+            label='Jumlah Pembayaran',
+            help_text='Isi sesuai nominal yang diterima (boleh berbeda dengan harga paket).',
+            widget=forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+                'inputmode': 'numeric',
+                'placeholder': 'Masukkan jumlah pembayaran yang diterima',
+                'autocomplete': 'off'
+            })
+        )
+        if instance and instance.amount_paid is not None:
+            formatted_amount = self._format_amount(instance.amount_paid)
+            self.fields['amount_paid'].initial = formatted_amount
+            self.initial['amount_paid'] = formatted_amount
+
+    def clean_amount_paid(self):
+        raw_value = self.cleaned_data.get('amount_paid', '')
+
+        if raw_value is None or str(raw_value).strip() == '':
+            if self.instance and self.instance.amount_paid is not None:
+                return self.instance.amount_paid
+            return None
+
+        value = str(raw_value).strip().replace(' ', '')
+
+        if ',' in value and '.' in value:
+            value = value.replace('.', '')
+        elif value.count('.') > 1:
+            value = value.replace('.', '')
+        elif '.' in value and ',' not in value:
+            parts = value.split('.')
+            if len(parts) > 1 and all(len(part) == 3 for part in parts[1:]):
+                value = ''.join(parts)
+
+        if ',' in value:
+            if value.count(',') > 1:
+                raise forms.ValidationError('Masukkan jumlah pembayaran yang valid.')
+            value = value.replace(',', '.')
+
+        normalized = re.sub(r'[^0-9.]', '', value)
+
+        if normalized.count('.') > 1 or normalized in {'', '.'}:
+            raise forms.ValidationError('Masukkan jumlah pembayaran yang valid.')
+
+        try:
+            amount = Decimal(normalized)
+        except (InvalidOperation, ValueError):
+            raise forms.ValidationError('Masukkan jumlah pembayaran yang valid.')
+
+        if amount <= 0:
+            raise forms.ValidationError('Jumlah pembayaran harus lebih besar dari 0.')
+
+        return amount
+
+    @staticmethod
+    def _format_amount(amount):
+        try:
+            amount = Decimal(str(amount))
+        except (InvalidOperation, ValueError):
+            return amount
+
+        integer_part = int(amount)
+        return f"{integer_part:,}".replace(',', '.')
 
 
 class UserRoleChangeForm(forms.ModelForm):
@@ -1302,9 +1421,12 @@ class TryoutPackageForm(forms.ModelForm):
     
     class Meta:
         model = TryoutPackage
-        fields = ['package_name', 'description', 'total_time', 'is_active', 'is_free_for_visitors']
+        fields = ['package_name', 'description', 'total_time', 'is_active', 'required_access_level', 'is_free_for_visitors']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
+            'required_access_level': forms.Select(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+            })
         }
     
     def __init__(self, *args, **kwargs):
@@ -1347,9 +1469,38 @@ class TryoutPackageForm(forms.ModelForm):
         self.fields['total_time'].help_text = "Total waktu pengerjaan dalam menit (contoh: 180 untuk 3 jam)"
         self.fields['is_active'].help_text = "Centang untuk membuat paket tersedia untuk siswa"
         self.fields['is_free_for_visitors'].help_text = (
-            "Centang agar pengunjung dengan role Visitor dapat mencoba paket ini secara gratis"
+            "Centang agar pengunjung dengan role Visitor dapat mencoba paket ini secara gratis. "
+            "Opsi ini akan otomatis mengatur tier minimum ke Visitor."
         )
         self.fields['is_free_for_visitors'].label = "Tersedia gratis untuk Visitor"
+        self.fields['required_access_level'].choices = AccessLevel.choices
+        if 'required_access_level' not in self.initial:
+            self.initial['required_access_level'] = self.instance.required_access_level or AccessLevel.SILVER
+        self.fields['required_access_level'].label = "Tier Akses Minimum"
+        tier_descriptions = " ".join([
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.VISITOR],
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.SILVER],
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.GOLD],
+            ACCESS_LEVEL_DESCRIPTIONS[AccessLevel.TUNTAS],
+        ])
+        self.fields['required_access_level'].help_text = (
+            "Tentukan tier minimum yang dibutuhkan siswa untuk membuka paket ini. "
+            f"{tier_descriptions}"
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        required_level = cleaned_data.get('required_access_level')
+        is_free = cleaned_data.get('is_free_for_visitors')
+
+        if is_free:
+            cleaned_data['required_access_level'] = AccessLevel.VISITOR
+        elif required_level == AccessLevel.VISITOR:
+            cleaned_data['is_free_for_visitors'] = True
+        else:
+            cleaned_data['is_free_for_visitors'] = False
+
+        return cleaned_data
 
 class TryoutPackageCategoryForm(forms.ModelForm):
     """Form for configuring categories within a package"""

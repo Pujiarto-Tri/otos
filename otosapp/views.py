@@ -11,7 +11,27 @@ import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, BroadcastMessage, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
+from otosapp.models import (
+    Choice,
+    User,
+    Role,
+    Category,
+    Question,
+    Test,
+    Answer,
+    MessageThread,
+    Message,
+    BroadcastMessage,
+    SubscriptionPackage,
+    PaymentMethod,
+    PaymentProof,
+    UserSubscription,
+    University,
+    UniversityTarget,
+    TryoutPackage,
+    TryoutPackageCategory,
+    AccessLevel,
+)
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
@@ -115,6 +135,14 @@ def _redirect_for_missing_subscription(request, *, is_visitor=False):
     return redirect('subscription_packages')
 
 
+def _get_access_level_label(level_value):
+    """Helper to render human friendly labels for access tiers."""
+    try:
+        return AccessLevel(level_value).label
+    except (ValueError, TypeError):
+        return str(level_value).title() if level_value else 'Tidak diketahui'
+
+
 def home(request):
     context = {}
     broadcast_messages = BroadcastMessage.objects.visible_for_user(request.user)
@@ -126,11 +154,14 @@ def home(request):
         if request.user.is_visitor():
             # Visitor dashboard - show subscription packages
             packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
-            free_packages = TryoutPackage.objects.filter(is_active=True, is_free_for_visitors=True).order_by('-release_date')[:4]
+            free_packages = TryoutPackage.objects.filter(
+                is_active=True,
+                required_access_level=AccessLevel.VISITOR
+            ).order_by('-release_date')[:4]
             free_tests_qs = Test.objects.filter(
                 student=request.user,
                 is_submitted=True,
-                tryout_package__is_free_for_visitors=True
+                tryout_package__required_access_level=AccessLevel.VISITOR
             ).order_by('-date_taken')
             recent_free_tests = list(free_tests_qs[:3])
             total_free_tests = free_tests_qs.count()
@@ -2515,6 +2546,13 @@ def tryout_list(request):
     if has_privileged_access:
         user_can_tryouts = True
 
+    user_access_level = AccessLevel.VISITOR
+    if request.user.is_authenticated and hasattr(request.user, 'get_access_level'):
+        try:
+            user_access_level = request.user.get_access_level()
+        except Exception:
+            user_access_level = AccessLevel.VISITOR
+
     if request.user.is_authenticated:
         for category in categories:
             user_best = Test.objects.filter(
@@ -2528,7 +2566,9 @@ def tryout_list(request):
     packages = list(packages.prefetch_related('tryoutpackagecategory_set__category'))
     for package in packages:
         package.is_locked_for_user = package.is_locked_for(request.user)
-        package.is_free_for_visitors_display = package.is_free_for_visitors
+        package.is_free_for_visitors_display = package.required_access_level == AccessLevel.VISITOR
+        package.required_access_level_label = package.get_required_access_level_display()
+        package.user_meets_required_level = AccessLevel.meets_requirement(user_access_level, package.required_access_level)
     
     context = {
         'categories': categories,
@@ -2537,6 +2577,8 @@ def tryout_list(request):
         'sort_option': sort_option,
         'is_visitor': is_visitor,
         'user_can_tryouts': user_can_tryouts,
+        'user_access_level': user_access_level,
+        'user_access_level_label': _get_access_level_label(user_access_level),
     }
     
     return render(request, 'students/tryouts/tryout_list.html', context)
@@ -3158,7 +3200,10 @@ def test_history(request):
             return _redirect_for_missing_subscription(request)
 
     if hasattr(request.user, 'is_visitor') and request.user.is_visitor():
-        tests = tests.filter(tryout_package__isnull=False, tryout_package__is_free_for_visitors=True)
+        tests = tests.filter(
+            tryout_package__isnull=False,
+            tryout_package__required_access_level=AccessLevel.VISITOR
+        )
     
     # Get filter parameters
     category_filter = request.GET.get('category', '').strip()
@@ -3859,7 +3904,16 @@ def message_api_unread_count(request):
 
 def subscription_packages(request):
     """View untuk menampilkan paket berlangganan"""
-    packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
+    packages = SubscriptionPackage.objects.filter(is_active=True).annotate(
+        access_level_order=Case(
+            When(access_level=AccessLevel.SILVER, then=0),
+            When(access_level=AccessLevel.GOLD, then=1),
+            When(access_level=AccessLevel.TUNTAS, then=2),
+            When(access_level=AccessLevel.VISITOR, then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('access_level_order', 'price')
     
     # Get active payment methods
     payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('payment_type', 'name')
@@ -3871,11 +3925,19 @@ def subscription_packages(request):
             user=request.user, 
             status='pending'
         ).first()
-    
+        user_access_level = request.user.get_access_level() if hasattr(request.user, 'get_access_level') else AccessLevel.VISITOR
+    else:
+        user_access_level = AccessLevel.VISITOR
+
     context = {
         'packages': packages,
         'payment_methods': payment_methods,
         'pending_payment': pending_payment,
+        'access_level_choices': [
+            (value, label) for value, label in AccessLevel.choices if value != AccessLevel.VISITOR
+        ],
+        'user_access_level': user_access_level,
+        'user_access_level_label': _get_access_level_label(user_access_level),
     }
     
     if request.user.is_authenticated:
@@ -4279,20 +4341,59 @@ def verify_payment(request, payment_id):
     """Admin view untuk verifikasi individual payment"""
     payment = get_object_or_404(PaymentProof, id=payment_id)
     original_status = payment.status  # Store original status to detect changes
+    original_amount = payment.amount_paid
+    original_package_id = payment.package_id
+
+    def format_rupiah(value):
+        try:
+            return f"{int(value):,}".replace(',', '.')
+        except (TypeError, ValueError):
+            return value
     
     if request.method == 'POST':
         form = PaymentVerificationForm(request.POST, instance=payment)
         if form.is_valid():
             payment = form.save(commit=False)
+            package_changed = original_package_id != form.cleaned_data.get('package').id if form.cleaned_data.get('package') else False
+            amount_after_clean = form.cleaned_data.get('amount_paid', original_amount)
+            amount_changed = amount_after_clean != original_amount
             payment.verified_by = request.user
             payment.verified_at = timezone.now()
             payment.save()
             
             # Handle status changes
-            if payment.status == 'approved' and original_status != 'approved':
-                # Payment newly approved - upgrade user
-                upgrade_user_to_student(payment.user, payment.package, payment)
-                messages.success(request, f'Pembayaran disetujui! User {payment.user.email} telah diupgrade ke Student.')
+            if payment.status == 'approved':
+                if original_status != 'approved':
+                    # Payment newly approved - upgrade user
+                    upgrade_user_to_student(payment.user, payment.package, payment)
+                    messages.success(
+                        request,
+                        f'Pembayaran disetujui! User {payment.user.email} telah diupgrade ke Student dengan paket {payment.package.name}.'
+                    )
+                elif package_changed:
+                    subscription = getattr(payment.user, 'subscription', None)
+                    if subscription:
+                        subscription.package = payment.package
+                        subscription.payment_proof = payment
+                        subscription.is_active = True
+                        subscription.save()
+                        messages.success(
+                            request,
+                            f'Paket berlangganan user {payment.user.email} diperbarui ke {payment.package.name}.'
+                        )
+                    else:
+                        upgrade_user_to_student(payment.user, payment.package, payment)
+                        messages.success(
+                            request,
+                            f'Paket pembayaran diperbarui dan langganan baru dibuat untuk {payment.user.email}.'
+                        )
+                elif amount_changed:
+                    messages.success(
+                        request,
+                        f'Jumlah pembayaran user {payment.user.email} diperbarui menjadi Rp {format_rupiah(payment.amount_paid)}.'
+                    )
+                else:
+                    messages.info(request, f'Status pembayaran user {payment.user.email} telah diupdate.')
             
             elif payment.status == 'rejected' and original_status == 'approved':
                 # Payment was approved but now rejected - deactivate subscription
@@ -4311,7 +4412,13 @@ def verify_payment(request, payment_id):
             
             else:
                 # Other status changes
-                messages.info(request, f'Status pembayaran user {payment.user.email} telah diupdate.')
+                if amount_changed:
+                    messages.success(
+                        request,
+                        f'Jumlah pembayaran user {payment.user.email} diperbarui menjadi Rp {format_rupiah(payment.amount_paid)}.'
+                    )
+                else:
+                    messages.info(request, f'Status pembayaran user {payment.user.email} telah diupdate.')
             
             return redirect('admin_payment_verifications')
     else:
@@ -5502,11 +5609,28 @@ def take_package_test(request, package_id):
         return redirect('tryout_list')
 
     if package.is_locked_for(request.user):
-        if hasattr(request.user, 'is_visitor') and request.user.is_visitor():
-            messages.warning(request, 'Paket tryout ini terkunci untuk Visitor. Upgrade ke paket berlangganan untuk akses penuh.')
+        user_level = AccessLevel.VISITOR
+        if hasattr(request.user, 'get_access_level'):
+            try:
+                user_level = request.user.get_access_level()
+            except Exception:
+                user_level = AccessLevel.VISITOR
+
+        required_label = package.get_required_access_level_display()
+        user_label = _get_access_level_label(user_level)
+
+        if user_level == AccessLevel.VISITOR:
+            if hasattr(request.user, 'is_visitor') and request.user.is_visitor():
+                messages.warning(request, 'Paket tryout ini khusus untuk member berbayar. Pilih paket subscription Student untuk membukanya.')
+            else:
+                messages.warning(request, 'Langganan aktif diperlukan untuk mengakses paket tryout ini. Silakan perpanjang atau upgrade paket Anda.')
         else:
-            messages.warning(request, 'Langganan aktif diperlukan untuk mengakses paket tryout ini.')
-        return redirect('subscription_packages' if hasattr(request.user, 'is_student') and request.user.is_student() else 'tryout_list')
+            messages.warning(
+                request,
+                f'Paket ini membutuhkan tier {required_label}. Tier Anda saat ini: {user_label}. Silakan upgrade paket subscription untuk melanjutkan.'
+            )
+
+        return redirect('subscription_packages')
     
     # Check if there's an existing unsubmitted test for this package and user
     existing_test = Test.objects.filter(
@@ -5588,8 +5712,23 @@ def take_package_test_question(request, package_id, question):
         return redirect('tryout_list')
 
     if package.is_locked_for(request.user):
-        messages.warning(request, 'Anda tidak memiliki akses ke paket tryout ini.')
-        return redirect('tryout_list')
+        user_level = AccessLevel.VISITOR
+        if hasattr(request.user, 'get_access_level'):
+            try:
+                user_level = request.user.get_access_level()
+            except Exception:
+                user_level = AccessLevel.VISITOR
+
+        required_label = package.get_required_access_level_display()
+        user_label = _get_access_level_label(user_level)
+        if user_level == AccessLevel.VISITOR:
+            messages.warning(request, 'Anda tidak memiliki akses ke paket tryout ini. Upgrade paket subscription Anda terlebih dahulu.')
+        else:
+            messages.warning(
+                request,
+                f'Paket ini membutuhkan tier {required_label}. Tier Anda saat ini: {user_label}. Silakan upgrade untuk melanjutkan.'
+            )
+        return redirect('subscription_packages')
     
     # Check if time is up
     if test.is_time_up():

@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django import template
 
 register = template.Library()
@@ -178,3 +180,24 @@ def abbrev_currency(value):
         return mark_safe(intcomma(int(round(num))))
     else:
         return mark_safe(str(int(round(num))))
+
+
+@register.filter
+def format_idr(value):
+    """Format angka menjadi ribuan dengan pemisah titik tanpa desimal."""
+    if value in (None, ''):
+        return '0'
+
+    try:
+        if isinstance(value, str):
+            digits_only = ''.join(ch for ch in value if ch.isdigit())
+            if not digits_only:
+                return value
+            amount = Decimal(digits_only)
+        else:
+            amount = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return value
+
+    integer_part = int(amount)
+    return f"{integer_part:,}".replace(',', '.')

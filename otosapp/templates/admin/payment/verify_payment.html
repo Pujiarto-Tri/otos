@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load media_helpers %}
+{% load custom_filters %}
 
 {% block title %}Verifikasi Pembayaran - {{ payment.user.first_name }} {{ payment.user.last_name }}{% endblock %}
 
@@ -62,7 +63,7 @@
                         📦 {{ payment.package.name }}
                     </h4>
                     <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                        <p><strong>Harga:</strong> Rp {{ payment.package.price|floatformat:0 }}</p>
+                        <p><strong>Harga:</strong> Rp {{ payment.package.price|format_idr }}</p>
                         <p><strong>Durasi:</strong> {{ payment.package.duration_days }} hari</p>
                         <p><strong>Deskripsi:</strong> {{ payment.package.description|default:"Tidak ada deskripsi" }}</p>
                     </div>
@@ -73,7 +74,7 @@
                     <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
                         <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Jumlah Bayar:</span>
                         <span class="text-lg font-bold text-gray-900 dark:text-white">
-                            Rp {{ payment.amount_paid|floatformat:0 }}
+                            Rp {{ payment.amount_paid|format_idr }}
                         </span>
                     </div>
 
@@ -177,6 +178,42 @@
 
                     <form method="POST" class="space-y-6">
                         {% csrf_token %}
+                        
+                        <!-- Package Selection -->
+                        <div>
+                            <label for="id_package" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Paket Berlangganan *
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                Sesuaikan paket yang akan diaktifkan untuk user ketika pembayaran disetujui.
+                            </p>
+                            {% if form.package.errors %}
+                            <div class="mb-3 text-sm text-red-600 dark:text-red-400">
+                                {% for error in form.package.errors %}
+                                    <p>⚠️ {{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {{ form.package }}
+                        </div>
+
+                        <!-- Amount Editing -->
+                        <div>
+                            <label for="id_amount_paid" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Jumlah Pembayaran
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                Catat nominal final yang diterima, termasuk potongan atau penyesuaian lain.
+                            </p>
+                            {% if form.amount_paid.errors %}
+                            <div class="mb-3 text-sm text-red-600 dark:text-red-400">
+                                {% for error in form.amount_paid.errors %}
+                                    <p>⚠️ {{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {{ form.amount_paid }}
+                        </div>
                         
                         <!-- Status Selection -->
                         <div>
@@ -289,6 +326,8 @@
                             {% csrf_token %}
                             <input type="hidden" name="status" value="approved">
                             <input type="hidden" name="admin_notes" value="Pembayaran telah diverifikasi dan disetujui.">
+                            <input type="hidden" name="package" value="{{ form.package.value|default:payment.package.id }}">
+                            <input type="hidden" name="amount_paid" value="{{ form.amount_paid.value|default:payment.amount_paid|format_idr }}">
                             <button type="submit" 
                                     onclick="return confirm('Yakin ingin menyetujui pembayaran ini?')"
                                     class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
@@ -300,6 +339,8 @@
                             {% csrf_token %}
                             <input type="hidden" name="status" value="rejected">
                             <input type="hidden" name="admin_notes" value="Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.">
+                            <input type="hidden" name="package" value="{{ form.package.value|default:payment.package.id }}">
+                            <input type="hidden" name="amount_paid" value="{{ form.amount_paid.value|default:payment.amount_paid|format_idr }}">
                             <button type="submit" 
                                     onclick="return confirm('Yakin ingin menolak pembayaran ini?')"
                                     class="w-full inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
@@ -328,6 +369,58 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('id_amount_paid');
+
+    if (amountInput) {
+        const formatRupiah = (value) => {
+            const numeric = (value || '').toString().replace(/[^0-9]/g, '');
+            if (!numeric) {
+                return '';
+            }
+            return numeric.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        };
+
+        const applyFormat = () => {
+            const formatted = formatRupiah(amountInput.value);
+            if (formatted !== amountInput.value) {
+                amountInput.value = formatted;
+            }
+        };
+
+        applyFormat();
+
+        amountInput.addEventListener('input', (event) => {
+            const selectionStart = amountInput.selectionStart;
+            const rawValue = amountInput.value;
+            const digitsBeforeCursor = rawValue.slice(0, selectionStart).replace(/[^0-9]/g, '').length;
+
+            const formatted = formatRupiah(rawValue);
+            amountInput.value = formatted;
+
+            let newCursor = formatted.length;
+            if (digitsBeforeCursor === 0) {
+                newCursor = 0;
+            } else {
+                let digitCount = 0;
+                for (let i = 0; i < formatted.length; i++) {
+                    if (/\d/.test(formatted[i])) {
+                        digitCount++;
+                    }
+                    if (digitCount === digitsBeforeCursor) {
+                        newCursor = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            amountInput.setSelectionRange(newCursor, newCursor);
+        });
+
+        amountInput.addEventListener('blur', applyFormat);
+    }
+});
+
 function viewImageModal(imageUrl) {
     document.getElementById('modalImage').src = imageUrl;
     document.getElementById('imageModal').classList.remove('hidden');
