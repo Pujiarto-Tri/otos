@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django.utils import timezone
+from django.db.models import Q
+from datetime import timedelta
 import re
 from django.conf import settings
 import os
@@ -355,6 +357,10 @@ class TryoutPackage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_free_for_visitors = models.BooleanField(
+        default=False,
+        help_text="Centang jika paket ini dapat diakses gratis oleh pengguna role Visitor"
+    )
     
     # Categories in this package
     categories = models.ManyToManyField(Category, through='TryoutPackageCategory')
@@ -389,6 +395,42 @@ class TryoutPackage(models.Model):
             self.get_total_questions() > 0 and
             all(pc.category.get_question_count() >= pc.question_count for pc in self.tryoutpackagecategory_set.all())
         )
+
+    def is_accessible_by(self, user):
+        """Determine if a given user can access this tryout package"""
+        if user is None or not getattr(user, 'is_authenticated', False):
+            return False
+
+        # Superuser or staff fallback
+        if getattr(user, 'is_superuser', False):
+            return True
+
+        # Admin/operator/teacher roles retain access to manage/testing purposes
+        try:
+            if user.is_admin() or user.is_operator() or user.is_teacher():
+                return True
+        except AttributeError:
+            pass
+
+        # Students require active subscription
+        try:
+            if user.is_student() and user.can_access_tryouts():
+                return True
+        except AttributeError:
+            pass
+
+        # Visitors only if package is marked free
+        try:
+            if user.is_visitor() and self.is_free_for_visitors:
+                return True
+        except AttributeError:
+            pass
+
+        return False
+
+    def is_locked_for(self, user):
+        """Helper for templates: package locked state for a user"""
+        return not self.is_accessible_by(user)
 
 class TryoutPackageCategory(models.Model):
     """Through model for TryoutPackage and Category relationship with scoring configuration"""
@@ -1146,6 +1188,190 @@ class Message(models.Model):
 def message_pre_delete(sender, instance, **kwargs):
     """Handle file deletion sebelum message dihapus"""
     instance.delete_attachment()
+
+
+class BroadcastMessageQuerySet(models.QuerySet):
+    """Custom queryset helpers for broadcast messages"""
+
+    def live(self):
+        now = timezone.now()
+        return self.filter(
+            is_active=True,
+            publish_at__lte=now
+        ).filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+
+    def visible_for_user(self, user):
+        if not user.is_authenticated:
+            return []
+
+        base_qs = self.live()
+        role_id = getattr(getattr(user, 'role', None), 'id', None)
+
+        if role_id:
+            base_qs = base_qs.filter(
+                Q(target_roles__isnull=True) | Q(target_roles__id=role_id)
+            ).distinct()
+        else:
+            base_qs = base_qs.filter(target_roles__isnull=True)
+
+        broadcasts = list(base_qs)
+
+        if getattr(user, 'is_student', None) and user.is_student():
+            if not user.has_active_subscription():
+                broadcasts = [b for b in broadcasts if not b.students_require_active_subscription]
+
+        return broadcasts
+
+
+class BroadcastMessageManager(models.Manager):
+    def get_queryset(self):
+        return BroadcastMessageQuerySet(self.model, using=self._db)
+
+    def live(self):
+        return self.get_queryset().live()
+
+    def visible_for_user(self, user):
+        return self.get_queryset().visible_for_user(user)
+
+
+class BroadcastMessage(models.Model):
+    """Scheduled broadcast announcements displayed on dashboards"""
+
+    title = models.CharField(max_length=160)
+    content = models.TextField(help_text="Isi pengumuman yang akan ditampilkan kepada user")
+    publish_at = models.DateTimeField(default=timezone.now, help_text="Waktu pengumuman mulai ditampilkan")
+    duration_minutes = models.PositiveIntegerField(
+        default=1440,
+        help_text="Durasi tampil (menit) sebelum pengumuman hilang otomatis"
+    )
+    expires_at = models.DateTimeField(blank=True, null=True, help_text="Waktu pengumuman berhenti tampil")
+    is_active = models.BooleanField(default=True, help_text="Nonaktifkan untuk menyembunyikan pengumuman")
+
+    target_roles = models.ManyToManyField(
+        Role,
+        blank=True,
+        related_name='broadcast_messages',
+        help_text="Kosongkan untuk menampilkan ke semua role"
+    )
+    students_require_active_subscription = models.BooleanField(
+        default=False,
+        help_text="Tampilkan hanya kepada siswa dengan langganan aktif"
+    )
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='broadcasts_created'
+    )
+    removed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='broadcasts_removed'
+    )
+    removed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = BroadcastMessageManager()
+
+    class Meta:
+        ordering = ['-publish_at', '-created_at']
+        verbose_name = "Pengumuman Broadcast"
+        verbose_name_plural = "Pengumuman Broadcast"
+
+    def __str__(self):
+        return f"{self.title} ({self.publish_at:%d %b %Y %H:%M})"
+
+    def save(self, *args, **kwargs):
+        if self.duration_minutes:
+            base_time = self.publish_at or timezone.now()
+            self.expires_at = base_time + timedelta(minutes=self.duration_minutes)
+        else:
+            self.expires_at = None
+
+        if self.is_active:
+            self.removed_at = None
+            self.removed_by = None
+
+        super().save(*args, **kwargs)
+
+    def remove_now(self, user=None):
+        self.is_active = False
+        self.removed_at = timezone.now()
+        if user:
+            self.removed_by = user
+        self.save(update_fields=['is_active', 'removed_at', 'removed_by', 'updated_at'])
+
+    def reactivate(self):
+        self.is_active = True
+        if self.publish_at and self.publish_at < timezone.now() and self.expires_at and self.expires_at <= timezone.now():
+            self.publish_at = timezone.now()
+        self.removed_at = None
+        self.removed_by = None
+        self.save()
+
+    @property
+    def is_live(self):
+        if not self.is_active:
+            return False
+        now = timezone.now()
+        if self.publish_at and self.publish_at > now:
+            return False
+        if self.expires_at and self.expires_at <= now:
+            return False
+        return True
+
+    @property
+    def is_upcoming(self):
+        return self.is_active and self.publish_at and self.publish_at > timezone.now()
+
+    @property
+    def is_expired(self):
+        if not self.expires_at:
+            return False
+        return timezone.now() >= self.expires_at
+
+    @property
+    def status_label(self):
+        if not self.is_active:
+            return 'inactive'
+        if self.is_expired:
+            return 'expired'
+        if self.is_upcoming:
+            return 'upcoming'
+        return 'live'
+
+    def target_role_names(self):
+        if self.target_roles.exists():
+            return ', '.join(self.target_roles.values_list('role_name', flat=True))
+        return 'Semua pengguna'
+
+    def remaining_minutes(self):
+        if not self.expires_at:
+            return None
+        delta = self.expires_at - timezone.now()
+        return max(0, int(delta.total_seconds() // 60))
+
+    def visible_for(self, user):
+        if not user.is_authenticated:
+            return False
+
+        if self.target_roles.exists():
+            user_role = getattr(user, 'role', None)
+            if not user_role:
+                return False
+            if not self.target_roles.filter(pk=user_role.pk).exists():
+                return False
+
+        if getattr(user, 'is_student', None) and user.is_student():
+            if self.students_require_active_subscription and not user.has_active_subscription():
+                return False
+
+        return self.is_live
 
 
 # ======================= SUBSCRIPTION & PAYMENT MODELS =======================

@@ -138,6 +138,14 @@
                                     {% if package.description %}
                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ package.description|truncatechars:60 }}</div>
                                     {% endif %}
+                                    {% if package.is_free_for_visitors %}
+                                    <div class="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Gratis Visitor
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-6 py-4">

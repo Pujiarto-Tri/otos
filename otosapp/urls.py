@@ -10,6 +10,13 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
     path('settings/', views.settings_view, name='settings'),
+
+    # Broadcast announcements
+    path('admin/broadcasts/', views.admin_broadcast_list, name='admin_broadcast_list'),
+    path('admin/broadcasts/create/', views.admin_broadcast_create, name='admin_broadcast_create'),
+    path('admin/broadcasts/<int:broadcast_id>/edit/', views.admin_broadcast_edit, name='admin_broadcast_edit'),
+    path('admin/broadcasts/<int:broadcast_id>/remove/', views.admin_broadcast_remove, name='admin_broadcast_remove'),
+    path('admin/broadcasts/<int:broadcast_id>/reactivate/', views.admin_broadcast_reactivate, name='admin_broadcast_reactivate'),
     
     path('admin/categories/', views.category_list, name='category_list'),
     path('admin/categories/create/', views.category_create, name='category_create'),

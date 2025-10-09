@@ -2,7 +2,7 @@ from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.forms import inlineformset_factory
-from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory, StudentGoal
+from .models import User, Role, Category, Question, Choice, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory, StudentGoal, BroadcastMessage
 
 class CustomUserCreationForm(UserCreationForm):
     phone_number = forms.CharField(
@@ -259,6 +259,102 @@ class UserUpdateForm(forms.ModelForm):
                 raise forms.ValidationError('Format nomor tidak valid. Contoh: +628123456789')
         return phone
     
+class BroadcastMessageForm(forms.ModelForm):
+    target_roles = forms.ModelMultipleChoiceField(
+        queryset=Role.objects.all().order_by('role_name'),
+        required=False,
+        label="Tampil Untuk Role",
+        widget=forms.SelectMultiple(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+            'size': '5'
+        }),
+        help_text='Kosongkan untuk menampilkan ke semua user.'
+    )
+
+    publish_at = forms.DateTimeField(
+        required=True,
+        label="Waktu Publikasi",
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        })
+    )
+
+    class Meta:
+        model = BroadcastMessage
+        fields = [
+            'title',
+            'content',
+            'target_roles',
+            'students_require_active_subscription',
+            'publish_at',
+            'duration_minutes',
+            'is_active',
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+                'placeholder': 'Judul pengumuman'
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+                'rows': 6,
+                'placeholder': 'Isi pengumuman...'
+            }),
+            'students_require_active_subscription': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+            'duration_minutes': forms.NumberInput(attrs={
+                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white',
+                'min': '5',
+                'step': '5'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+        }
+        labels = {
+            'title': 'Judul',
+            'content': 'Isi Pengumuman',
+            'students_require_active_subscription': 'Hanya untuk siswa berlangganan aktif',
+            'duration_minutes': 'Durasi Tampil (menit)',
+            'is_active': 'Aktif',
+        }
+        help_texts = {
+            'duration_minutes': 'Setelah durasi berakhir, pengumuman hilang otomatis kecuali diaktifkan ulang.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        current_time = timezone.localtime().replace(second=0, microsecond=0)
+        if self.instance and self.instance.pk and self.instance.publish_at:
+            self.initial['publish_at'] = timezone.localtime(self.instance.publish_at).replace(second=0, microsecond=0)
+        elif 'publish_at' not in self.initial:
+            self.initial['publish_at'] = current_time
+
+        if 'duration_minutes' not in self.initial:
+            self.initial.setdefault('duration_minutes', 1440)
+
+        if 'is_active' not in self.initial:
+            self.initial.setdefault('is_active', True)
+
+        # Exclude visitor role by default from selection
+        self.fields['target_roles'].queryset = Role.objects.exclude(role_name__iexact='Visitor').order_by('role_name')
+
+    def clean_publish_at(self):
+        publish_at = self.cleaned_data.get('publish_at')
+        if publish_at is None:
+            raise forms.ValidationError('Waktu publikasi wajib diisi.')
+        if timezone.is_naive(publish_at):
+            publish_at = timezone.make_aware(publish_at, timezone.get_current_timezone())
+        return publish_at
+
+    def clean_duration_minutes(self):
+        duration = self.cleaned_data.get('duration_minutes')
+        if duration is None or duration <= 0:
+            raise forms.ValidationError('Durasi tampil harus lebih besar dari 0 menit.')
+        return duration
+
 class CategoryCreationForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -1206,7 +1302,7 @@ class TryoutPackageForm(forms.ModelForm):
     
     class Meta:
         model = TryoutPackage
-        fields = ['package_name', 'description', 'total_time', 'is_active']
+        fields = ['package_name', 'description', 'total_time', 'is_active', 'is_free_for_visitors']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
         }
@@ -1250,6 +1346,10 @@ class TryoutPackageForm(forms.ModelForm):
         self.fields['description'].help_text = "Deskripsi paket dan target peserta"
         self.fields['total_time'].help_text = "Total waktu pengerjaan dalam menit (contoh: 180 untuk 3 jam)"
         self.fields['is_active'].help_text = "Centang untuk membuat paket tersedia untuk siswa"
+        self.fields['is_free_for_visitors'].help_text = (
+            "Centang agar pengunjung dengan role Visitor dapat mencoba paket ini secara gratis"
+        )
+        self.fields['is_free_for_visitors'].label = "Tersedia gratis untuk Visitor"
 
 class TryoutPackageCategoryForm(forms.ModelForm):
     """Form for configuring categories within a package"""

@@ -1,7 +1,23 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import User, Role, Category, Question, Choice, Test, Answer, MessageThread, Message, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
+from .models import (
+    User,
+    Role,
+    Category,
+    Question,
+    Choice,
+    Test,
+    Answer,
+    MessageThread,
+    Message,
+    BroadcastMessage,
+    ThreadStatusLog,
+    University,
+    UniversityTarget,
+    TryoutPackage,
+    TryoutPackageCategory,
+)
 
 class CustomUserAdmin(UserAdmin):
     model = User
@@ -112,7 +128,28 @@ class MessageAdmin(admin.ModelAdmin):
 
 admin.site.register(MessageThread, MessageThreadAdmin)
 admin.site.register(Message, MessageAdmin)
-from .models import ThreadStatusLog
+
+
+@admin.register(BroadcastMessage)
+class BroadcastMessageAdmin(admin.ModelAdmin):
+    list_display = (
+        'title',
+        'publish_at',
+        'expires_at',
+        'is_active',
+        'students_require_active_subscription',
+        'created_by',
+    )
+    list_filter = (
+        'is_active',
+        'students_require_active_subscription',
+        'target_roles',
+        'publish_at',
+    )
+    search_fields = ('title', 'content')
+    filter_horizontal = ('target_roles',)
+    readonly_fields = ('created_at', 'updated_at', 'removed_at', 'removed_by')
+
 
 class ThreadStatusLogAdmin(admin.ModelAdmin):
     list_display = ('thread', 'changed_by', 'old_status', 'new_status', 'created_at')

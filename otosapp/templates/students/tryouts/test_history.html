@@ -29,6 +29,13 @@
 	</div>
     
 	<!-- Statistics Cards -->
+	{% if user.is_visitor %}
+	<div class="bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 text-amber-800 dark:text-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+		<span class="text-xl">🔒</span>
+		<p class="text-sm">Riwayat ini menampilkan tryout gratis yang telah kamu selesaikan. Upgrade ke paket Student untuk membuka sejarah tryout premium dan fitur analitik lengkap.</p>
+	</div>
+	{% endif %}
+
 	<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 		<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
 			<div class="flex items-center justify-between">

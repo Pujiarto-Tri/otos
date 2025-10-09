@@ -11,12 +11,12 @@ import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
+from otosapp.models import Choice, User, Role, Category, Question, Test, Answer, MessageThread, Message, BroadcastMessage, SubscriptionPackage, PaymentMethod, PaymentProof, UserSubscription, University, UniversityTarget, TryoutPackage, TryoutPackageCategory
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
-from .forms import CustomUserCreationForm, AdminUserCreationForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
+from .forms import CustomUserCreationForm, AdminUserCreationForm, BroadcastMessageForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from .services.student_momentum import get_momentum_snapshot
 
@@ -49,8 +49,75 @@ def check_and_downgrade_expired_subscriptions():
         print(f"Downgraded user {subscription.user.email} to Visitor due to expired subscription")
 
 
+def _is_teacher_for_test(user, test):
+    """Utility to determine if a teacher has rights over the test categories."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+
+    try:
+        for category in test.categories.all():
+            if category.created_by and category.created_by == user:
+                return True
+            if category.teachers.filter(pk=user.pk).exists():
+                return True
+    except Exception:
+        return False
+
+    return False
+
+
+def _user_can_view_test(user, test):
+    """Check if the given user may view summary/detail of a test."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+
+    if getattr(user, 'is_superuser', False):
+        return True
+
+    try:
+        if user.is_admin() or user.is_operator():
+            return True
+    except AttributeError:
+        pass
+
+    if user == test.student:
+        package = getattr(test, 'tryout_package', None)
+        if package:
+            return package.is_accessible_by(user)
+        return hasattr(user, 'can_access_tryouts') and user.can_access_tryouts()
+
+    try:
+        if user.is_teacher() and _is_teacher_for_test(user, test):
+            return True
+    except AttributeError:
+        pass
+
+    return False
+
+
+def _redirect_for_missing_subscription(request, *, is_visitor=False):
+    """Provide consistent messaging when a user lacks subscription access."""
+    if is_visitor:
+        messages.warning(request, 'Silakan upgrade ke paket Student untuk membuka semua tryout premium.')
+        return redirect('subscription_packages')
+
+    subscription_status = request.user.get_subscription_status() if hasattr(request.user, 'get_subscription_status') else None
+    if subscription_status:
+        status = subscription_status.get('status')
+        if status == 'deactivated':
+            messages.warning(request, 'Langganan Anda telah dinonaktifkan oleh admin. Silakan hubungi admin atau berlangganan kembali.')
+        elif status == 'expired':
+            messages.warning(request, 'Langganan Anda telah berakhir. Silakan perpanjang untuk melanjutkan.')
+        else:
+            messages.warning(request, 'Langganan Anda tidak aktif. Silakan berlangganan untuk melanjutkan.')
+    else:
+        messages.warning(request, 'Langganan aktif diperlukan untuk mengakses fitur ini.')
+    return redirect('subscription_packages')
+
+
 def home(request):
     context = {}
+    broadcast_messages = BroadcastMessage.objects.visible_for_user(request.user)
     
     if request.user.is_authenticated:
         # Auto downgrade expired subscriptions
@@ -59,6 +126,14 @@ def home(request):
         if request.user.is_visitor():
             # Visitor dashboard - show subscription packages
             packages = SubscriptionPackage.objects.filter(is_active=True).order_by('price')
+            free_packages = TryoutPackage.objects.filter(is_active=True, is_free_for_visitors=True).order_by('-release_date')[:4]
+            free_tests_qs = Test.objects.filter(
+                student=request.user,
+                is_submitted=True,
+                tryout_package__is_free_for_visitors=True
+            ).order_by('-date_taken')
+            recent_free_tests = list(free_tests_qs[:3])
+            total_free_tests = free_tests_qs.count()
             
             # Check if user has pending payment
             pending_payment = PaymentProof.objects.filter(
@@ -69,6 +144,9 @@ def home(request):
             context.update({
                 'is_visitor': True,
                 'packages': packages,
+                'free_packages': free_packages,
+                'recent_free_tests': recent_free_tests,
+                'total_free_tests': total_free_tests,
                 'pending_payment': pending_payment,
                 'subscription_status': request.user.get_subscription_status()
             })
@@ -656,6 +734,8 @@ def home(request):
             'featured_packages': featured_packages
         })
     
+    context['broadcast_messages'] = broadcast_messages
+
     return render(request, 'home.html', context)
 
 
@@ -2324,7 +2404,6 @@ def update_utbk_coefficients(request, category_id):
 ##STUDENTS##
 
 @login_required
-@active_subscription_required
 def tryout_list(request):
     # Check if there's an ongoing test - pick the most recent valid unsubmitted test
     ongoing_test = None
@@ -2422,6 +2501,20 @@ def tryout_list(request):
         categories = categories.order_by('scoring_method')
     
     # Add personal best scores for categories
+    is_visitor = hasattr(request.user, 'is_visitor') and request.user.is_visitor()
+    has_privileged_access = any([
+        getattr(request.user, 'is_superuser', False),
+        hasattr(request.user, 'is_admin') and request.user.is_admin(),
+        hasattr(request.user, 'is_teacher') and request.user.is_teacher(),
+        hasattr(request.user, 'is_operator') and request.user.is_operator(),
+    ]) if request.user.is_authenticated else False
+
+    user_can_tryouts = False
+    if hasattr(request.user, 'can_access_tryouts') and request.user.can_access_tryouts():
+        user_can_tryouts = True
+    if has_privileged_access:
+        user_can_tryouts = True
+
     if request.user.is_authenticated:
         for category in categories:
             user_best = Test.objects.filter(
@@ -2430,12 +2523,20 @@ def tryout_list(request):
                 is_submitted=True
             ).aggregate(best_score=Max('score'))['best_score']
             category.user_best_score = user_best
+            category.is_locked_for_user = not user_can_tryouts
+
+    packages = list(packages.prefetch_related('tryoutpackagecategory_set__category'))
+    for package in packages:
+        package.is_locked_for_user = package.is_locked_for(request.user)
+        package.is_free_for_visitors_display = package.is_free_for_visitors
     
     context = {
         'categories': categories,
         'packages': packages,
         'search_query': search_query,
         'sort_option': sort_option,
+        'is_visitor': is_visitor,
+        'user_can_tryouts': user_can_tryouts,
     }
     
     return render(request, 'students/tryouts/tryout_list.html', context)
@@ -2755,9 +2856,13 @@ def submit_test(request, test_id):
     return redirect('home')
 
 @login_required
-@active_subscription_required
 def test_results(request, test_id):
     test = get_object_or_404(Test, id=test_id)
+    if not _user_can_view_test(request.user, test):
+        if request.user == test.student:
+            is_visitor = hasattr(request.user, 'is_visitor') and request.user.is_visitor()
+            return _redirect_for_missing_subscription(request, is_visitor=is_visitor)
+        raise PermissionDenied
     
     # Get category from test.categories (many-to-many relationship)
     category = test.categories.first()
@@ -2840,32 +2945,13 @@ def test_results_detail(request, test_id):
     and admins should be able to review student submissions even if they don't have a
     student subscription. We enforce subscription checks only for students/visitors.
     """
-    # If the requester is a student or visitor, enforce subscription rules (same as decorator)
-    if request.user.is_authenticated and (request.user.is_student() or request.user.is_visitor()):
-        if not request.user.can_access_tryouts():
-            subscription_status = request.user.get_subscription_status()
-            if request.user.is_visitor():
-                from django.contrib import messages
-                messages.warning(request, 'Silakan berlangganan terlebih dahulu untuk mengakses fitur tryout.')
-                from django.shortcuts import redirect
-                return redirect('subscription_packages')
-            elif request.user.is_student() and not request.user.has_active_subscription():
-                from django.contrib import messages
-                from django.shortcuts import redirect
-                if subscription_status['status'] == 'deactivated':
-                    messages.warning(request, 'Langganan Anda telah dinonaktifkan oleh admin. Silakan hubungi admin atau berlangganan kembali.')
-                elif subscription_status['status'] == 'expired':
-                    messages.warning(request, 'Langganan Anda telah berakhir. Silakan perpanjang untuk melanjutkan.')
-                else:
-                    messages.warning(request, 'Langganan Anda tidak aktif. Silakan berlangganan untuk melanjutkan.')
-                return redirect('subscription_packages')
-            else:
-                from django.contrib import messages
-                from django.shortcuts import redirect
-                messages.error(request, 'Akses ditolak.')
-                return redirect('home')
-    # Load the test first (do not restrict by student here so teachers/admins can view)
     test = get_object_or_404(Test, id=test_id)
+
+    if not _user_can_view_test(request.user, test):
+        if request.user == test.student:
+            is_visitor = hasattr(request.user, 'is_visitor') and request.user.is_visitor()
+            return _redirect_for_missing_subscription(request, is_visitor=is_visitor)
+        raise PermissionDenied
     
     # Get category from test.categories
     category = test.categories.first()
@@ -2875,19 +2961,9 @@ def test_results_detail(request, test_id):
     
     # Permission check: allow the student themself, admins, or the teacher who created the category(ies)
     # If none match, deny access
-    try:
-        is_owner_teacher = False
-        for c in test.categories.all():
-            if c.created_by and c.created_by == request.user:
-                is_owner_teacher = True
-                break
-            if c.teachers.filter(pk=request.user.pk).exists():
-                is_owner_teacher = True
-                break
-    except Exception:
-        is_owner_teacher = False
+    is_owner_teacher = _is_teacher_for_test(request.user, test)
 
-    if not (request.user == test.student or request.user.is_superuser or request.user.is_admin() or is_owner_teacher):
+    if not (request.user == test.student or getattr(request.user, 'is_superuser', False) or request.user.is_admin() or is_owner_teacher):
         raise PermissionDenied
 
     # Calculate score if not already calculated
@@ -3068,7 +3144,6 @@ def get_scoring_explanation(category):
     return "Sistem penilaian tidak diketahui."
 
 @login_required
-@active_subscription_required
 def test_history(request):
     """Show all completed tests for the student with filtering and pagination"""
     # Get all tests for the current student
@@ -3077,6 +3152,13 @@ def test_history(request):
         student=request.user,
         is_submitted=True
     ).select_related().prefetch_related('categories').order_by('-date_taken')
+
+    if hasattr(request.user, 'is_student') and request.user.is_student():
+        if not request.user.can_access_tryouts():
+            return _redirect_for_missing_subscription(request)
+
+    if hasattr(request.user, 'is_visitor') and request.user.is_visitor():
+        tests = tests.filter(tryout_package__isnull=False, tryout_package__is_free_for_visitors=True)
     
     # Get filter parameters
     category_filter = request.GET.get('category', '').strip()
@@ -3941,6 +4023,106 @@ def delete_payment_method(request, method_id):
     return render(request, 'admin/subscription/payment_method_confirm_delete.html', {
         'method': method
     })
+
+
+@login_required
+@admin_or_operator_required
+def admin_broadcast_list(request):
+    """List broadcast messages for admin/operator control"""
+    broadcasts = BroadcastMessage.objects.all().prefetch_related('target_roles').order_by('-publish_at', '-created_at')
+    now = timezone.now()
+
+    stats = {
+        'live': BroadcastMessage.objects.live().count(),
+        'upcoming': BroadcastMessage.objects.filter(is_active=True, publish_at__gt=now).count(),
+        'expired': BroadcastMessage.objects.filter(is_active=True, expires_at__lte=now).count(),
+        'inactive': BroadcastMessage.objects.filter(is_active=False).count(),
+    }
+
+    context = {
+        'broadcasts': broadcasts,
+        'stats': stats,
+    }
+
+    return render(request, 'admin/broadcasts/list.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def admin_broadcast_create(request):
+    """Create new broadcast announcement"""
+    if request.method == 'POST':
+        form = BroadcastMessageForm(request.POST)
+        if form.is_valid():
+            broadcast = form.save(commit=False)
+            broadcast.created_by = request.user
+            broadcast.save()
+            form.save_m2m()
+            messages.success(request, 'Pengumuman broadcast berhasil dibuat!')
+            return redirect('admin_broadcast_list')
+        else:
+            messages.error(request, 'Periksa kembali formulir pengumuman.')
+    else:
+        form = BroadcastMessageForm()
+
+    return render(request, 'admin/broadcasts/form.html', {
+        'form': form,
+        'title': 'Buat Pengumuman Broadcast',
+        'is_edit': False,
+    })
+
+
+@login_required
+@admin_or_operator_required
+def admin_broadcast_edit(request, broadcast_id):
+    """Edit existing broadcast announcement"""
+    broadcast = get_object_or_404(BroadcastMessage, id=broadcast_id)
+
+    if request.method == 'POST':
+        form = BroadcastMessageForm(request.POST, instance=broadcast)
+        if form.is_valid():
+            broadcast = form.save(commit=False)
+            if not broadcast.is_active and broadcast.removed_at is None:
+                broadcast.removed_at = timezone.now()
+                broadcast.removed_by = request.user
+            elif broadcast.is_active:
+                broadcast.removed_at = None
+                broadcast.removed_by = None
+            broadcast.save()
+            form.save_m2m()
+            messages.success(request, 'Pengumuman broadcast berhasil diperbarui!')
+            return redirect('admin_broadcast_list')
+        else:
+            messages.error(request, 'Periksa kembali formulir pengumuman.')
+    else:
+        form = BroadcastMessageForm(instance=broadcast)
+
+    return render(request, 'admin/broadcasts/form.html', {
+        'form': form,
+        'title': 'Edit Pengumuman Broadcast',
+        'is_edit': True,
+        'broadcast': broadcast,
+    })
+
+
+@login_required
+@admin_or_operator_required
+@require_POST
+def admin_broadcast_remove(request, broadcast_id):
+    broadcast = get_object_or_404(BroadcastMessage, id=broadcast_id)
+    broadcast.remove_now(request.user)
+    messages.success(request, 'Pengumuman broadcast dinonaktifkan dan dihapus dari dashboard.')
+    return redirect('admin_broadcast_list')
+
+
+@login_required
+@admin_or_operator_required
+@require_POST
+def admin_broadcast_reactivate(request, broadcast_id):
+    broadcast = get_object_or_404(BroadcastMessage, id=broadcast_id)
+    broadcast.reactivate()
+    messages.success(request, 'Pengumuman broadcast diaktifkan kembali.')
+    return redirect('admin_broadcast_list')
 
 
 @login_required
@@ -5308,7 +5490,6 @@ def admin_package_detail(request, package_id):
 
 
 @login_required
-@active_subscription_required
 def take_package_test(request, package_id):
     """Start a tryout package test session"""
     from django.utils import timezone
@@ -5316,9 +5497,16 @@ def take_package_test(request, package_id):
     package = get_object_or_404(TryoutPackage, id=package_id)
     
     # Check if package can be taken
-    if not package.can_be_taken:
+    if not package.can_be_taken():
         messages.error(request, 'Paket tryout ini belum dapat diambil.')
         return redirect('tryout_list')
+
+    if package.is_locked_for(request.user):
+        if hasattr(request.user, 'is_visitor') and request.user.is_visitor():
+            messages.warning(request, 'Paket tryout ini terkunci untuk Visitor. Upgrade ke paket berlangganan untuk akses penuh.')
+        else:
+            messages.warning(request, 'Langganan aktif diperlukan untuk mengakses paket tryout ini.')
+        return redirect('subscription_packages' if hasattr(request.user, 'is_student') and request.user.is_student() else 'tryout_list')
     
     # Check if there's an existing unsubmitted test for this package and user
     existing_test = Test.objects.filter(
@@ -5382,7 +5570,6 @@ def take_package_test(request, package_id):
 
 
 @login_required
-@active_subscription_required
 def take_package_test_question(request, package_id, question):
     """Handle individual questions in package test"""
     from django.utils import timezone
@@ -5398,6 +5585,10 @@ def take_package_test_question(request, package_id, question):
     
     if not test:
         messages.error(request, 'Sesi tryout tidak ditemukan. Silakan mulai ulang.')
+        return redirect('tryout_list')
+
+    if package.is_locked_for(request.user):
+        messages.warning(request, 'Anda tidak memiliki akses ke paket tryout ini.')
         return redirect('tryout_list')
     
     # Check if time is up
@@ -5624,7 +5815,6 @@ def take_package_test_question(request, package_id, question):
 
 
 @login_required
-@active_subscription_required
 def submit_package_test(request, package_id):
     """Submit package test and calculate results"""
     from django.utils import timezone
@@ -5640,6 +5830,10 @@ def submit_package_test(request, package_id):
     
     if not test:
         messages.error(request, 'Sesi tryout tidak ditemukan.')
+        return redirect('tryout_list')
+
+    if package.is_locked_for(request.user):
+        messages.warning(request, 'Anda tidak memiliki akses ke paket tryout ini.')
         return redirect('tryout_list')
     
     # Only accept POST requests (direct submit, no confirmation page)

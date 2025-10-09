@@ -5,7 +5,16 @@ from django.test import TestCase
 from django.utils import timezone
 
 from .forms import StudentGoalForm
-from .models import Category, Role, StudentGoal, Test, User
+from .models import (
+	BroadcastMessage,
+	Category,
+	Role,
+	StudentGoal,
+	SubscriptionPackage,
+	Test,
+	User,
+	UserSubscription,
+)
 from .services.student_momentum import get_momentum_snapshot
 
 
@@ -234,3 +243,103 @@ class StudentMomentumServiceTests(TestCase):
 		frequency = next((s for s in signals if s.title == 'Frekuensi Latihan'), None)
 		self.assertIsNotNone(frequency)
 		self.assertEqual(frequency.status, 'focus')
+
+
+class BroadcastMessageVisibilityTests(TestCase):
+	def setUp(self):
+		self.student_role = Role.objects.create(role_name='Student')
+		self.teacher_role = Role.objects.create(role_name='Teacher')
+		self.operator_role = Role.objects.create(role_name='Operator')
+
+		self.package = SubscriptionPackage.objects.create(
+			name='Paket Premium',
+			description='Akses penuh selama 30 hari',
+			features='Tryout lengkap\nAnalisis realtime',
+			price=199000,
+			duration_days=30,
+		)
+
+		self.student_active = User.objects.create_user(
+			email='active@student.com',
+			username='active@student.com',
+			password='testpass123',
+			role=self.student_role,
+		)
+		UserSubscription.objects.create(
+			user=self.student_active,
+			package=self.package,
+			end_date=timezone.now() + timedelta(days=7),
+		)
+
+		self.student_inactive = User.objects.create_user(
+			email='inactive@student.com',
+			username='inactive@student.com',
+			password='testpass123',
+			role=self.student_role,
+		)
+
+		self.teacher = User.objects.create_user(
+			email='teacher@example.com',
+			username='teacher@example.com',
+			password='testpass123',
+			role=self.teacher_role,
+		)
+
+	def _create_broadcast(self, **kwargs):
+		defaults = {
+			'title': 'Pengumuman Penting',
+			'content': 'Mohon diperhatikan.',
+			'publish_at': timezone.now() - timedelta(minutes=5),
+			'duration_minutes': 120,
+		}
+		defaults.update(kwargs)
+		broadcast = BroadcastMessage.objects.create(**defaults)
+		return broadcast
+
+	def test_student_with_active_subscription_sees_restricted_message(self):
+		broadcast = self._create_broadcast(students_require_active_subscription=True)
+		broadcast.target_roles.add(self.student_role)
+
+		visible = BroadcastMessage.objects.visible_for_user(self.student_active)
+		self.assertIn(broadcast, visible)
+
+	def test_student_without_subscription_hidden_when_restricted(self):
+		broadcast = self._create_broadcast(students_require_active_subscription=True)
+		broadcast.target_roles.add(self.student_role)
+
+		visible = BroadcastMessage.objects.visible_for_user(self.student_inactive)
+		self.assertNotIn(broadcast, visible)
+
+	def test_general_student_message_visible_to_all_students(self):
+		broadcast = self._create_broadcast(students_require_active_subscription=False)
+		broadcast.target_roles.add(self.student_role)
+
+		self.assertIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_active))
+		self.assertIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_inactive))
+
+	def test_teacher_specific_broadcast(self):
+		broadcast = self._create_broadcast()
+		broadcast.target_roles.add(self.teacher_role)
+
+		self.assertIn(broadcast, BroadcastMessage.objects.visible_for_user(self.teacher))
+		self.assertNotIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_active))
+
+	def test_removed_broadcast_no_longer_visible(self):
+		broadcast = self._create_broadcast()
+		broadcast.target_roles.add(self.student_role)
+		visible = BroadcastMessage.objects.visible_for_user(self.student_active)
+		self.assertIn(broadcast, visible)
+
+		broadcast.remove_now(user=self.teacher)
+		visible_after = BroadcastMessage.objects.visible_for_user(self.student_active)
+		self.assertNotIn(broadcast, visible_after)
+
+	def test_upcoming_broadcast_not_visible_until_publish_time(self):
+		broadcast = self._create_broadcast(publish_at=timezone.now() + timedelta(hours=1))
+		broadcast.target_roles.add(self.student_role)
+
+		self.assertNotIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_active))
+
+		broadcast.publish_at = timezone.now() - timedelta(minutes=1)
+		broadcast.save()
+		self.assertIn(broadcast, BroadcastMessage.objects.visible_for_user(self.student_active))

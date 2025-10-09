@@ -6,6 +6,8 @@
         <!-- Welcome Header -->
         {% include 'components/welcome_header.html' with user=user %}
 
+        {% include 'components/broadcast_alerts.html' with broadcasts=broadcast_messages %}
+
         <!-- Role-Based Dashboard Content -->
         {% if user.is_visitor %}
             {% include 'dashboards/visitor_dashboard.html' %}

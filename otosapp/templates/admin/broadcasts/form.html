@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-10 dark:bg-gray-900">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-6 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+            <a href="{% url 'admin_broadcast_list' %}" class="inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Kembali
+            </a>
+            <span>/</span>
+            <span>{{ title }}</span>
+        </div>
+
+        <div class="rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-800">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Isi detail pengumuman broadcast yang akan tampil di dashboard pengguna.
+                </p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="grid gap-6">
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Judul Pengumuman</label>
+                        {{ form.title }}
+                        {% if form.title.help_text %}
+                        <p class="mt-1 text-xs text-gray-500">{{ form.title.help_text }}</p>
+                        {% endif %}
+                        {% for error in form.title.errors %}
+                        <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Isi Pengumuman</label>
+                        {{ form.content }}
+                        {% for error in form.content.errors %}
+                        <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Tampilkan ke Role</label>
+                            {{ form.target_roles }}
+                            <p class="mt-1 text-xs text-gray-500">Kosongkan untuk menampilkan kepada seluruh pengguna.</p>
+                            {% for error in form.target_roles.errors %}
+                            <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                            <label class="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                {{ form.students_require_active_subscription }}
+                                <span>Batasi ke siswa dengan langganan aktif</span>
+                            </label>
+                            <label class="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                {{ form.is_active }}
+                                <span>Pengumuman aktif</span>
+                            </label>
+                            <p class="text-xs text-gray-500">
+                                Nonaktifkan jika ingin menyembunyikan sementara tanpa menghapus pengaturan pengumuman.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Waktu Publikasi</label>
+                            {{ form.publish_at }}
+                            {% for error in form.publish_at.errors %}
+                            <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Durasi Tampil (menit)</label>
+                            {{ form.duration_minutes }}
+                            <p class="mt-1 text-xs text-gray-500">Contoh: 1440 untuk 24 jam, 4320 untuk 3 hari.</p>
+                            {% for error in form.duration_minutes.errors %}
+                            <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/40 dark:text-red-200">
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="mt-8 flex items-center justify-end gap-3">
+                    <a href="{% url 'admin_broadcast_list' %}"
+                       class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                        Batal
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                        {% if is_edit %}Simpan Perubahan{% else %}Simpan Pengumuman{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

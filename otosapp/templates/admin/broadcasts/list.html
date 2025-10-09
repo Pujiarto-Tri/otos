@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Pengumuman Broadcast{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-8 rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-800">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📣 Pengumuman Broadcast</h1>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Kelola pesan siaran untuk ditampilkan di dashboard siswa dan guru.
+                    </p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'admin_broadcast_create' %}"
+                       class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Buat Pengumuman
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900/60 dark:bg-emerald-900/30">
+                <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">Sedang Tayang</p>
+                <p class="mt-2 text-3xl font-semibold text-emerald-900 dark:text-emerald-100">{{ stats.live }}</p>
+            </div>
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/60 dark:bg-blue-900/20">
+                <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Terjadwal</p>
+                <p class="mt-2 text-3xl font-semibold text-blue-900 dark:text-blue-100">{{ stats.upcoming }}</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/60 dark:bg-amber-900/20">
+                <p class="text-sm font-medium text-amber-700 dark:text-amber-300">Berakhir</p>
+                <p class="mt-2 text-3xl font-semibold text-amber-900 dark:text-amber-100">{{ stats.expired }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/60">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Dinonaktifkan</p>
+                <p class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{{ stats.inactive }}</p>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-gray-800">
+            <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Daftar Pengumuman</h2>
+            </div>
+            {% if broadcasts %}
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for broadcast in broadcasts %}
+                <div class="px-6 py-5">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex-1 space-y-4">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ broadcast.title }}</h3>
+                                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold capitalize
+                                    {% if broadcast.status_label == 'live' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200
+                                    {% elif broadcast.status_label == 'upcoming' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200
+                                    {% elif broadcast.status_label == 'expired' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200
+                                    {% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200{% endif %}">
+                                    {{ broadcast.status_label|title }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">{{ broadcast.content|truncatechars:160 }}</p>
+                            <dl class="grid gap-3 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-2 xl:grid-cols-4">
+                                <div class="flex items-start gap-2">
+                                    <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Mulai</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ broadcast.publish_at|localtime|date:"d M Y H:i" }}</dd>
+                                    </div>
+                                </div>
+                                {% if broadcast.expires_at %}
+                                <div class="flex items-start gap-2">
+                                    <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12h.01M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Selesai</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ broadcast.expires_at|localtime|date:"d M Y H:i" }}</dd>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class="flex items-start gap-2">
+                                    <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v6a9 9 0 1018 0V7" />
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Target</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ broadcast.target_role_names }}</dd>
+                                    </div>
+                                </div>
+                                {% if broadcast.students_require_active_subscription %}
+                                <div class="flex items-start gap-2">
+                                    <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Batasan</dt>
+                                        <dd class="font-medium text-gray-900 dark:text-gray-100">Hanya siswa aktif</dd>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        <div class="flex w-full flex-col gap-2 border-t border-gray-200 pt-4 dark:border-gray-700 sm:flex-row sm:justify-end sm:border-none sm:pt-0 lg:w-auto">
+                            <a href="{% url 'admin_broadcast_edit' broadcast.id %}"
+                               class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                Edit
+                            </a>
+                            {% if broadcast.is_active %}
+                            <form method="post" action="{% url 'admin_broadcast_remove' broadcast.id %}" class="w-full sm:w-auto" onsubmit="return confirm('Nonaktifkan pengumuman ini sekarang?');">
+                                {% csrf_token %}
+                                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                    Hentikan Sekarang
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'admin_broadcast_reactivate' broadcast.id %}" class="w-full sm:w-auto" onsubmit="return confirm('Aktifkan kembali pengumuman ini?');">
+                                {% csrf_token %}
+                                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                                    Aktifkan Kembali
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
+                <svg class="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z" />
+                </svg>
+                <p class="text-base font-medium">Belum ada pengumuman broadcast</p>
+                <p class="mt-2 text-sm">Klik tombol "Buat Pengumuman" untuk menambahkan pengumuman pertama.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <a href="{% url 'home' %}"
+               class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Kembali ke Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
