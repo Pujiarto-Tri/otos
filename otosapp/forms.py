@@ -935,6 +935,15 @@ class PaymentMethodForm(forms.ModelForm):
 
 class SubscriptionPackageForm(forms.ModelForm):
     """Form untuk admin mengelola paket berlangganan"""
+    price = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
+            'placeholder': 'Harga dalam rupiah',
+            'inputmode': 'numeric',
+            'autocomplete': 'off',
+        })
+    )
+
     class Meta:
         model = SubscriptionPackage
         # Remove 'package_type' from fields
@@ -954,12 +963,6 @@ class SubscriptionPackageForm(forms.ModelForm):
                 'rows': 6,
                 'placeholder': 'Fitur 1\nFitur 2\nFitur 3\n...'
             }),
-            'price': forms.TextInput(attrs={
-                'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
-                'placeholder': 'Harga dalam rupiah',
-                'inputmode': 'numeric',
-                'autocomplete': 'off',
-            }),
             'duration_days': forms.NumberInput(attrs={
                 'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500',
                 'placeholder': 'Durasi dalam hari',
@@ -978,6 +981,10 @@ class SubscriptionPackageForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.price:
+            formatted_price = self._format_amount(self.instance.price)
+            self.initial['price'] = formatted_price
+            self.fields['price'].initial = formatted_price
         self.fields['features'].help_text = "Masukkan setiap fitur dalam baris terpisah"
         self.fields['duration_days'].help_text = "Durasi berlangganan dalam hari (contoh: 30 untuk 1 bulan)"
         self.fields['is_featured'].help_text = "Tandai jika ini adalah paket unggulan"
@@ -996,6 +1003,67 @@ class SubscriptionPackageForm(forms.ModelForm):
             "Pilih tingkat akses yang diterima siswa setelah membeli paket ini. "
             f"{tier_descriptions} Visitor / Gratis hanya untuk paket promo tanpa langganan."
         )
+
+    def clean_price(self):
+        raw_value = self.cleaned_data.get('price')
+
+        if raw_value is None:
+            raise forms.ValidationError('Harga paket wajib diisi.')
+
+        normalized_amount = self._normalize_amount(raw_value)
+
+        if normalized_amount <= 0:
+            raise forms.ValidationError('Harga paket harus lebih besar dari 0.')
+
+        if normalized_amount.as_tuple().exponent < -2:
+            raise forms.ValidationError('Harga paket tidak boleh memiliki lebih dari 2 angka desimal.')
+
+        return normalized_amount.quantize(Decimal('0.01'))
+
+    @staticmethod
+    def _normalize_amount(value):
+        value = str(value).strip()
+
+        if not value:
+            raise forms.ValidationError('Harga paket wajib diisi.')
+
+        value = value.replace(' ', '')
+
+        if ',' in value and '.' in value:
+            value = value.replace('.', '')
+        elif value.count('.') > 1:
+            value = value.replace('.', '')
+        elif '.' in value and ',' not in value:
+            parts = value.split('.')
+            if len(parts) > 1 and all(len(part) == 3 for part in parts[1:]):
+                value = ''.join(parts)
+
+        if ',' in value:
+            if value.count(',') > 1:
+                raise forms.ValidationError('Masukkan harga paket yang valid.')
+            value = value.replace(',', '.')
+
+        normalized = re.sub(r'[^0-9.]', '', value)
+
+        if normalized.count('.') > 1 or normalized in {'', '.'}:
+            raise forms.ValidationError('Masukkan harga paket yang valid.')
+
+        try:
+            amount = Decimal(normalized)
+        except (InvalidOperation, ValueError):
+            raise forms.ValidationError('Masukkan harga paket yang valid.')
+
+        return amount
+
+    @staticmethod
+    def _format_amount(amount):
+        try:
+            amount = Decimal(str(amount))
+        except (InvalidOperation, ValueError):
+            return amount
+
+        integer_part = int(amount)
+        return f"{integer_part:,}".replace(',', '.')
 
 
 class PaymentProofForm(forms.ModelForm):

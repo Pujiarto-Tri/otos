@@ -71,27 +71,53 @@
                                 </span>
                             </label>
                             {{ form.price }}
-                            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                <span id="price-preview"></span>
-                            </div>
                             <script>
-                            // Preview harga dengan format ribuan (tidak mengubah value input number)
                             document.addEventListener('DOMContentLoaded', function() {
                                 const priceInput = document.getElementById('{{ form.price.id_for_label }}');
-                                const pricePreview = document.getElementById('price-preview');
-                                function formatRupiah(num) {
-                                    if (!num) return '';
-                                    return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+                                if (!priceInput) {
+                                    return;
                                 }
-                                function updatePreview() {
-                                    let value = priceInput.value.replace(/[^\d]/g, '');
-                                    pricePreview.textContent = value ? formatRupiah(value) : '';
+
+                                function formatWithDots(digits) {
+                                    if (!digits) {
+                                        return '';
+                                    }
+                                    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                                 }
-                                if (priceInput && pricePreview) {
-                                    priceInput.addEventListener('input', updatePreview);
-                                    // Inisialisasi saat load
-                                    updatePreview();
+
+                                function getCursorPosition(digitCount, formattedValue) {
+                                    let digitsSeen = 0;
+                                    for (let i = 0; i < formattedValue.length; i++) {
+                                        if (/\d/.test(formattedValue[i])) {
+                                            digitsSeen += 1;
+                                            if (digitsSeen === digitCount) {
+                                                return i + 1;
+                                            }
+                                        }
+                                    }
+                                    return formattedValue.length;
                                 }
+
+                                function normalizeAndFormat() {
+                                    const selectionStart = priceInput.selectionStart || 0;
+                                    const rawValue = priceInput.value;
+                                    const rawDigits = rawValue.replace(/\D/g, '');
+                                    const digitsBeforeCursor = rawValue.slice(0, selectionStart).replace(/\D/g, '');
+                                    const formatted = formatWithDots(rawDigits);
+
+                                    priceInput.value = formatted;
+
+                                    const newCursor = getCursorPosition(digitsBeforeCursor.length, formatted);
+                                    requestAnimationFrame(() => {
+                                        priceInput.setSelectionRange(newCursor, newCursor);
+                                    });
+                                }
+
+                                priceInput.addEventListener('input', normalizeAndFormat);
+                                priceInput.addEventListener('blur', normalizeAndFormat);
+
+                                normalizeAndFormat();
                             });
                             </script>
                             {% if form.price.errors %}
