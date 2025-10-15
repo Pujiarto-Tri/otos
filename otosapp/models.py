@@ -63,6 +63,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['username']
     role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, storage=get_storage, max_length=500)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
 
     groups = models.ManyToManyField(
         Group,
@@ -99,6 +100,17 @@ class User(AbstractUser):
         """Check if user has teacher role"""
         return self.role and self.role.role_name == 'Teacher'
     
+    @property
+    def is_email_verified(self):
+        return self.email_verified_at is not None
+
+    def mark_email_verified(self, commit=True):
+        self.is_active = True
+        self.email_verified_at = timezone.now()
+        if commit:
+            self.save(update_fields=['is_active', 'email_verified_at'])
+        return self
+
     def has_active_subscription(self):
         """Check if user has active subscription"""
         try:
@@ -1640,6 +1652,52 @@ class StudentGoalManager(models.Manager):
 
     def active(self):
         return self.get_queryset().active()
+class EmailVerificationTokenQuerySet(models.QuerySet):
+    def valid(self):
+        now = timezone.now()
+        return self.filter(consumed_at__isnull=True, expires_at__gt=now)
+
+    def for_purpose(self, purpose):
+        return self.filter(purpose=purpose)
+
+
+class EmailVerificationToken(models.Model):
+    PURPOSE_ACTIVATE = 'activate'
+    PURPOSE_CHOICES = [
+        (PURPOSE_ACTIVATE, 'Account Activation'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='email_verification_tokens'
+    )
+    token = models.CharField(max_length=128, unique=True)
+    purpose = models.CharField(max_length=32, choices=PURPOSE_CHOICES, default=PURPOSE_ACTIVATE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+
+    objects = EmailVerificationTokenQuerySet.as_manager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['purpose', 'expires_at']),
+        ]
+
+    @property
+    def is_valid(self):
+        now = timezone.now()
+        return self.consumed_at is None and now < self.expires_at
+
+    def mark_consumed(self, commit=True):
+        self.consumed_at = timezone.now()
+        if commit:
+            self.save(update_fields=['consumed_at'])
+        return self
+
 
 
 class StudentGoal(models.Model):

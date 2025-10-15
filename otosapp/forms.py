@@ -3,7 +3,8 @@ from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm, AuthenticationForm, PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
 from django.forms import inlineformset_factory
 from .models import (
     User,
@@ -200,6 +201,58 @@ class CustomPasswordChangeForm(PasswordChangeForm):
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
             })
     
+class VerifiedEmailAuthenticationForm(AuthenticationForm):
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        if not user.is_email_verified:
+            raise forms.ValidationError(
+                'Email Anda belum terverifikasi. Silakan cek inbox atau kirim ulang tautan aktivasi.',
+                code='email_not_verified'
+            )
+
+    def clean(self):
+        try:
+            return super().clean()
+        except forms.ValidationError as exc:
+            username = self.data.get('username')
+            password = self.data.get('password')
+            if username and password:
+                try:
+                    user = User.objects.get(email__iexact=username)
+                except User.DoesNotExist:
+                    pass
+                else:
+                    if user.check_password(password) and not user.is_email_verified:
+                        raise forms.ValidationError(
+                            'Email Anda belum terverifikasi. Silakan cek inbox atau kirim ulang tautan aktivasi.',
+                            code='email_not_verified'
+                        )
+            raise exc
+
+class VerifiedEmailPasswordResetForm(PasswordResetForm):
+    email_template_name = 'emails/password_reset_email.txt'
+    html_email_template_name = 'emails/password_reset_email.html'
+    subject_template_name = 'emails/password_reset_subject.txt'
+
+    def get_users(self, email):
+        for user in super().get_users(email):
+            if getattr(user, 'is_email_verified', False):
+                yield user
+
+    def save(self, domain_override=None, use_https=False, token_generator=None, from_email=None, request=None, **kwargs):
+        token_generator = token_generator or default_token_generator
+        return super().save(
+            domain_override=domain_override,
+            use_https=use_https,
+            token_generator=token_generator,
+            from_email=from_email,
+            request=request,
+            subject_template_name=self.subject_template_name,
+            email_template_name=self.email_template_name,
+            html_email_template_name=self.html_email_template_name,
+            **kwargs,
+        )
+
 class UserUpdateForm(forms.ModelForm):
     email = forms.EmailField(
         required=True,

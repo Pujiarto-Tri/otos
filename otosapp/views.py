@@ -11,6 +11,11 @@ import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.urls import reverse, NoReverseMatch
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 from otosapp.models import (
     Choice,
     User,
@@ -31,11 +36,16 @@ from otosapp.models import (
     TryoutPackage,
     TryoutPackageCategory,
     AccessLevel,
+    EmailVerificationToken,
 )
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
 from datetime import timedelta, datetime
+import secrets
+
+ACTIVATION_TOKEN_VALIDITY_HOURS = getattr(settings, 'ACCOUNT_ACTIVATION_TOKEN_VALID_HOURS', 24)
+ACTIVATION_RESEND_COOLDOWN_MINUTES = getattr(settings, 'ACCOUNT_ACTIVATION_RESEND_COOLDOWN_MINUTES', 5)
 from .forms import CustomUserCreationForm, AdminUserCreationForm, BroadcastMessageForm, UserUpdateForm, CategoryUpdateForm, CategoryCreationForm, QuestionForm, ChoiceFormSet, QuestionUpdateForm, SubscriptionPackageForm, PaymentMethodForm, PaymentProofForm, PaymentVerificationForm, AdminBroadcastThreadForm, UserRoleChangeForm, UserSubscriptionEditForm, UniversityForm, UniversityTargetForm, TryoutPackageForm, TryoutPackageCategoryFormSet
 from .decorators import admin_required, admin_or_operator_required, admin_or_teacher_required, admin_or_teacher_or_operator_required, operator_required, students_required, visitor_required, visitor_or_student_required, active_subscription_required
 from .services.student_momentum import get_momentum_snapshot
@@ -1576,16 +1586,148 @@ def teacher_student_list(request):
     return render(request, 'teacher/student_performance.html', {'categories': categories})
 
 
+def _issue_account_activation_token(user, *, validity_hours=None):
+    validity_hours = validity_hours or ACTIVATION_TOKEN_VALIDITY_HOURS
+    EmailVerificationToken.objects.valid().for_purpose(
+        EmailVerificationToken.PURPOSE_ACTIVATE
+    ).filter(user=user).update(consumed_at=timezone.now())
+
+    token_value = secrets.token_urlsafe(48)
+    expires_at = timezone.now() + timedelta(hours=validity_hours)
+    return EmailVerificationToken.objects.create(
+        user=user,
+        token=token_value,
+        purpose=EmailVerificationToken.PURPOSE_ACTIVATE,
+        expires_at=expires_at,
+    )
+
+
+def _send_activation_email(request, verification_token):
+    try:
+        activation_path = reverse('activate-account', args=[verification_token.token])
+    except NoReverseMatch:
+        activation_path = f"/register/activate/{verification_token.token}/"
+
+    activation_url = request.build_absolute_uri(activation_path)
+    context = {
+        'user': verification_token.user,
+        'activation_url': activation_url,
+        'expires_at': verification_token.expires_at,
+    }
+
+    subject = render_to_string('emails/account_activation_subject.txt', context).strip()
+    html_body = render_to_string('emails/account_activation.html', context)
+    text_body = strip_tags(html_body)
+
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or getattr(settings, 'EMAIL_HOST_USER', '') or 'no-reply@brainest.id'
+
+    send_mail(subject, text_body, from_email, [verification_token.user.email], html_message=html_body)
+
+    verification_token.last_sent_at = timezone.now()
+    verification_token.save(update_fields=['last_sent_at'])
+
+
 def register(request):
+    template_name = 'registration/register.html'
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)  # Log the user in after successful registration
-            return redirect('home')  # Redirect to home or another page
+            with transaction.atomic():
+                user = form.save(commit=False)
+                user.is_active = False
+                user.email_verified_at = None
+                user.save()
+                form.save_m2m()
+
+                verification_token = _issue_account_activation_token(user)
+
+                def _deliver_activation():
+                    _send_activation_email(request, verification_token)
+
+                transaction.on_commit(_deliver_activation)
+
+            messages.success(request, 'Akun berhasil dibuat. Silakan cek email untuk mengaktifkan akun Anda.')
+            return redirect('login')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'registration/register.html', {'form': form})
+
+    return render(request, template_name, {'form': form})
+
+
+def activate_account(request, token):
+    token_obj = get_object_or_404(
+        EmailVerificationToken,
+        token=token,
+        purpose=EmailVerificationToken.PURPOSE_ACTIVATE,
+    )
+
+    if not token_obj.is_valid:
+        try:
+            resend_url = reverse('resend-activation')
+        except NoReverseMatch:
+            resend_url = '/register/resend-activation/'
+
+        context = {
+            'reason': 'Tautan aktivasi tidak lagi berlaku.' if token_obj.expires_at <= timezone.now() else 'Tautan aktivasi sudah digunakan.',
+            'email': token_obj.user.email,
+            'resend_url': resend_url if token_obj.user and not token_obj.user.is_email_verified else None,
+        }
+        return render(request, 'registration/activation_failed.html', context, status=400)
+
+    token_obj.mark_consumed()
+    user = token_obj.user
+    user.mark_email_verified()
+
+    messages.success(request, 'Akun Anda berhasil diaktifkan. Silakan masuk menggunakan email dan kata sandi Anda.')
+    return redirect('login')
+
+
+def resend_activation(request):
+    template_name = 'registration/resend_activation.html'
+    context = {'cooldown_minutes': ACTIVATION_RESEND_COOLDOWN_MINUTES}
+
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        context['email'] = email
+        if not email:
+            messages.error(request, 'Silakan masukkan alamat email yang digunakan saat pendaftaran.')
+            return render(request, template_name, context, status=400)
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            # Avoid account enumeration: respond with success message regardless
+            messages.success(request, 'Jika email terdaftar dan belum aktif, kami telah mengirim tautan aktivasi baru.')
+            return render(request, template_name, context)
+
+        if user.is_email_verified:
+            messages.info(request, 'Email ini sudah terverifikasi. Silakan masuk menggunakan akun tersebut.')
+            return redirect('login')
+
+        latest_token = EmailVerificationToken.objects.filter(
+            user=user,
+            purpose=EmailVerificationToken.PURPOSE_ACTIVATE,
+        ).order_by('-last_sent_at', '-created_at').first()
+
+        if latest_token and latest_token.last_sent_at:
+            elapsed = timezone.now() - latest_token.last_sent_at
+            cooldown_delta = timedelta(minutes=ACTIVATION_RESEND_COOLDOWN_MINUTES)
+            if elapsed < cooldown_delta:
+                remaining_seconds = int((cooldown_delta - elapsed).total_seconds())
+                minutes_remaining = max(1, remaining_seconds // 60)
+                messages.warning(
+                    request,
+                    f'Tautan aktivasi terbaru sudah dikirim. Coba lagi dalam {minutes_remaining} menit.'
+                )
+                return render(request, template_name, context, status=429)
+
+        verification_token = _issue_account_activation_token(user)
+        _send_activation_email(request, verification_token)
+
+        messages.success(request, 'Kami telah mengirim tautan aktivasi terbaru. Periksa email Anda dalam beberapa menit.')
+        return redirect('login')
+
+    return render(request, template_name, context)
 
 ##User View##
 
