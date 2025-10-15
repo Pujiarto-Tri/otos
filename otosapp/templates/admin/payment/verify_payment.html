@@ -52,6 +52,7 @@
                                 {{ payment.user.first_name }} {{ payment.user.last_name }}
                             </h3>
                             <p class="text-gray-600 dark:text-gray-400">{{ payment.user.email }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">{{ payment.user.phone_number|default:"-" }}</p>
                             <p class="text-sm text-blue-600 dark:text-blue-400">
                                 Role: {{ payment.user.role.role_name }}
                             </p>

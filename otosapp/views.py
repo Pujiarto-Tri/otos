@@ -1,5 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, Http404, HttpResponseNotFound
+from django.http import JsonResponse, Http404, HttpResponseNotFound, HttpResponseBadRequest
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -1831,6 +1831,58 @@ def user_delete(request, user_id):
         user.delete()
         return redirect('user_list')
     return render(request, 'admin/manage_user/user_confirm_delete.html', {'user': user})
+
+
+@login_required
+@admin_or_operator_required
+@require_POST
+def user_update_status(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+
+    # Prevent operators from modifying admin accounts
+    if request.user.is_operator() and user.is_admin():
+        raise PermissionDenied("Operators cannot modify admin users.")
+
+    action = request.POST.get('action')
+
+    if action not in {'activate', 'deactivate', 'mark_verified', 'mark_unverified'}:
+        return HttpResponseBadRequest('Invalid action requested.')
+
+    update_fields = []
+    if action == 'activate':
+        if not user.is_active:
+            user.is_active = True
+            update_fields.append('is_active')
+        if not user.email_verified_at:
+            user.email_verified_at = timezone.now()
+            update_fields.append('email_verified_at')
+        messages.success(request, f"{user.email} berhasil diaktifkan.")
+    elif action == 'deactivate':
+        if user.is_active:
+            user.is_active = False
+            update_fields.append('is_active')
+        messages.success(request, f"{user.email} dinonaktifkan.")
+    elif action == 'mark_verified':
+        if not user.email_verified_at:
+            user.email_verified_at = timezone.now()
+            update_fields.append('email_verified_at')
+        if not user.is_active:
+            user.is_active = True
+            if 'is_active' not in update_fields:
+                update_fields.append('is_active')
+        messages.success(request, f"Status email {user.email} ditandai terverifikasi.")
+    elif action == 'mark_unverified':
+        if user.email_verified_at is not None:
+            user.email_verified_at = None
+            update_fields.append('email_verified_at')
+        messages.info(request, f"Status verifikasi email {user.email} telah direset.")
+
+    if update_fields:
+        user.save(update_fields=update_fields)
+    else:
+        messages.info(request, 'Tidak ada perubahan status yang diperlukan.')
+
+    return redirect('user_list')
 
 
 ##Category View##
@@ -4516,6 +4568,7 @@ def admin_payment_verifications(request):
             Q(user__email__icontains=search_query) |
             Q(user__first_name__icontains=search_query) |
             Q(user__last_name__icontains=search_query) |
+            Q(user__phone_number__icontains=search_query) |
             Q(package__name__icontains=search_query)
         )
     
