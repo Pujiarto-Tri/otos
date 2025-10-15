@@ -16,10 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('admin/password_reset/', RedirectView.as_view(pattern_name='password_reset', permanent=False), name='admin_password_reset_redirect'),
+    path('admin/password_reset/done/', RedirectView.as_view(pattern_name='password_reset_done', permanent=False), name='admin_password_reset_done_redirect'),
+    path('admin/reset/<uidb64>/<token>/', RedirectView.as_view(pattern_name='password_reset_confirm', permanent=False), name='admin_password_reset_confirm_redirect'),
+    path('admin/reset/done/', RedirectView.as_view(pattern_name='password_reset_complete', permanent=False), name='admin_password_reset_complete_redirect'),
     path('', include("otosapp.urls")),
     path('admin/', admin.site.urls),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

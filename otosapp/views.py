@@ -1646,7 +1646,10 @@ def register(request):
 
                 transaction.on_commit(_deliver_activation)
 
-            messages.success(request, 'Akun berhasil dibuat. Silakan cek email untuk mengaktifkan akun Anda.')
+            messages.success(
+                request,
+                f'Akun berhasil dibuat. Silakan cek email: {user.email} untuk mengaktifkan akun Anda.'
+            )
             return redirect('login')
     else:
         form = CustomUserCreationForm()

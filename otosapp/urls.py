@@ -16,20 +16,24 @@ urlpatterns = [
     ), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('password-reset/', auth_views.PasswordResetView.as_view(
-        template_name='registration/password_reset_form.html',
+        template_name='registration/password_reset_form_brainest.html',
         email_template_name='emails/password_reset_email.txt',
         html_email_template_name='emails/password_reset_email.html',
         subject_template_name='emails/password_reset_subject.txt',
-        form_class=VerifiedEmailPasswordResetForm
+        form_class=VerifiedEmailPasswordResetForm,
+        extra_context={'hide_chrome': True}
     ), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
-        template_name='registration/password_reset_done.html'
+        template_name='registration/password_reset_done_brainest.html',
+        extra_context={'hide_chrome': True}
     ), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
-        template_name='registration/password_reset_confirm.html'
+        template_name='registration/password_reset_confirm_brainest.html',
+        extra_context={'hide_chrome': True}
     ), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
-        template_name='registration/password_reset_complete.html'
+        template_name='registration/password_reset_complete_brainest.html',
+        extra_context={'hide_chrome': True}
     ), name='password_reset_complete'),
     
     path('settings/', views.settings_view, name='settings'),

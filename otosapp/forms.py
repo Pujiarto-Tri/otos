@@ -241,15 +241,16 @@ class VerifiedEmailPasswordResetForm(PasswordResetForm):
 
     def save(self, domain_override=None, use_https=False, token_generator=None, from_email=None, request=None, **kwargs):
         token_generator = token_generator or default_token_generator
+        kwargs.setdefault('subject_template_name', self.subject_template_name)
+        kwargs.setdefault('email_template_name', self.email_template_name)
+        kwargs.setdefault('html_email_template_name', self.html_email_template_name)
+
         return super().save(
             domain_override=domain_override,
             use_https=use_https,
             token_generator=token_generator,
             from_email=from_email,
             request=request,
-            subject_template_name=self.subject_template_name,
-            email_template_name=self.email_template_name,
-            html_email_template_name=self.html_email_template_name,
             **kwargs,
         )
 
