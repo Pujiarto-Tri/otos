@@ -222,11 +222,11 @@ ACCOUNT_ACTIVATION_RESEND_COOLDOWN_MINUTES = int(os.environ.get('ACCOUNT_ACTIVAT
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND') or (
     'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
 )
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@brainest.local')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply.brainest@gmail.com')
 
 if EMAIL_BACKEND.endswith('smtp.EmailBackend'):
     EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply.brainest@gmail.com')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'

@@ -1619,7 +1619,7 @@ def _send_activation_email(request, verification_token):
     html_body = render_to_string('emails/account_activation.html', context)
     text_body = strip_tags(html_body)
 
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or getattr(settings, 'EMAIL_HOST_USER', '') or 'no-reply@brainest.id'
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or getattr(settings, 'EMAIL_HOST_USER', '') or 'noreply.brainest@gmail.com'
 
     send_mail(subject, text_body, from_email, [verification_token.user.email], html_message=html_body)
 
