@@ -64,7 +64,8 @@ FAVICON_PNG_BYTES = base64.b64decode(
 
 def favicon(request):
     """Serve a minimal favicon to prevent favicon.ico 404 warnings."""
-    response = HttpResponse(FAVICON_PNG_BYTES, content_type="image/png")
+    content_type = "image/png"
+    response = HttpResponse(FAVICON_PNG_BYTES, content_type=content_type)
     response['Cache-Control'] = 'public, max-age=86400'
     return response
 
