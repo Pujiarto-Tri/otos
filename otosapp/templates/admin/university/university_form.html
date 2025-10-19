@@ -110,7 +110,7 @@
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.minimum_utbk_score.errors.0 }}</p>
                             {% endif %}
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Rentang: 0-1000. Nilai ini akan digunakan untuk sistem rekomendasi kepada student.
+                                Rentang: 0-7000. Nilai ini akan digunakan untuk sistem rekomendasi kepada student.
                             </p>
                         </div>
 
@@ -123,11 +123,11 @@
                                 Referensi Nilai UTBK
                             </h4>
                             <div class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                                <div>800-1000: Universitas top (UI, ITB, UGM)</div>
-                                <div>650-799: Universitas negeri favorit</div>
-                                <div>500-649: Universitas negeri standar</div>
-                                <div>400-499: Universitas swasta/politeknik</div>
-                                <div>0-399: Perlu bimbingan intensif</div>
+                                <div>5600-7000: Universitas top (UI, ITB, UGM)</div>
+                                <div>4550-5599: Universitas negeri favorit</div>
+                                <div>3500-4549: Universitas negeri standar</div>
+                                <div>2800-3499: Universitas swasta/politeknik</div>
+                                <div>0-2799: Perlu bimbingan intensif</div>
                             </div>
                         </div>
                     </div>
@@ -198,12 +198,12 @@ document.getElementById('{{ form.website.id_for_label }}').addEventListener('blu
     }
 });
 
-// UTBK Score validation
+// UTBK score validation against 7000-point scale
 document.getElementById('{{ form.minimum_utbk_score.id_for_label }}').addEventListener('input', function() {
     let score = parseInt(this.value);
     let helpText = this.parentNode.querySelector('p');
     
-    if (score < 0 || score > 1000) {
+    if (score < 0 || score > 7000) {
         this.classList.add('border-red-500', 'dark:border-red-400');
         this.classList.remove('border-gray-300', 'dark:border-gray-600');
     } else {

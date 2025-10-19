@@ -44,6 +44,7 @@ urlpatterns = [
     path('admin/broadcasts/<int:broadcast_id>/edit/', views.admin_broadcast_edit, name='admin_broadcast_edit'),
     path('admin/broadcasts/<int:broadcast_id>/remove/', views.admin_broadcast_remove, name='admin_broadcast_remove'),
     path('admin/broadcasts/<int:broadcast_id>/reactivate/', views.admin_broadcast_reactivate, name='admin_broadcast_reactivate'),
+    path('admin/reports/sales/', views.admin_sales_report, name='admin_sales_report'),
     
     path('admin/categories/', views.category_list, name='category_list'),
     path('admin/categories/create/', views.category_create, name='category_create'),
@@ -137,6 +138,7 @@ urlpatterns = [
     path('admin/packages/<int:package_id>/edit/', views.admin_package_update, name='admin_package_update'),
     path('admin/packages/<int:package_id>/delete/', views.admin_package_delete, name='admin_package_delete'),
     path('admin/packages/<int:package_id>/detail/', views.admin_package_detail, name='admin_package_detail'),
+    path('admin/packages/<int:package_id>/toggle-status/', views.toggle_subscription_package_status, name='toggle_subscription_package_status'),
     # API for admin UI
     path('api/category/<int:category_id>/question-count/', views.api_category_question_count, name='api_category_question_count'),
     

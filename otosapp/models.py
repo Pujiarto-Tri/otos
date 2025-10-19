@@ -1549,6 +1549,24 @@ class SubscriptionPackage(models.Model):
         """Return formatted price"""
         return f"Rp {self.price:,.0f}"
 
+class SubscriptionPackagePriceHistory(models.Model):
+    """Audit trail for subscription package price changes."""
+
+    package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE, related_name='price_history')
+    old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    new_price = models.DecimalField(max_digits=10, decimal_places=2)
+    changed_at = models.DateTimeField(default=timezone.now)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='package_price_changes')
+
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = 'Riwayat Harga Paket'
+        verbose_name_plural = 'Riwayat Harga Paket'
+
+    def __str__(self):
+        timestamp = self.changed_at.strftime('%Y-%m-%d %H:%M') if self.changed_at else 'unknown'
+        return f"{self.package.name} @ {timestamp}: {self.old_price} -> {self.new_price}"
+
 
 class PaymentProof(models.Model):
     """Model untuk bukti pembayaran yang diupload user"""

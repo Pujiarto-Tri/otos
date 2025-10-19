@@ -31,6 +31,7 @@ from otosapp.models import (
     PaymentMethod,
     PaymentProof,
     UserSubscription,
+    SubscriptionPackagePriceHistory,
     University,
     UniversityTarget,
     TryoutPackage,
@@ -40,8 +41,8 @@ from otosapp.models import (
 )
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Count, Avg, Max, Q, Sum, Case, When, IntegerField
-from datetime import timedelta, datetime
+from django.db.models import Count, Avg, Max, Min, Q, Sum, Case, When, IntegerField
+from datetime import timedelta, datetime, time
 import secrets
 
 ACTIVATION_TOKEN_VALIDITY_HOURS = getattr(settings, 'ACCOUNT_ACTIVATION_TOKEN_VALID_HOURS', 24)
@@ -778,6 +779,457 @@ def home(request):
     context['broadcast_messages'] = broadcast_messages
 
     return render(request, 'home.html', context)
+
+
+@login_required
+@admin_required
+def admin_sales_report(request):
+    """Render a dedicated admin-only sales analytics dashboard."""
+    now = timezone.now()
+    current_tz = timezone.get_current_timezone()
+
+    def parse_date(value, *, end_of_day=False):
+        if not value:
+            return None
+        try:
+            parsed_date = datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+        boundary_time = time(23, 59, 59, 999999) if end_of_day else time(0, 0, 0)
+        combined = datetime.combine(parsed_date, boundary_time)
+        return timezone.make_aware(combined, current_tz) if timezone.is_naive(combined) else combined
+
+    def ensure_aware_dt(value):
+        if not value:
+            return now
+        if timezone.is_naive(value):
+            return timezone.make_aware(value, current_tz)
+        return value
+
+    def to_float(value):
+        if value is None:
+            return 0.0
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def growth_pct(current, previous):
+        previous_val = to_float(previous)
+        current_val = to_float(current)
+        if previous_val == 0.0:
+            return None
+        return round(((current_val - previous_val) / previous_val) * 100, 2)
+
+    def minutes_to_label(value):
+        if value is None:
+            return 'N/A'
+        total_minutes = int(round(value))
+        hours, minutes = divmod(total_minutes, 60)
+        if hours and minutes:
+            return f'{hours}j {minutes}m'
+        if hours:
+            return f'{hours}j'
+        return f'{minutes}m'
+
+    def add_price_point(storage, package_id, package_name, point):
+        bucket = storage.setdefault(package_id, {'name': package_name, 'data': []})
+        if any(existing['x'] == point['x'] and existing['y'] == point['y'] for existing in bucket['data']):
+            return
+        bucket['data'].append(point)
+
+    period_key = (request.GET.get('period') or '30d').lower()
+    start_param = request.GET.get('start_date')
+    end_param = request.GET.get('end_date')
+
+    period_labels = {
+        '7d': '7 Hari Terakhir',
+        '30d': '30 Hari Terakhir',
+        '90d': '90 Hari Terakhir',
+        '180d': '180 Hari Terakhir',
+    }
+    period_days = {'7d': 7, '30d': 30, '90d': 90, '180d': 180}
+    period_label = period_labels.get(period_key, period_labels['30d'])
+
+    base_qs = PaymentProof.objects.filter(status='approved', verified_at__isnull=False)
+    start_dt = None
+    end_dt = now
+
+    if period_key in period_days:
+        days = period_days[period_key]
+        start_dt = end_dt - timedelta(days=days - 1)
+        period_label = period_labels[period_key]
+    elif period_key == 'ytd':
+        start_dt = timezone.make_aware(datetime(now.year, 1, 1), current_tz)
+        period_label = f'Tahun Berjalan {now.year}'
+    elif period_key == 'all':
+        first_sale = base_qs.aggregate(first=Min('verified_at'))['first']
+        start_dt = first_sale
+        period_label = 'Sepanjang Waktu'
+    elif period_key == 'custom':
+        start_dt = parse_date(start_param)
+        custom_end = parse_date(end_param, end_of_day=True)
+        if custom_end:
+            end_dt = custom_end
+        period_label = 'Rentang Kustom'
+        if start_dt and end_dt and start_dt > end_dt:
+            start_dt, end_dt = end_dt, start_dt
+    else:
+        fallback_days = period_days['30d']
+        start_dt = end_dt - timedelta(days=fallback_days - 1)
+        period_label = period_labels['30d']
+
+    filtered_payments = base_qs
+    if start_dt:
+        filtered_payments = filtered_payments.filter(verified_at__gte=start_dt)
+    if end_dt:
+        filtered_payments = filtered_payments.filter(verified_at__lte=end_dt)
+    filtered_payments = filtered_payments.select_related('user', 'package')
+
+    start_date_local = timezone.localdate(start_dt) if start_dt else None
+    end_date_local = timezone.localdate(end_dt) if end_dt else timezone.localdate(now)
+    range_days = None
+    if start_date_local:
+        range_days = max(1, (end_date_local - start_date_local).days + 1)
+
+    aggregates = filtered_payments.aggregate(
+        total=Sum('amount_paid'),
+        avg=Avg('amount_paid'),
+        max=Max('amount_paid'),
+        min=Min('amount_paid'),
+    )
+    total_revenue = aggregates['total'] or 0
+    avg_order_value = aggregates['avg'] or 0
+    max_order_value = aggregates['max'] or 0
+    min_order_value = aggregates['min'] or 0
+    total_orders = filtered_payments.count()
+    unique_customers = filtered_payments.values('user_id').distinct().count() if total_orders else 0
+
+    repeat_purchase_rate = None
+    if total_orders > 1 and unique_customers:
+        repeat_purchase_rate = round(((total_orders - unique_customers) / total_orders) * 100, 2)
+
+    period_span = None
+    if start_dt:
+        period_span = (end_dt - start_dt) if end_dt else timedelta()
+        if period_span.total_seconds() <= 0:
+            period_span = timedelta(days=1)
+
+    previous_totals = {'total': 0, 'count': 0}
+    if period_span:
+        prev_end = start_dt - timedelta(microseconds=1)
+        prev_start = prev_end - period_span
+        previous_qs = base_qs.filter(verified_at__gte=prev_start, verified_at__lte=prev_end)
+        previous_totals = previous_qs.aggregate(total=Sum('amount_paid'), count=Count('id'))
+
+    revenue_growth = growth_pct(total_revenue, previous_totals.get('total'))
+    orders_growth = growth_pct(total_orders, previous_totals.get('count'))
+
+    daily_data = filtered_payments.annotate(day=TruncDay('verified_at')).values('day').annotate(total=Sum('amount_paid'), count=Count('id')).order_by('day')
+    daily_series = []
+    for entry in daily_data:
+        day_value = entry['day']
+        if day_value is None:
+            continue
+        local_day = timezone.localtime(day_value)
+        daily_series.append({
+            'date': local_day.date().isoformat(),
+            'label': local_day.strftime('%d %b'),
+            'revenue': round(to_float(entry['total']), 2),
+            'orders': entry['count'],
+        })
+
+    monthly_data = filtered_payments.annotate(month=TruncMonth('verified_at')).values('month').annotate(total=Sum('amount_paid'), count=Count('id')).order_by('month')
+    monthly_series = []
+    for entry in monthly_data:
+        month_value = entry['month']
+        if month_value is None:
+            continue
+        local_month = timezone.localtime(month_value)
+        monthly_series.append({
+            'label': local_month.strftime('%b %Y'),
+            'revenue': round(to_float(entry['total']), 2),
+            'orders': entry['count'],
+        })
+
+    average_daily_revenue = round(to_float(total_revenue) / len(daily_series), 2) if daily_series else round(to_float(total_revenue), 2)
+    peak_day = max(daily_series, key=lambda item: item['revenue']) if daily_series else None
+
+    payment_methods = []
+    payment_methods_raw = filtered_payments.values('payment_method').annotate(
+        total=Sum('amount_paid'), count=Count('id'), avg=Avg('amount_paid')
+    ).order_by('-total')
+    for entry in payment_methods_raw:
+        label = entry['payment_method'] or 'Lainnya'
+        payment_methods.append({
+            'label': label,
+            'count': entry['count'],
+            'revenue': round(to_float(entry['total']), 2),
+            'avg_order': round(to_float(entry['avg']), 2),
+        })
+
+    package_breakdown = []
+    package_raw = filtered_payments.values('package__id', 'package__name', 'package__access_level').annotate(
+        total=Sum('amount_paid'), count=Count('id'), avg=Avg('amount_paid')
+    ).order_by('-total')
+    for entry in package_raw:
+        package_breakdown.append({
+            'package_id': entry['package__id'],
+            'package_name': entry['package__name'] or 'Tidak Diketahui',
+            'access_level': entry['package__access_level'],
+            'revenue': round(to_float(entry['total']), 2),
+            'count': entry['count'],
+            'avg_order': round(to_float(entry['avg']), 2),
+        })
+
+    peak_package = package_breakdown[0] if package_breakdown else None
+
+    top_customers = []
+    top_customers_raw = filtered_payments.values(
+        'user_id', 'user__first_name', 'user__last_name', 'user__email'
+    ).annotate(total=Sum('amount_paid'), count=Count('id')).order_by('-total')[:8]
+    for entry in top_customers_raw:
+        first_name = entry.get('user__first_name') or ''
+        last_name = entry.get('user__last_name') or ''
+        full_name = f"{first_name} {last_name}".strip() or entry.get('user__email')
+        revenue_val = to_float(entry['total'])
+        orders_val = entry['count'] or 0
+        avg_ticket = round(revenue_val / orders_val, 2) if orders_val else 0.0
+        top_customers.append({
+            'user_id': entry['user_id'],
+            'name': full_name,
+            'email': entry.get('user__email'),
+            'orders': orders_val,
+            'revenue': round(revenue_val, 2),
+            'avg_order': avg_ticket,
+        })
+
+    recent_payments = list(filtered_payments.order_by('-verified_at')[:10])
+
+    status_labels = dict(PaymentProof.STATUS_CHOICES)
+    status_qs = PaymentProof.objects.all()
+    if start_dt:
+        status_qs = status_qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        status_qs = status_qs.filter(created_at__lte=end_dt)
+    status_breakdown = []
+    for entry in status_qs.values('status').annotate(total=Sum('amount_paid'), count=Count('id')).order_by('-count'):
+        status_key = entry['status']
+        status_breakdown.append({
+            'status': status_key,
+            'label': status_labels.get(status_key, status_key.title()),
+            'count': entry['count'],
+            'revenue': round(to_float(entry['total']), 2),
+        })
+
+    pending_qs = PaymentProof.objects.filter(status='pending')
+    if start_dt:
+        pending_qs = pending_qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        pending_qs = pending_qs.filter(created_at__lte=end_dt)
+    pending_totals = pending_qs.aggregate(total=Sum('amount_paid'), count=Count('id'))
+    pending_revenue = pending_totals.get('total') or 0
+    pending_count = pending_totals.get('count') or 0
+
+    processing_minutes = []
+    for verified_at, created_at in filtered_payments.values_list('verified_at', 'created_at'):
+        if verified_at and created_at:
+            delta_minutes = (verified_at - created_at).total_seconds() / 60
+            if delta_minutes >= 0:
+                processing_minutes.append(delta_minutes)
+
+    processing_metrics = {
+        'avg_minutes': None,
+        'fastest_minutes': None,
+        'slowest_minutes': None,
+        'avg_display': 'N/A',
+        'fastest_display': 'N/A',
+        'slowest_display': 'N/A',
+    }
+    if processing_minutes:
+        avg_minutes = sum(processing_minutes) / len(processing_minutes)
+        fastest_minutes = min(processing_minutes)
+        slowest_minutes = max(processing_minutes)
+        processing_metrics.update({
+            'avg_minutes': round(avg_minutes, 1),
+            'fastest_minutes': round(fastest_minutes, 1),
+            'slowest_minutes': round(slowest_minutes, 1),
+            'avg_display': minutes_to_label(avg_minutes),
+            'fastest_display': minutes_to_label(fastest_minutes),
+            'slowest_display': minutes_to_label(slowest_minutes),
+        })
+
+    price_history_qs = SubscriptionPackagePriceHistory.objects.select_related('package', 'changed_by').order_by('changed_at')
+    if start_dt:
+        price_history_qs = price_history_qs.filter(changed_at__gte=start_dt)
+    if end_dt:
+        price_history_qs = price_history_qs.filter(changed_at__lte=end_dt)
+
+    price_history_entries = list(price_history_qs)
+    price_series_map = {}
+    for change in price_history_entries:
+        local_changed_at = timezone.localtime(change.changed_at) if change.changed_at else timezone.localtime(now)
+        add_price_point(
+            price_series_map,
+            change.package_id,
+            change.package.name,
+            {
+                'x': local_changed_at.strftime('%Y-%m-%d'),
+                'y': round(to_float(change.new_price), 2),
+            }
+        )
+
+    if start_dt:
+        prior_changes = (
+            SubscriptionPackagePriceHistory.objects.select_related('package')
+            .filter(changed_at__lt=start_dt)
+            .order_by('package_id', '-changed_at')
+        )
+        tracked_packages = set()
+        local_start = timezone.localtime(start_dt)
+        for change in prior_changes:
+            if change.package_id in tracked_packages:
+                continue
+            tracked_packages.add(change.package_id)
+            add_price_point(
+                price_series_map,
+                change.package_id,
+                change.package.name,
+                {
+                    'x': local_start.strftime('%Y-%m-%d'),
+                    'y': round(to_float(change.new_price), 2),
+                }
+            )
+
+    baseline_reference = start_dt if start_dt else None
+    all_packages = SubscriptionPackage.objects.all()
+    for package in all_packages:
+        if baseline_reference:
+            baseline_dt = timezone.localtime(baseline_reference)
+        else:
+            candidate_dt = ensure_aware_dt(getattr(package, 'created_at', None) or getattr(package, 'updated_at', None) or now)
+            baseline_dt = timezone.localtime(candidate_dt)
+        add_price_point(
+            price_series_map,
+            package.id,
+            package.name,
+            {
+                'x': baseline_dt.strftime('%Y-%m-%d'),
+                'y': round(to_float(package.price), 2),
+            }
+        )
+
+    price_chart_series = []
+    for series in price_series_map.values():
+        series['data'].sort(key=lambda item: item['x'])
+        price_chart_series.append(series)
+
+    price_change_events = sorted(price_history_entries, key=lambda change: change.changed_at, reverse=True)[:10]
+    price_change_rows = []
+    for change in price_change_events:
+        local_changed_at = timezone.localtime(change.changed_at) if change.changed_at else None
+        old_price_val = round(to_float(change.old_price), 2) if change.old_price is not None else None
+        new_price_val = round(to_float(change.new_price), 2)
+        delta_val = None
+        direction = 'flat'
+        delta_abs = None
+        if change.old_price is not None:
+            delta_val = round(new_price_val - old_price_val, 2)
+            delta_abs = round(abs(delta_val), 2)
+            if delta_val > 0:
+                direction = 'up'
+            elif delta_val < 0:
+                direction = 'down'
+        changer_name = None
+        changer_email = None
+        if change.changed_by:
+            changer_name = change.changed_by.get_full_name() or change.changed_by.email
+            changer_email = change.changed_by.email
+        price_change_rows.append({
+            'package_name': change.package.name,
+            'changed_at': local_changed_at,
+            'old_price': old_price_val,
+            'new_price': new_price_val,
+            'delta': delta_val,
+            'delta_abs': delta_abs,
+            'direction': direction,
+            'changed_by_name': changer_name,
+            'changed_by_email': changer_email,
+        })
+
+    previous_revenue = previous_totals.get('total') or 0
+    previous_orders = previous_totals.get('count') or 0
+
+    report = {
+        'has_data': total_orders > 0,
+        'period_label': period_label,
+        'period_key': period_key,
+        'start_date': start_date_local,
+        'end_date': end_date_local,
+        'range_days': range_days,
+        'total_revenue': round(to_float(total_revenue), 2),
+        'total_orders': total_orders,
+        'unique_customers': unique_customers,
+        'repeat_purchase_rate': repeat_purchase_rate,
+        'avg_order_value': round(to_float(avg_order_value), 2),
+        'max_order_value': round(to_float(max_order_value), 2),
+        'min_order_value': round(to_float(min_order_value), 2),
+        'average_daily_revenue': average_daily_revenue,
+        'growth': {
+            'revenue_pct': revenue_growth,
+            'orders_pct': orders_growth,
+            'previous_revenue': round(to_float(previous_revenue), 2),
+            'previous_orders': previous_orders,
+        },
+        'pending_revenue': round(to_float(pending_revenue), 2),
+        'pending_orders': pending_count,
+        'peak_day': peak_day,
+        'peak_package': peak_package,
+        'processing': processing_metrics,
+    }
+
+    chart_payload = {
+        'daily': daily_series,
+        'monthly': monthly_series,
+        'paymentMethods': [
+            {'label': item['label'], 'value': item['revenue']} for item in payment_methods
+        ],
+        'packageShare': [
+            {'label': item['package_name'], 'value': item['revenue']} for item in package_breakdown
+        ],
+        'priceChanges': price_chart_series,
+    }
+    chart_data_json = json.dumps(chart_payload)
+
+    period_options = [
+        {'key': '7d', 'label': '7 Hari'},
+        {'key': '30d', 'label': '30 Hari'},
+        {'key': '90d', 'label': '90 Hari'},
+        {'key': '180d', 'label': '180 Hari'},
+        {'key': 'ytd', 'label': f'Year to Date {now.year}'},
+        {'key': 'all', 'label': 'Sepanjang Waktu'},
+    ]
+    filters = {
+        'options': period_options,
+        'active': period_key if period_key in {opt['key'] for opt in period_options} or period_key == 'custom' else '30d',
+        'start_value': start_date_local.strftime('%Y-%m-%d') if start_date_local else '',
+        'end_value': end_date_local.strftime('%Y-%m-%d') if end_date_local else '',
+        'is_custom': period_key == 'custom',
+    }
+
+    context = {
+        'report': report,
+        'filters': filters,
+        'payment_methods': payment_methods,
+        'package_breakdown': package_breakdown,
+        'top_customers': top_customers,
+        'recent_payments': recent_payments,
+        'status_breakdown': status_breakdown,
+        'price_change_rows': price_change_rows,
+        'chart_data_json': chart_data_json,
+    }
+
+    return render(request, 'admin/reports/sales_report.html', context)
 
 
 # ------------------------- TEACHER VIEWS -------------------------
@@ -1913,7 +2365,7 @@ def category_create(request):
 @login_required
 @admin_or_operator_required
 def category_list(request):
-    categories_list = Category.objects.all()
+    categories_list = Category.objects.all().order_by('category_name')
     q = request.GET.get('q', '').strip()
     scoring_method = request.GET.get('scoring_method', '').strip()
     if q:
@@ -4492,7 +4944,13 @@ def create_subscription_package(request):
     if request.method == 'POST':
         form = SubscriptionPackageForm(request.POST)
         if form.is_valid():
-            form.save()
+            package = form.save()
+            SubscriptionPackagePriceHistory.objects.create(
+                package=package,
+                old_price=None,
+                new_price=package.price,
+                changed_by=request.user
+            )
             messages.success(request, 'Paket berlangganan berhasil dibuat!')
             return redirect('admin_subscription_packages')
     else:
@@ -4511,11 +4969,19 @@ def create_subscription_package(request):
 def update_subscription_package(request, package_id):
     """Admin view untuk update paket berlangganan"""
     package = get_object_or_404(SubscriptionPackage, id=package_id)
+    original_price = package.price
     
     if request.method == 'POST':
         form = SubscriptionPackageForm(request.POST, instance=package)
         if form.is_valid():
-            form.save()
+            updated_package = form.save()
+            if original_price != updated_package.price:
+                SubscriptionPackagePriceHistory.objects.create(
+                    package=updated_package,
+                    old_price=original_price,
+                    new_price=updated_package.price,
+                    changed_by=request.user
+                )
             messages.success(request, 'Paket berlangganan berhasil diupdate!')
             return redirect('admin_subscription_packages')
     else:
@@ -4535,7 +5001,7 @@ def update_subscription_package(request, package_id):
 def delete_subscription_package(request, package_id):
     """Admin view untuk delete paket berlangganan"""
     package = get_object_or_404(SubscriptionPackage, id=package_id)
-    active_subscribers = package.subscription_set.filter(is_active=True, end_date__gt=timezone.now()).count()
+    active_subscribers = package.usersubscription_set.filter(is_active=True, end_date__gt=timezone.now()).count()
     warning = None
     if active_subscribers > 0:
         warning = f"Paket ini masih memiliki {active_subscribers} subscriber aktif. Menonaktifkan paket tidak akan memutus langganan yang sedang berjalan, namun tidak bisa dipilih user baru." 
@@ -4549,6 +5015,32 @@ def delete_subscription_package(request, package_id):
         'warning': warning,
     }
     return render(request, 'admin/subscription/package_confirm_delete.html', context)
+
+
+@login_required
+@admin_required
+@require_POST
+def toggle_subscription_package_status(request, package_id):
+    """Toggle status paket subscription tanpa menghapus data."""
+    package = get_object_or_404(SubscriptionPackage, id=package_id)
+
+    new_status = not package.is_active
+    package.is_active = new_status
+    package.save(update_fields=['is_active'])
+
+    if not new_status:
+        active_subscribers = package.usersubscription_set.filter(is_active=True, end_date__gt=timezone.now()).count()
+        if active_subscribers:
+            messages.warning(
+                request,
+                f'Paket {package.name} dinonaktifkan. {active_subscribers} langganan aktif yang berjalan tidak terpengaruh dan tetap aktif sampai masa berakhirnya.'
+            )
+        else:
+            messages.success(request, f'Paket {package.name} dinonaktifkan.')
+    else:
+        messages.success(request, f'Paket {package.name} diaktifkan kembali dan dapat dipilih pengguna baru.')
+
+    return redirect('admin_subscription_packages')
 
 
 @login_required

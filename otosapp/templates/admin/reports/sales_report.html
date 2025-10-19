@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Laporan Penjualan | Brainest{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mt-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Laporan Penjualan</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {{ report.period_label }}{% if report.range_days %} &middot; {{ report.range_days }} hari{% endif %}
+                {% if report.start_date and report.end_date %}
+                    &middot; {{ report.start_date|date:"d M Y" }} - {{ report.end_date|date:"d M Y" }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="w-full lg:w-auto">
+            <div class="flex flex-wrap gap-2 justify-start lg:justify-end">
+                {% for option in filters.options %}
+                    <a href="?period={{ option.key }}" class="px-3 py-2 text-sm font-medium rounded-lg border transition shadow-sm {% if filters.active == option.key %}bg-blue-600 border-blue-600 text-white hover:bg-blue-700{% else %}bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+                        {{ option.label }}
+                    </a>
+                {% endfor %}
+            </div>
+            <form method="get" class="mt-3 flex flex-wrap items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 shadow-sm {% if filters.is_custom %}ring-2 ring-blue-500 dark:ring-blue-400{% endif %}">
+                <input type="hidden" name="period" value="custom">
+                <input type="date" name="start_date" value="{{ filters.start_value }}" class="rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Tanggal mulai">
+                <span class="text-gray-400 text-sm">-></span>
+                <input type="date" name="end_date" value="{{ filters.end_value }}" class="rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Tanggal akhir">
+                <button type="submit" class="inline-flex items-center px-3 py-2 text-sm font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Terapkan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Pendapatan</p>
+            <div class="mt-2 flex items-baseline gap-2">
+                <span class="text-3xl font-bold text-gray-900 dark:text-white">Rp {{ report.total_revenue|floatformat:0|intcomma }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Rata-rata harian Rp {{ report.average_daily_revenue|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                {% if report.growth.revenue_pct is not None %}
+                    <span class="inline-flex items-center gap-1 font-semibold {% if report.growth.revenue_pct >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                        {% if report.growth.revenue_pct >= 0 %}+{% endif %}{{ report.growth.revenue_pct|floatformat:2 }}%
+                    </span>
+                    <span class="block">Perbandingan terhadap Rp {{ report.growth.previous_revenue|floatformat:0|intcomma }}</span>
+                {% else %}
+                    <span>Perbandingan belum tersedia untuk rentang ini.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Transaksi</p>
+            <div class="mt-2 flex items-baseline gap-2">
+                <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ report.total_orders|intcomma }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Customer unik {{ report.unique_customers|intcomma }}</span>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                {% if report.growth.orders_pct is not None %}
+                    <span class="inline-flex items-center gap-1 font-semibold {% if report.growth.orders_pct >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                        {% if report.growth.orders_pct >= 0 %}+{% endif %}{{ report.growth.orders_pct|floatformat:2 }}%
+                    </span>
+                    <span class="block">Perbandingan terhadap {{ report.growth.previous_orders|intcomma }} transaksi</span>
+                {% else %}
+                    <span>Perbandingan belum tersedia untuk rentang ini.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rata-rata Nilai Transaksi</p>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">Rp {{ report.avg_order_value|floatformat:0|intcomma }}</div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                <p>Minimum Rp {{ report.min_order_value|floatformat:0|intcomma }}</p>
+                <p>Maksimum Rp {{ report.max_order_value|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Customer Unik</p>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ report.unique_customers|intcomma }}</div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                {% if report.repeat_purchase_rate is not None %}
+                    <span>Tingkat pembelian ulang {{ report.repeat_purchase_rate|floatformat:2 }}%</span>
+                {% else %}
+                    <span>Tidak ada data repeat order untuk periode ini.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Transaksi Tertunda</p>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ report.pending_orders|intcomma }}</div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                <span>Potensi Rp {{ report.pending_revenue|floatformat:0|intcomma }}</span>
+                <p class="mt-1">Pantau transaksi ini pada menu verifikasi pembayaran.</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Waktu Verifikasi</p>
+            <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ report.processing.avg_display }}</div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                <p>Tercepat {{ report.processing.fastest_display }}</p>
+                <p>Terlama {{ report.processing.slowest_display }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Performa Harian Terbaik</h2>
+            {% if report.peak_day %}
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Tanggal {{ report.peak_day.label }} menghasilkan Rp {{ report.peak_day.revenue|floatformat:0|intcomma }} dari {{ report.peak_day.orders|intcomma }} transaksi.</p>
+            {% else %}
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Belum ada data penjualan pada rentang yang dipilih.</p>
+            {% endif %}
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Paket Terlaris</h2>
+            {% if report.peak_package %}
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ report.peak_package.package_name }} menyumbang Rp {{ report.peak_package.revenue|floatformat:0|intcomma }} dari {{ report.peak_package.count|intcomma }} transaksi.</p>
+            {% else %}
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Belum ada data paket terjual pada rentang yang dipilih.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tren Pendapatan Harian</h2>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Total Rp {{ report.total_revenue|floatformat:0|intcomma }}</span>
+            </div>
+            <div id="dailyRevenueChart" class="h-72 mt-4"></div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Rekap Bulanan</h2>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Periode {{ report.period_label }}</span>
+            </div>
+            <div id="monthlyRevenueChart" class="h-72 mt-4"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Pergerakan Harga Paket</h2>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Pantau momentum perubahan harga</span>
+            </div>
+            <div id="priceChangeChart" class="h-72 mt-4"></div>
+            <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">Grafik menampilkan harga akhir setiap perubahan. Garis datar menandakan harga stabil pada rentang yang dipilih.</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Riwayat Penyesuaian Harga Terbaru</h2>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 text-left">Tanggal</th>
+                            <th class="py-2 text-left">Paket</th>
+                            <th class="py-2 text-right">Harga Lama</th>
+                            <th class="py-2 text-right">Harga Baru</th>
+                            <th class="py-2 text-right">Δ Harga</th>
+                            <th class="py-2 text-left">Diubah Oleh</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        {% if price_change_rows %}
+                            {% for row in price_change_rows %}
+                                <tr>
+                                    <td class="py-2">{% if row.changed_at %}{{ row.changed_at|date:"d M Y" }}<br><span class="text-xs text-gray-500 dark:text-gray-400">{{ row.changed_at|date:"H:i" }}</span>{% else %}-{% endif %}</td>
+                                    <td class="py-2">{{ row.package_name }}</td>
+                                    <td class="py-2 text-right">{% if row.old_price is not None %}Rp {{ row.old_price|floatformat:0|intcomma }}{% else %}-{% endif %}</td>
+                                    <td class="py-2 text-right">Rp {{ row.new_price|floatformat:0|intcomma }}</td>
+                                    <td class="py-2 text-right">
+                                        {% if row.delta is not None %}
+                                            {% if row.direction == 'up' %}
+                                                <span class="text-green-600 dark:text-green-400 font-semibold">+Rp {{ row.delta_abs|floatformat:0|intcomma }}</span>
+                                            {% elif row.direction == 'down' %}
+                                                <span class="text-red-600 dark:text-red-400 font-semibold">-Rp {{ row.delta_abs|floatformat:0|intcomma }}</span>
+                                            {% else %}
+                                                Rp {{ row.delta_abs|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-2">
+                                        {% if row.changed_by_name %}
+                                            <div class="flex flex-col">
+                                                <span class="font-medium">{{ row.changed_by_name }}</span>
+                                                {% if row.changed_by_email %}
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ row.changed_by_email }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-gray-400">Sistem</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="py-4 text-center text-gray-400">Belum ada perubahan harga pada rentang yang dipilih.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Metode Pembayaran</h2>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ payment_methods|length }} metode</span>
+            </div>
+            <div id="paymentMethodChart" class="h-64 mt-4"></div>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 text-left">Metode</th>
+                            <th class="py-2 text-right">Transaksi</th>
+                            <th class="py-2 text-right">Pendapatan</th>
+                            <th class="py-2 text-right">Rata-rata</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        {% if payment_methods %}
+                            {% for method in payment_methods %}
+                                <tr>
+                                    <td class="py-2">{{ method.label }}</td>
+                                    <td class="py-2 text-right">{{ method.count|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ method.revenue|floatformat:0|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ method.avg_order|floatformat:0|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-gray-400">Belum ada transaksi untuk ditampilkan.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Kontribusi Paket</h2>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ package_breakdown|length }} paket</span>
+            </div>
+            <div id="packageShareChart" class="h-64 mt-4"></div>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 text-left">Paket</th>
+                            <th class="py-2 text-right">Transaksi</th>
+                            <th class="py-2 text-right">Pendapatan</th>
+                            <th class="py-2 text-right">Rata-rata</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        {% if package_breakdown %}
+                            {% for package in package_breakdown %}
+                                <tr>
+                                    <td class="py-2">{{ package.package_name }}</td>
+                                    <td class="py-2 text-right">{{ package.count|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ package.revenue|floatformat:0|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ package.avg_order|floatformat:0|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-gray-400">Belum ada data paket pada rentang ini.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Customer Teratas</h2>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 text-left">Customer</th>
+                            <th class="py-2 text-right">Transaksi</th>
+                            <th class="py-2 text-right">Pendapatan</th>
+                            <th class="py-2 text-right">Rata-rata</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        {% if top_customers %}
+                            {% for customer in top_customers %}
+                                <tr>
+                                    <td class="py-2">
+                                        <div class="flex flex-col">
+                                            <span class="font-medium">{{ customer.name }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ customer.email }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-2 text-right">{{ customer.orders|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ customer.revenue|floatformat:0|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ customer.avg_order|floatformat:0|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-gray-400">Belum ada customer pada rentang ini.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Status Funnel Pembayaran</h2>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 text-left">Status</th>
+                            <th class="py-2 text-right">Jumlah</th>
+                            <th class="py-2 text-right">Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        {% if status_breakdown %}
+                            {% for status in status_breakdown %}
+                                <tr>
+                                    <td class="py-2">{{ status.label }}</td>
+                                    <td class="py-2 text-right">{{ status.count|intcomma }}</td>
+                                    <td class="py-2 text-right">Rp {{ status.revenue|floatformat:0|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="py-4 text-center text-gray-400">Belum ada transaksi pada rentang ini.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm mt-8">
+        <div class="flex items-start justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transaksi Terbaru</h2>
+            <span class="text-xs text-gray-500 dark:text-gray-400">Menampilkan maks 10 transaksi terakhir</span>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                <thead class="text-gray-500 dark:text-gray-400">
+                    <tr>
+                        <th class="py-2 text-left">Tanggal</th>
+                        <th class="py-2 text-left">Customer</th>
+                        <th class="py-2 text-left">Paket</th>
+                        <th class="py-2 text-right">Metode</th>
+                        <th class="py-2 text-right">Nominal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                    {% if recent_payments %}
+                        {% for payment in recent_payments %}
+                            <tr>
+                                <td class="py-2">{{ payment.verified_at|date:"d M Y H:i" }}</td>
+                                <td class="py-2">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ payment.user.get_full_name|default:payment.user.email }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ payment.user.email }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-2">{{ payment.package.name }}</td>
+                                <td class="py-2 text-right">{{ payment.payment_method }}</td>
+                                <td class="py-2 text-right">Rp {{ payment.amount_paid|floatformat:0|intcomma }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="py-4 text-center text-gray-400">Belum ada transaksi pada rentang ini.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    if (typeof ApexCharts === 'undefined') {
+        return;
+    }
+    const raw = '{{ chart_data_json|escapejs }}';
+    if (!raw) {
+        return;
+    }
+    let payload;
+    try {
+        payload = JSON.parse(raw);
+    } catch (err) {
+        console.error('Gagal memuat data chart laporan penjualan', err);
+        return;
+    }
+    const currencyFormatter = new Intl.NumberFormat('id-ID');
+
+    function formatCurrency(value) {
+        return 'Rp ' + currencyFormatter.format(Math.round(value || 0));
+    }
+
+    function renderDailyChart(data) {
+        const target = document.querySelector('#dailyRevenueChart');
+        if (!target || !Array.isArray(data)) {
+            return;
+        }
+        const categories = data.map(item => item.label);
+        const revenueSeries = data.map(item => Number(item.revenue || 0));
+        const ordersSeries = data.map(item => Number(item.orders || 0));
+        const options = {
+            chart: { type: 'line', height: 300, stacked: false, toolbar: { show: false } },
+            stroke: { width: [3, 0], curve: 'smooth' },
+            dataLabels: { enabled: false },
+            colors: ['#2563eb', '#f97316'],
+            series: [
+                { name: 'Pendapatan', type: 'line', data: revenueSeries },
+                { name: 'Transaksi', type: 'column', data: ordersSeries }
+            ],
+            xaxis: {
+                categories,
+                labels: { style: { colors: '#94a3b8' } }
+            },
+            yaxis: [
+                {
+                    title: { text: 'Pendapatan (Rp)' },
+                    labels: {
+                        formatter: val => currencyFormatter.format(Math.round(val || 0)),
+                        style: { colors: '#94a3b8' }
+                    }
+                },
+                {
+                    opposite: true,
+                    title: { text: 'Transaksi' },
+                    labels: { style: { colors: '#94a3b8' } }
+                }
+            ],
+            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: [
+                    { formatter: value => formatCurrency(value) },
+                    { formatter: value => (value || 0) + ' transaksi' }
+                ]
+            }
+        };
+        const chart = new ApexCharts(target, options);
+        chart.render();
+    }
+
+    function renderMonthlyChart(data) {
+        const target = document.querySelector('#monthlyRevenueChart');
+        if (!target || !Array.isArray(data)) {
+            return;
+        }
+        const categories = data.map(item => item.label);
+        const revenueSeries = data.map(item => Number(item.revenue || 0));
+        const options = {
+            chart: { type: 'bar', height: 300, toolbar: { show: false } },
+            plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
+            dataLabels: { enabled: false },
+            colors: ['#0ea5e9'],
+            series: [{ name: 'Pendapatan', data: revenueSeries }],
+            xaxis: {
+                categories,
+                labels: { style: { colors: '#94a3b8' } }
+            },
+            yaxis: {
+                labels: {
+                    formatter: val => currencyFormatter.format(Math.round(val || 0)),
+                    style: { colors: '#94a3b8' }
+                }
+            },
+            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+            tooltip: { y: { formatter: value => formatCurrency(value) } }
+        };
+        const chart = new ApexCharts(target, options);
+        chart.render();
+    }
+
+    function renderDonut(targetId, data, emptyLabel) {
+        const target = document.querySelector('#' + targetId);
+        if (!target) {
+            return;
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+            target.innerHTML = '<p class="text-center text-sm text-gray-400">' + (emptyLabel || 'Tidak ada data') + '</p>';
+            return;
+        }
+        const labels = data.map(item => item.label || 'Tidak Diketahui');
+        const series = data.map(item => Number(item.value || 0));
+        const options = {
+            chart: { type: 'donut', height: 260 },
+            labels,
+            series,
+            legend: { position: 'bottom' },
+            dataLabels: { formatter: val => val.toFixed(1) + '%' },
+            tooltip: { y: { formatter: value => formatCurrency(value) } },
+            colors: ['#2563eb', '#10b981', '#f97316', '#6366f1', '#facc15', '#ef4444', '#14b8a6']
+        };
+        const chart = new ApexCharts(target, options);
+        chart.render();
+    }
+
+    function renderPriceChangeChart(series) {
+        const target = document.querySelector('#priceChangeChart');
+        if (!target) {
+            return;
+        }
+        if (!Array.isArray(series) || series.length === 0) {
+            target.innerHTML = '<p class="text-center text-sm text-gray-400">Belum ada data riwayat harga.</p>';
+            return;
+        }
+        const mappedSeries = series.map(item => ({
+            name: item.name,
+            data: (item.data || []).map(point => ({
+                x: point.x,
+                y: Number(point.y || 0)
+            }))
+        }));
+        const options = {
+            chart: { type: 'line', height: 300, toolbar: { show: false } },
+            stroke: { curve: 'smooth', width: 2 },
+            markers: { size: 3 },
+            dataLabels: { enabled: false },
+            colors: ['#2563eb', '#f97316', '#10b981', '#6366f1', '#ef4444', '#a855f7', '#0ea5e9'],
+            series: mappedSeries,
+            xaxis: {
+                type: 'category',
+                labels: { rotate: -45, style: { colors: '#94a3b8' } }
+            },
+            yaxis: {
+                labels: {
+                    formatter: value => currencyFormatter.format(Math.round(value || 0)),
+                    style: { colors: '#94a3b8' }
+                }
+            },
+            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+            tooltip: { y: { formatter: value => formatCurrency(value) } }
+        };
+        const chart = new ApexCharts(target, options);
+        chart.render();
+    }
+
+    renderDailyChart(payload.daily || []);
+    renderMonthlyChart(payload.monthly || []);
+    renderDonut('paymentMethodChart', payload.paymentMethods || [], 'Belum ada transaksi.');
+    renderDonut('packageShareChart', payload.packageShare || [], 'Belum ada paket terjual.');
+    renderPriceChangeChart(payload.priceChanges || []);
+})();
+</script>
+{% endblock %}
