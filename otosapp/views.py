@@ -1,5 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, Http404, HttpResponseNotFound, HttpResponseBadRequest
+from django.http import JsonResponse, Http404, HttpResponseNotFound, HttpResponseBadRequest, HttpResponse
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
+import base64
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -54,6 +55,18 @@ from .services.student_momentum import get_momentum_snapshot
 from django.db.models.functions import TruncDay, TruncMonth
 from django.core.exceptions import PermissionDenied
 import json
+
+
+FAVICON_PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NkYGBgAAAABQABDQottAAAAABJRU5ErkJggg=="
+)
+
+
+def favicon(request):
+    """Serve a minimal favicon to prevent favicon.ico 404 warnings."""
+    response = HttpResponse(FAVICON_PNG_BYTES, content_type="image/png")
+    response['Cache-Control'] = 'public, max-age=86400'
+    return response
 
 
 def check_and_downgrade_expired_subscriptions():

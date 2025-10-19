@@ -6,6 +6,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    path('favicon.ico', views.favicon, name='favicon'),
     path('', views.home, name='home'),
     path('register/', register, name='register'),
     path('register/activate/<str:token>/', views.activate_account, name='activate-account'),
