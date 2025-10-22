@@ -4,6 +4,17 @@ import os
 import requests
 from django.core.files.base import ContentFile
 from urllib.parse import urljoin
+from io import BytesIO
+from pathlib import PurePosixPath
+
+import mimetypes
+
+try:
+    from PIL import Image, ImageOps, UnidentifiedImageError
+except ImportError:  # Pillow is optional until installed
+    Image = None
+    ImageOps = None
+    UnidentifiedImageError = Exception
 
 class UniqueFileSystemStorage(FileSystemStorage):
     def get_available_name(self, name, max_length=None):
@@ -33,45 +44,110 @@ class VercelBlobStorage(FileSystemStorage):
 
     def _save(self, name, content):
         """Save file to Vercel Blob or fall back to local storage."""
+        name = name.replace('\\', '/')
+        optimized_name, file_bytes, content_type = self._prepare_upload(name, content)
+
         if not self.use_vercel:
-            # Fallback to local storage
-            return super()._save(name, content)
-        
-        # Read content
-        content.seek(0)
-        file_content = content.read()
-        
+            # Fallback to local storage with optimized content
+            django_file = ContentFile(file_bytes)
+            django_file.name = PurePosixPath(optimized_name).name
+            return super()._save(optimized_name, django_file)
+
         try:
-            # Use PUT method to upload directly
-            url = f'https://blob.vercel-storage.com/{name}'
+            url = f'https://blob.vercel-storage.com/{optimized_name}'
             headers = {
                 'Authorization': f'Bearer {self.token}',
             }
-            
-            # Detect content type
-            import mimetypes
-            content_type, _ = mimetypes.guess_type(name)
+
             if content_type:
                 headers['Content-Type'] = content_type
-            
-            response = requests.put(url, data=file_content, headers=headers)
-            
+
+            response = requests.put(url, data=file_bytes, headers=headers)
+
             if response.status_code in [200, 201]:
                 try:
                     result = response.json()
-                    # Return the public URL as the stored name
                     public_url = result.get('url', url)
                     return public_url
                 except Exception:
-                    # If no JSON response, assume the URL is the public URL
                     return url
-            else:
-                # Fallback to local storage
-                return super()._save(name, content)
-                
+
+            # Fallback to local storage on non-success response
+            django_file = ContentFile(file_bytes)
+            django_file.name = PurePosixPath(optimized_name).name
+            return super()._save(optimized_name, django_file)
+
         except Exception:
             # Fallback to local storage
-            return super()._save(name, content)
+            django_file = ContentFile(file_bytes)
+            django_file.name = PurePosixPath(optimized_name).name
+            return super()._save(optimized_name, django_file)
+
+    def _prepare_upload(self, name, content):
+        """Optimize file bytes before upload; returns (name, bytes, content_type)."""
+        name = name.replace('\\', '/')
+        content.seek(0)
+        raw_bytes = content.read()
+
+        if not raw_bytes:
+            return name, raw_bytes, mimetypes.guess_type(name)[0]
+
+        if not Image:
+            content.seek(0)
+            return name, raw_bytes, mimetypes.guess_type(name)[0]
+
+        if not self._should_optimize(name):
+            content.seek(0)
+            return name, raw_bytes, mimetypes.guess_type(name)[0]
+
+        try:
+            with Image.open(BytesIO(raw_bytes)) as img:
+                if getattr(img, "is_animated", False):
+                    return name, raw_bytes, mimetypes.guess_type(name)[0]
+
+                max_size = getattr(settings, 'UPLOAD_IMAGE_MAX_SIZE', 1920)
+                quality = getattr(settings, 'UPLOAD_IMAGE_WEBP_QUALITY', 80)
+
+                # Normalize orientation and color mode
+                img = self._normalize_image(img)
+
+                resampling_enum = getattr(Image, 'Resampling', None)
+                resample_filter = getattr(resampling_enum, 'LANCZOS', getattr(Image, 'LANCZOS', Image.BICUBIC))
+
+                img.thumbnail((max_size, max_size), resample=resample_filter)
+
+                buffer = BytesIO()
+                img.save(buffer, format='WEBP', quality=quality, method=6)
+                buffer.seek(0)
+
+                optimized_name = str(PurePosixPath(name).with_suffix('.webp'))
+                return optimized_name, buffer.read(), 'image/webp'
+
+        except (UnidentifiedImageError, OSError):
+            pass
+
+        finally:
+            content.seek(0)
+
+        return name, raw_bytes, mimetypes.guess_type(name)[0]
+
+    def _should_optimize(self, name):
+        extension = PurePosixPath(name).suffix.lower()
+        if extension in {'.webp', '.gif'}:
+            return False
+        return extension in {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
+
+    def _normalize_image(self, img):
+        if ImageOps is not None:
+            try:
+                img = ImageOps.exif_transpose(img)
+            except Exception:
+                pass
+
+        if img.mode not in ('RGB', 'L'):
+            img = img.convert('RGB')
+
+        return img
 
     def url(self, name):
         """Return the URL for the file."""
