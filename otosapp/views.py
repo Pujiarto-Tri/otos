@@ -2692,34 +2692,6 @@ def question_create(request):
         form = QuestionForm(request.POST)
         formset = ChoiceFormSet(request.POST)
 
-        # DEBUG: show incoming POST and FILES keys to diagnose validation issues
-        try:
-            print('\n[DEBUG] question_create POST keys:', list(request.POST.keys()))
-            print('[DEBUG] question_create FILES keys:', list(request.FILES.keys()))
-            
-            # Debug checkbox values specifically
-            print('\n[DEBUG] Checkbox values:')
-            for key in request.POST.keys():
-                if 'is_correct' in key:
-                    print(f'  {key}: {request.POST.get(key)}')
-            
-            # Debug formset structure
-            print('\n[DEBUG] Formset info:')
-            print(f'  TOTAL_FORMS: {request.POST.get("choices-TOTAL_FORMS")}')
-            print(f'  INITIAL_FORMS: {request.POST.get("choices-INITIAL_FORMS")}')
-            
-            # Debug each choice data
-            print('\n[DEBUG] Choice data from POST:')
-            for i in range(5):
-                choice_text = request.POST.get(f'choices-{i}-choice_text', '')
-                is_correct = request.POST.get(f'choices-{i}-is_correct', '')
-                # Handle both checkbox "on" values and hidden field "true"/"false" values
-                is_correct_bool = is_correct in ['on', 'true', True]
-                print(f'  Choice {i+1}: text="{choice_text[:30]}..." is_correct="{is_correct}" -> {is_correct_bool}')
-            
-        except Exception as _:
-            pass
-        
         if form.is_valid():
             question = form.save(commit=False)
             if hasattr(request.user, 'created_by'):
