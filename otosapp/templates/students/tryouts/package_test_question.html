@@ -71,6 +71,32 @@ button[name="action"][value="next"] {
     z-index: 9999 !important;
 }
 
+/* Ensure main/question layout forms two columns on tablet/desktop */
+.question-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .question-layout {
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .question-layout {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
+    .question-layout .question-main {
+        grid-column: span 8 / span 8;
+    }
+    .question-layout .question-sidebar {
+        grid-column: span 4 / span 4;
+    }
+}
+
 /* Force button colors to override any conflicts */
 #submit-test-btn-primary[style*="background-color"],
 #submit-test-btn-secondary[style*="background-color"],
@@ -90,10 +116,10 @@ button[name="action"][value="next"] {
 <!-- Desktop/Tablet: Two-column layout, Mobile: Stacked layout -->
 <div class="w-full">
     <!-- Mobile: reduced padding, Desktop: normal spacing -->
-    <div class="p-2 sm:p-3 lg:p-6 md:grid md:grid-cols-12 md:gap-6 space-y-3 md:space-y-0">
+    <div class="question-layout grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 p-2 sm:p-3 lg:p-6 md:grid-cols-12">
         
         <!-- Left Column: Banner + Question (Desktop: col-span-8, Mobile: full width) -->
-        <div class="md:col-span-8 space-y-3 lg:space-y-6">
+        <div class="question-main md:col-span-8 space-y-3 lg:space-y-6">
             <!-- Header Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg lg:rounded-2xl shadow-lg p-3 sm:p-4 lg:p-6 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-3 lg:mb-4">
@@ -271,7 +297,7 @@ button[name="action"][value="next"] {
         </div>
 
         <!-- Right Column: Progress Bar + Timer + Navigation (Desktop: col-span-4, Mobile: full width) -->
-        <div class="md:col-span-4 space-y-3 lg:space-y-6">
+    <div class="question-sidebar md:col-span-4 space-y-3 lg:space-y-6 md:self-start">
             
             <!-- Desktop Timer Display (hidden on mobile) -->
             <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -307,15 +333,15 @@ button[name="action"][value="next"] {
                 {% if is_package and package_subtests %}
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <div>
-                        <label for="subtest-select" class="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-2">Pilih Subtest:</label>
-                        <select id="subtest-select" class="inline-block px-3 py-2 border rounded bg-white dark:bg-gray-800 text-sm">
+                        <label for="subtest-select" class="text-sm font-semibold text-gray-700 dark:text-gray-100 mr-2">Pilih Subtest:</label>
+                        <select id="subtest-select" class="inline-block px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="all">Semua Subtest</option>
                             {% for s in package_subtests %}
                             <option value="{{ s.start }}-{{ s.start|add:s.count|add:'-1' }}" {% if current_question_number >= s.start and current_question_number < s.start|add:s.count %}selected{% endif %}>{{ s.category_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="text-sm text-gray-500">Navigasi menampilkan hanya soal subtest yang dipilih</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-300">Navigasi menampilkan hanya soal subtest yang dipilih</div>
                 </div>
                 {% endif %}
                 <!-- Navigation Header -->
@@ -327,7 +353,7 @@ button[name="action"][value="next"] {
                         <span class="hidden sm:inline">Navigasi Soal</span>
                         <span class="sm:hidden">Navigasi</span>
                     </h3>
-                    <button onclick="toggleNavigation()" class="flex items-center gap-1 lg:gap-2 px-2 py-1 lg:px-4 lg:py-2 text-indigo-600 bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-md lg:rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all font-medium text-sm lg:text-base">
+                    <button onclick="toggleNavigation()" class="flex items-center gap-1 lg:gap-2 px-2 py-1 lg:px-4 lg:py-2 text-indigo-600 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-md lg:rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all font-medium text-sm lg:text-base">
                         <svg id="nav-toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         <span id="nav-toggle-text" class="hidden sm:inline">Sembunyikan</span>
                     </button>
@@ -435,46 +461,55 @@ button[name="action"][value="next"] {
         </div>
     </div>
 </div>
-<!-- Submit Confirmation Modal - Flowbite Style -->
-<div id="submit-modal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative w-full max-w-2xl max-h-full">
-        <!-- Modal content -->
-        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-            <!-- Modal header -->
-            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Selesai Ujian
-                </h3>
-                <button type="button" id="close-modal-btn" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                    </svg>
-                    <span class="sr-only">Close modal</span>
-                </button>
-            </div>
-            <!-- Modal body -->
-            <div class="p-6 space-y-6">
-                <div class="text-center">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/50 mb-4">
-                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+<!-- Submit Confirmation Modal -->
+<div id="submit-modal" tabindex="-1" aria-hidden="true" class="fixed inset-0 z-[9999] hidden items-center justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" data-backdrop></div>
+    <div class="relative w-full max-w-xl">
+        <div class="submit-modal-card relative rounded-2xl bg-white shadow-lg ring-1 ring-slate-900/10 transition-all dark:bg-slate-900 dark:ring-white/10">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m6.938-4A7.5 7.5 0 1112 4.5c2.426 0 4.584 1.146 6 2.938"></path>
                         </svg>
                     </div>
-                    <div id="submit-modal-text" class="text-base leading-relaxed text-gray-500 dark:text-gray-400 mb-4">
-                        Anda telah menjawab <span id="answered-summary" class="font-semibold text-gray-900 dark:text-white">0</span> dari {{ total_questions }} soal.
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Selesaikan Ujian?</h3>
+                        <p class="text-sm text-slate-600 dark:text-slate-300">Pastikan semua jawaban sudah tersimpan sebelum menyelesaikan ujian.</p>
                     </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">
-                        Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.
-                    </p>
+                </div>
+                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200/70 text-slate-600 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-700/80 dark:text-slate-200 dark:hover:bg-slate-600" data-modal-dismiss>
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l8 8m0-8l-8 8"></path>
+                    </svg>
+                    <span class="sr-only">Tutup modal</span>
+                </button>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Anda telah menjawab <span id="answered-summary" class="font-semibold text-slate-900 dark:text-white">0</span> dari {{ total_questions }} soal.
+                            </p>
+                            <p id="submit-modal-text" class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                Setelah ujian diselesaikan, Anda tidak dapat mengubah jawaban lagi.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- Modal footer -->
-            <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
-                <button id="cancel-submit" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:justify-end dark:border-slate-700">
+                <button id="cancel-submit" type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-400 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500" data-modal-dismiss>
                     Batal
                 </button>
-                <button onclick="submitTest()" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
-                    Ya, Selesai
+                <button id="confirm-submit-btn" type="button" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-400" data-modal-confirm>
+                    Ya, Selesaikan
                 </button>
             </div>
         </div>
@@ -531,6 +566,14 @@ button[name="action"][value="next"] {
 }
 
 #next-subtest-modal.flex {
+    pointer-events: auto;
+}
+
+#submit-modal {
+    pointer-events: none;
+}
+
+#submit-modal.flex {
     pointer-events: auto;
 }
 
@@ -1231,6 +1274,7 @@ function showSubmitConfirmation() {
 // Top-level modal display function (global)
 function showModalGlobal() {
     const modal = document.getElementById('submit-modal');
+    const modalCard = modal?.querySelector('.submit-modal-card');
     const answeredCount = answeredQuestions.length;
     const totalQuestions = {{ total_questions }};
 
@@ -1244,67 +1288,39 @@ function showModalGlobal() {
     if (modalText) {
         if (answeredCount === totalQuestions) {
             // All questions answered - show success message
-            modalText.classList.remove('text-gray-500', 'dark:text-gray-400');
+            modalText.classList.remove('text-slate-600', 'dark:text-slate-300');
             modalText.classList.add('text-green-600', 'dark:text-green-400');
             // Update the span styling for success
             if (summaryEl) {
-                summaryEl.classList.remove('text-gray-900', 'dark:text-white');
+                summaryEl.classList.remove('text-slate-900', 'dark:text-white');
                 summaryEl.classList.add('text-green-600', 'dark:text-green-400');
             }
         } else {
             // Some questions remaining - show normal message
             modalText.classList.remove('text-green-600', 'dark:text-green-400');
-            modalText.classList.add('text-gray-500', 'dark:text-gray-400');
+            modalText.classList.add('text-slate-600', 'dark:text-slate-300');
             // Update the span styling for normal state
             if (summaryEl) {
                 summaryEl.classList.remove('text-green-600', 'dark:text-green-400');
-                summaryEl.classList.add('text-gray-900', 'dark:text-white');
+                summaryEl.classList.add('text-slate-900', 'dark:text-white');
             }
         }
     }
 
-    console.log('Attempting to show modal:', modal); // Debug log
-    console.log('Modal parent:', modal?.parentElement); // Debug log
-    console.log('Modal classes:', modal?.className); // Debug log
-
     if (modal) {
-        // Ensure modal is appended to body, not trapped in exam container
         if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
         }
-        
-        // Temporarily disable exam focus mode effects on the modal
-        modal.style.setProperty('position', 'fixed', 'important');
-        modal.style.setProperty('top', '0', 'important');
-        modal.style.setProperty('left', '0', 'important');
-        modal.style.setProperty('right', '0', 'important');
-        modal.style.setProperty('bottom', '0', 'important');
-        modal.style.setProperty('width', '100vw', 'important');
-        modal.style.setProperty('height', '100vh', 'important');
-        
-        // Use Flowbite modal classes - remove hidden and add flex to backdrop
+
         modal.classList.remove('hidden');
-        
-        // Override any CSS that might be hiding the modal
-        modal.style.setProperty('display', 'flex', 'important');
-        modal.style.setProperty('visibility', 'visible', 'important');
-        modal.style.setProperty('opacity', '1', 'important');
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
+        modal.classList.add('flex');
         modal.setAttribute('aria-hidden', 'false');
-        // Add backdrop
-        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        // Ensure modal appears above exam mode content
-        modal.style.zIndex = '9999999';
         document.documentElement.classList.add('overflow-hidden');
         document.body.classList.add('overflow-hidden');
-        
-        // Debug modal content visibility
-        const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-700');
-        if (modalContent) {
-            modalContent.style.setProperty('display', 'block', 'important');
-            modalContent.style.setProperty('visibility', 'visible', 'important');
-            modalContent.style.setProperty('opacity', '1', 'important');
+
+        if (modalCard) {
+            modalCard.classList.remove('animate-fade-in');
+            requestAnimationFrame(() => modalCard.classList.add('animate-fade-in'));
         }
     } else {
         console.error('submit-modal element not found!'); // Debug log
@@ -1315,14 +1331,9 @@ function showModalGlobal() {
 function hideSubmitConfirmation() {
     const modal = document.getElementById('submit-modal');
     if (modal) {
-        // Use Flowbite modal hiding approach
+        modal.classList.remove('flex');
         modal.classList.add('hidden');
-        modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
-        // Clear backdrop
-        modal.style.backgroundColor = '';
-        // Reset z-index to default
-        modal.style.zIndex = '';
         document.documentElement.classList.remove('overflow-hidden');
         document.body.classList.remove('overflow-hidden');
     }
@@ -1335,21 +1346,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. Modal setup
     const submitModal = document.getElementById('submit-modal');
     if (submitModal) {
-        // Handle backdrop clicks
-        submitModal.addEventListener('click', function(e) {
-            // If click happens on the modal backdrop (the modal container) but not inside the modal content, close
-            if (e.target === submitModal) {
-                hideSubmitConfirmation();
-            }
-        });
+        const dismissButtons = submitModal.querySelectorAll('[data-modal-dismiss]');
+        const backdrop = submitModal.querySelector('[data-backdrop]');
+        const confirmBtn = submitModal.querySelector('[data-modal-confirm]');
 
-        // Handle close button clicks
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        if (closeModalBtn) {
-            closeModalBtn.addEventListener('click', hideSubmitConfirmation);
+        dismissButtons.forEach(btn => btn.addEventListener('click', hideSubmitConfirmation));
+        if (backdrop) {
+            backdrop.addEventListener('click', hideSubmitConfirmation);
+        }
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                hideSubmitConfirmation();
+                submitTest();
+            });
         }
 
-        // Handle Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && !submitModal.classList.contains('hidden')) {
                 hideSubmitConfirmation();
@@ -2462,6 +2473,30 @@ function cleanupBlueElements() {
         });
     }
 
+    // Intercept navigation clicks that cross subtests so we can confirm before leaving
+    const navButtons = document.querySelectorAll('.nav-button');
+    if (navButtons.length && subtestRanges.length) {
+        navButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const targetIndex = parseInt(this.dataset.questionIndex, 10);
+                if (isNaN(targetIndex) || targetIndex === currentQuestionNumber) {
+                    return;
+                }
+
+                const currentSub = findSubtestForIndex(currentQuestionNumber);
+                const targetSub = findSubtestForIndex(targetIndex);
+
+                if (currentSub && targetSub && currentSub.name !== targetSub.name) {
+                    e.preventDefault();
+                    const targetHref = this.href;
+                    showNextSubtestModal(currentSub.name, targetSub.name, function() {
+                        window.location.href = targetHref;
+                    });
+                }
+            });
+        });
+    }
+
     // Modal for confirming moving to next subtest
     function showNextSubtestModal(fromName, toName, onConfirm){
         const modal = document.getElementById('next-subtest-modal');
@@ -2480,6 +2515,8 @@ function cleanupBlueElements() {
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        document.documentElement.classList.add('overflow-hidden');
+        document.body.classList.add('overflow-hidden');
         requestAnimationFrame(() => {
             modalCard?.classList.add('animate-fade-in');
         });
@@ -2489,6 +2526,8 @@ function cleanupBlueElements() {
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
+                document.documentElement.classList.remove('overflow-hidden');
+                document.body.classList.remove('overflow-hidden');
                 if (callback) callback();
             }, 180);
         };

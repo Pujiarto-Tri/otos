@@ -98,6 +98,142 @@
     opacity: 0.95;
 }
 
+@keyframes start-modal-backdrop {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes start-modal-backdrop-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes start-modal-card {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes start-modal-card-out {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+}
+
+#startTestModal {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+}
+
+#startTestModal.modal-visible {
+    opacity: 1;
+    pointer-events: auto;
+    animation: start-modal-backdrop 200ms ease forwards;
+}
+
+#startTestModal.modal-hiding {
+    animation: start-modal-backdrop-out 200ms ease forwards;
+}
+
+.start-modal-card {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+}
+
+#startTestModal.modal-visible .start-modal-card {
+    animation: start-modal-card 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#startTestModal.modal-hiding .start-modal-card {
+    animation: start-modal-card-out 220ms ease forwards;
+}
+
+.confirm-read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    background-color: #f3f4f6;
+    transition: color 200ms ease, background-color 200ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.dark .confirm-read-btn {
+    color: #e5e7eb;
+    background-color: rgba(55, 65, 81, 0.85);
+}
+
+.confirm-read-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.05));
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 210ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+.confirm-read-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -16px rgba(34, 197, 94, 0.6);
+}
+
+.confirm-read-btn:hover::before {
+    opacity: 0.7;
+    transform: scale(1);
+}
+
+.confirm-read-btn .confirm-glow {
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(circle at center, rgba(34,197,94,0.35), transparent 65%);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 240ms ease, transform 260ms ease;
+    pointer-events: none;
+}
+
+.confirm-read-btn.confirmed {
+    color: #047857;
+    background-color: rgba(220, 252, 231, 0.95);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 18px 28px -20px rgba(34, 197, 94, 0.5);
+}
+
+.dark .confirm-read-btn.confirmed {
+    color: #6ee7b7;
+    background-color: rgba(6, 95, 70, 0.45);
+}
+
+.confirm-read-btn.confirmed::before {
+    opacity: 0.85;
+    transform: scale(1);
+    background: linear-gradient(135deg, rgba(34,197,94,0.35), rgba(16,185,129,0.18));
+}
+
+.confirm-read-btn.confirmed .confirm-glow {
+    opacity: 1;
+    transform: scale(1);
+}
+
 </style>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
@@ -484,7 +620,7 @@
 <!-- Start Warning Modal -->
 <div id="startTestModal" class="fixed inset-0 bg-gray-900/50 modal-backdrop hidden overflow-y-auto h-full w-full z-50">
     <div class="relative top-10 mx-auto p-5 w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-fadeIn">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden start-modal-card">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white">
                 <div class="flex items-center justify-between">
@@ -562,8 +698,9 @@
                 <!-- Ready Check -->
                 <div class="text-center mb-8">
                     <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">Apakah Anda sudah siap untuk memulai tryout ini?</p>
-                        <button id="confirm-read-btn" type="button" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors" aria-pressed="false" aria-describedby="confirm-read-hint">
-                            <svg id="confirm-read-icon" class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                        <button id="confirm-read-btn" type="button" class="confirm-read-btn" aria-pressed="false" aria-describedby="confirm-read-hint">
+                            <span class="confirm-glow" aria-hidden="true"></span>
+                            <svg id="confirm-read-icon" class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
                             <span id="confirm-read-text">Saya sudah membaca semua informasi</span>
                         </button>
                         <div id="confirm-read-hint" class="mt-2 text-xs text-gray-500 dark:text-gray-400">Tombol "Mulai Sekarang" akan aktif setelah konfirmasi.</div>
@@ -619,36 +756,57 @@ document.addEventListener('DOMContentLoaded', () => showTab('packages'));
 
 // Custom Start Warning Modal functions
 function showStartWarning(button) {
-    console.log('showStartWarning called', button);
     const title = button.getAttribute('data-title');
     const questions = button.getAttribute('data-questions');
     const time = button.getAttribute('data-time');
     const url = button.getAttribute('data-url');
     
-    console.log('Modal data:', { title, questions, time, url });
-    console.log('DEBUGGING: URL should be take_test, not admin URL:', url);
-    
     document.getElementById('modal-category-name').textContent = title;
     document.getElementById('modal-question-count').textContent = questions;
     document.getElementById('modal-time-limit').textContent = time;
     document.getElementById('start-now-button').setAttribute('data-url', url);
-    document.getElementById('startTestModal').classList.remove('hidden');
+    const startModal = document.getElementById('startTestModal');
+    if (!startModal) {
+        return;
+    }
+
+    startModal.classList.remove('modal-hiding');
+    startModal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        startModal.classList.add('modal-visible');
+    });
+    document.documentElement.classList.add('overflow-hidden');
+    document.body.classList.add('overflow-hidden');
 }
 
 function hideStartWarning() {
-    console.log('hideStartWarning called');
-    document.getElementById('startTestModal').classList.add('hidden');
+    const startModal = document.getElementById('startTestModal');
+    if (!startModal) {
+        return;
+    }
+
+    startModal.classList.remove('modal-visible');
+    startModal.classList.add('modal-hiding');
+    document.documentElement.classList.remove('overflow-hidden');
+    document.body.classList.remove('overflow-hidden');
+
+    if (window.__startModalHideTimer) {
+        clearTimeout(window.__startModalHideTimer);
+    }
+
+    window.__startModalHideTimer = setTimeout(() => {
+        startModal.classList.add('hidden');
+        startModal.classList.remove('modal-hiding');
+        window.__startModalHideTimer = null;
+    }, 240);
 }
 
 function startTryout() {
     const url = document.getElementById('start-now-button').getAttribute('data-url');
-    console.log('Starting tryout with URL:', url);
-    console.log('DEBUGGING: This should be /students/tryouts/ID/take/1/ format:', url);
     
     // Add error handling for the redirect
     try {
         if (url) {
-            console.log('Redirecting to:', url);
             window.location.href = url;
         } else {
             console.error('No URL found for redirect');
@@ -678,17 +836,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function setConfirmed(confirmed) {
         confirmBtn.setAttribute('aria-pressed', confirmed ? 'true' : 'false');
         if (confirmed) {
-            confirmBtn.classList.remove('bg-gray-100', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
-            confirmBtn.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-300');
+            confirmBtn.classList.add('confirmed');
             confirmIcon.style.display = 'inline-block';
+            confirmIcon.classList.add('text-green-600', 'dark:text-green-300');
             confirmText.textContent = 'Dikonfirmasi: Siap memulai';
             // enable start button
             startNowBtn.removeAttribute('disabled');
             startNowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         } else {
-            confirmBtn.classList.add('bg-gray-100', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
-            confirmBtn.classList.remove('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-300');
+            confirmBtn.classList.remove('confirmed');
             confirmIcon.style.display = 'none';
+            confirmIcon.classList.remove('text-green-600', 'dark:text-green-300');
             confirmText.textContent = 'Saya sudah membaca semua informasi';
             // disable start button
             startNowBtn.setAttribute('disabled', 'disabled');
