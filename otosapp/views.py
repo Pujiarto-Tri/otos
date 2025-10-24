@@ -2200,6 +2200,14 @@ def resend_activation(request):
 
 ##User View##
 
+def _serialize_form_errors(form):
+    """Convert Django form errors into a JSON-serializable dict."""
+    errors = {}
+    for field, field_errors in form.errors.items():
+        errors[field] = [str(error) for error in field_errors]
+    return errors
+
+
 @login_required
 @admin_or_operator_required
 def user_list(request):
@@ -2231,10 +2239,12 @@ def user_list(request):
         users = paginator.page(paginator.num_pages)
 
     # Stat cards for roles
-    from otosapp.models import Role
     student_count = User.objects.filter(role__role_name='Student').count()
     teacher_count = User.objects.filter(role__role_name='Teacher').count()
     operator_count = User.objects.filter(role__role_name='Operator').count()
+
+    create_form = AdminUserCreationForm(current_user=request.user, auto_id='create_%s')
+    update_form = UserUpdateForm(current_user=request.user, auto_id='update_%s')
 
     return render(request, 'admin/manage_user/user_list.html', {
         'users': users,
@@ -2242,6 +2252,8 @@ def user_list(request):
         'student_count': student_count,
         'teacher_count': teacher_count,
         'operator_count': operator_count,
+        'create_form': create_form,
+        'update_form': update_form,
     })
     
 
@@ -2252,10 +2264,16 @@ def user_create(request):
         form = AdminUserCreationForm(request.POST, current_user=request.user)
         if form.is_valid():
             form.save()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
             return redirect('user_list')
-    else:
-        form = AdminUserCreationForm(current_user=request.user)
-    return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Add New User'})
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': _serialize_form_errors(form)}, status=400)
+        messages.error(request, 'Gagal menambahkan user. Periksa kembali data yang dimasukkan.')
+        return redirect('user_list')
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    return redirect('user_list')
 
 @login_required
 @admin_or_operator_required
@@ -2269,20 +2287,26 @@ def user_update(request, user_id):
     if request.method == 'POST':
         form = UserUpdateForm(request.POST, instance=user, current_user=request.user)
         if form.is_valid():
-            # Prevent Operator from assigning Admin role
             try:
                 if request.user.role.role_name == 'Operator' and form.cleaned_data.get('role') and form.cleaned_data.get('role').role_name == 'Admin':
                     form.add_error('role', 'Operator tidak memiliki izin untuk memberikan role Admin.')
                 else:
                     form.save()
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                        return JsonResponse({'success': True})
                     return redirect('user_list')
             except Exception:
-                # If any unexpected error during role check, avoid silent failure and proceed to save as fallback
                 form.save()
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True})
                 return redirect('user_list')
-    else:
-        form = UserUpdateForm(instance=user, current_user=request.user)
-    return render(request, 'admin/manage_user/user_form.html', {'form': form, 'title': 'Edit User'})
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': _serialize_form_errors(form)}, status=400)
+        messages.error(request, 'Gagal memperbarui user. Periksa kembali data yang dimasukkan.')
+        return redirect('user_list')
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    return redirect('user_list')
 
 @login_required
 @admin_or_operator_required
@@ -2295,8 +2319,12 @@ def user_delete(request, user_id):
     
     if request.method == 'POST':
         user.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
         return redirect('user_list')
-    return render(request, 'admin/manage_user/user_confirm_delete.html', {'user': user})
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    return redirect('user_list')
 
 
 @login_required
