@@ -5,7 +5,7 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-10 dark:bg-gray-900">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 space-y-8">
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)]">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,1fr)]">
             <div class="space-y-6">
                 <section class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] items-start">
@@ -32,7 +32,7 @@
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div class="rounded-2xl border border-gray-200/70 bg-gray-50 p-4 dark:border-gray-700/70 dark:bg-gray-800/60">
                                     <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Nilai Anda</p>
-                                    <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{{ test.score|floatformat:1 }}</p>
+                                    <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{{ test.score|floatformat:"-1" }}</p>
                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Nilai minimum lulus: {{ category.get_passing_score|default:"-" }}
                                     </p>
@@ -48,7 +48,7 @@
                         <div class="relative">
                             <div class="rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-600 to-fuchsia-600 shadow-2xl p-8 text-center text-white h-full flex flex-col justify-center">
                                 <p class="text-sm uppercase tracking-[0.35em] text-white/80">Skor Anda</p>
-                                <p class="mt-3 text-6xl font-black">{{ test.score|floatformat:1 }}</p>
+                                <p class="mt-3 text-6xl font-black">{{ test.score|floatformat:"-1" }}</p>
                                 <div class="mt-5 flex flex-col gap-3">
                                     {% if show_university_section %}
                                         {% if target_achievement_status == 'all_met' %}
@@ -209,7 +209,7 @@
                                             <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50">
                                                 <div class="mb-3 flex items-baseline justify-between">
                                                     <span class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Nilai Anda</span>
-                                                    <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ test.score|floatformat:1 }}</span>
+                                                    <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ test.score|floatformat:"-1" }}</span>
                                                 </div>
                                                 <div class="flex items-baseline justify-between">
                                                     <span class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Minimum</span>
@@ -275,7 +275,7 @@
                                         <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50">
                                             <div class="mb-3 flex items-baseline justify-between">
                                                 <span class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Nilai Anda</span>
-                                                <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ test.score|floatformat:1 }}</span>
+                                                <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ test.score|floatformat:"-1" }}</span>
                                             </div>
                                             <div class="flex items-baseline justify-between">
                                                 <span class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Minimum</span>
